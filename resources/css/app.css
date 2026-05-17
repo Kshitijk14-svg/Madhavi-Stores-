@@ -1,0 +1,14 @@
+/* 
+  Vite/PostCSS Compatibility File
+  This file is kept minimal to prevent build errors.
+  All actual styles are in public/css/app.css.
+*/
+
+.bg-silk { background-color: #f0ebe3; }
+
+.pcard-img {
+  position: relative;
+  overflow: hidden;
+  background-color: #f0ebe3;
+  aspect-ratio: 3/4;
+}
