@@ -20,6 +20,49 @@
         @endforeach
     </div>
 
+    {{-- Sales Chart Card --}}
+    <div class="border border-gray-100 bg-slate-50/30 p-6 mb-12">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+                <span class="text-[10px] font-bold tracking-[0.2em] uppercase text-muted">Business Performance</span>
+                <h3 class="font-display text-2xl text-primary mt-1">Sales Revenue Analytics</h3>
+            </div>
+            
+            {{-- Interval Selector Switcher --}}
+            <div class="flex flex-col md:flex-row items-end md:items-center gap-3 self-start md:self-auto">
+                {{-- Date Wise Custom Filter --}}
+                <div class="flex items-center bg-white border border-gray-200 p-1.5 rounded-sm gap-1 shadow-sm">
+                    <input type="date" id="chart-start-date" class="bg-transparent text-[10px] text-muted outline-none px-1 uppercase font-bold tracking-widest cursor-pointer">
+                    <span class="text-muted text-[10px] px-1">TO</span>
+                    <input type="date" id="chart-end-date" class="bg-transparent text-[10px] text-muted outline-none px-1 uppercase font-bold tracking-widest cursor-pointer" onchange="loadSalesChart('custom')">
+                </div>
+
+                <div class="flex items-center bg-slate-100 p-1 rounded-sm gap-1">
+                    <button type="button" onclick="loadSalesChart('day')" class="chart-filter bg-slate-100 text-primary font-bold text-[10px] tracking-wider uppercase px-4 py-2 hover:bg-slate-200 transition-colors rounded-sm" data-range="day">Day</button>
+                    <button type="button" onclick="loadSalesChart('week')" class="chart-filter bg-slate-100 text-primary font-bold text-[10px] tracking-wider uppercase px-4 py-2 hover:bg-slate-200 transition-colors rounded-sm" data-range="week">Week</button>
+                    <button type="button" onclick="loadSalesChart('month')" class="chart-filter bg-primary text-white font-bold text-[10px] tracking-wider uppercase px-4 py-2 hover:bg-slate-200 transition-colors rounded-sm" data-range="month">Month</button>
+                    <button type="button" onclick="loadSalesChart('year')" class="chart-filter bg-slate-100 text-primary font-bold text-[10px] tracking-wider uppercase px-4 py-2 hover:bg-slate-200 transition-colors rounded-sm" data-range="year">Year</button>
+                    <button type="button" onclick="loadSalesChart('all')" class="chart-filter bg-slate-100 text-primary font-bold text-[10px] tracking-wider uppercase px-4 py-2 hover:bg-slate-200 transition-colors rounded-sm" data-range="all">All</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center mb-6 border-b border-gray-100 pb-6">
+            <div class="lg:border-r lg:border-gray-100 lg:pr-6">
+                <p class="text-xs text-muted">Period Sales Total</p>
+                <p id="chart-total-sales" class="text-3xl font-display font-medium text-secondary mt-1">₹0.00</p>
+            </div>
+            <div class="lg:col-span-3">
+                <p class="text-xs text-muted italic">Visualizing gross revenue trends across the selected interval. Canceled transactions are omitted from metrics.</p>
+            </div>
+        </div>
+
+        {{-- Chart Container --}}
+        <div class="relative h-[320px] w-full z-0">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
     {{-- Recent Products --}}
     <div>
         <div class="flex justify-between items-center mb-6">

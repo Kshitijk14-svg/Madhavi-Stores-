@@ -214,7 +214,7 @@
                                 {{-- Actions --}}
                                 <div class="flex gap-2 pt-2 border-t border-gray-100">
                                     {{-- Toggle Active/Inactive --}}
-                                    <form action="{{ route('admin.coupons.toggle', $coupon->id) }}" method="POST">
+                                    <form action="{{ route('admin.coupons.toggle', $coupon->id) }}" method="POST" class="coupon-toggle-form inline-block">
                                         @csrf
                                         <button type="submit"
                                                 class="text-[9px] px-3 py-1.5 font-bold uppercase tracking-wide border transition-colors

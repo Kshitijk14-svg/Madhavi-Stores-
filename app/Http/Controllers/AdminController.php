@@ -23,12 +23,18 @@ class AdminController extends Controller
     public function dashboard()
     {
         $revenue = Order::where('order_status', '!=', 'Cancelled')->sum('total');
+        $ordersCount = Order::count();
+        $avgOrderValue = $ordersCount > 0 ? $revenue / $ordersCount : 0;
+        $customersCount = User::where('role', 'customer')->count();
+        if ($customersCount === 0) {
+            $customersCount = User::count();
+        }
         
         $stats = [
-            ['label' => 'Total Sales', 'value' => '₹' . number_format($revenue), 'trend' => 'All Orders'],
-            ['label' => 'Total Orders', 'value' => Order::count(), 'trend' => 'Completed & Pending'],
-            ['label' => 'Active Carts', 'value' => CartItem::distinct('user_id')->count('user_id'), 'trend' => 'Customer Carts'],
-            ['label' => 'Total Coupons', 'value' => Coupon::where('is_active', true)->count(), 'trend' => 'Active Promos'],
+            ['label' => 'Total Revenue', 'value' => '₹' . number_format($revenue, 2), 'trend' => 'Non-Cancelled'],
+            ['label' => 'Sales Volume', 'value' => number_format($ordersCount), 'trend' => 'Total Orders'],
+            ['label' => 'Average Order', 'value' => '₹' . number_format($avgOrderValue, 2), 'trend' => 'Avg Value (AOV)'],
+            ['label' => 'Registered Clients', 'value' => number_format($customersCount), 'trend' => 'Atelier Members'],
         ];
 
         $recentProducts = Product::with('category')->latest()->take(5)->get();
@@ -36,12 +42,232 @@ class AdminController extends Controller
         return view('admin.dashboard', compact('stats', 'recentProducts'));
     }
 
+    public function salesChartData(Request $request)
+    {
+        $range = $request->input('range', 'month');
+        $labels = [];
+        $values = [];
+
+        switch ($range) {
+            case 'custom':
+                if ($request->has('start') && $request->has('end')) {
+                    $start = Carbon::parse($request->input('start'))->startOfDay();
+                    $end = Carbon::parse($request->input('end'))->endOfDay();
+                    
+                    $orders = Order::where('order_status', '!=', 'Cancelled')
+                        ->whereBetween('created_at', [$start, $end])
+                        ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total) as total_sales'))
+                        ->groupBy('date')
+                        ->pluck('total_sales', 'date')
+                        ->toArray();
+
+                    $days = $start->diffInDays($end);
+                    if ($days > 60) $days = 60; // Max limit to prevent browser crash
+                    
+                    for ($i = 0; $i <= $days; $i++) {
+                        $dateObj = $start->copy()->addDays($i);
+                        $dateStr = $dateObj->format('Y-m-d');
+                        $labels[] = $dateObj->format('d M');
+                        $values[] = $orders[$dateStr] ?? 0;
+                    }
+                }
+                break;
+
+            case 'day':
+                // Hourly sales for today
+                $start = Carbon::today();
+                $end = Carbon::today()->endOfDay();
+                
+                $orders = Order::where('order_status', '!=', 'Cancelled')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->select(DB::raw('HOUR(created_at) as hour'), DB::raw('SUM(total) as total_sales'))
+                    ->groupBy('hour')
+                    ->pluck('total_sales', 'hour')
+                    ->toArray();
+
+                for ($i = 0; $i < 24; $i++) {
+                    $hourLabel = $i % 12 === 0 ? 12 : $i % 12;
+                    $ampm = $i < 12 ? 'AM' : 'PM';
+                    $labels[] = $hourLabel . ' ' . $ampm;
+                    $values[] = $orders[$i] ?? 0;
+                }
+                break;
+
+            case 'week':
+                // Daily sales for the last 7 days
+                $start = Carbon::now()->subDays(6)->startOfDay();
+                $end = Carbon::now()->endOfDay();
+
+                $orders = Order::where('order_status', '!=', 'Cancelled')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total) as total_sales'))
+                    ->groupBy('date')
+                    ->pluck('total_sales', 'date')
+                    ->toArray();
+
+                for ($i = 6; $i >= 0; $i--) {
+                    $date = Carbon::now()->subDays($i)->format('Y-m-d');
+                    $dateObj = Carbon::parse($date);
+                    $labels[] = $dateObj->format('D');
+                    $values[] = $orders[$date] ?? 0;
+                }
+                break;
+
+            case 'month':
+                // Daily sales for the last 30 days
+                $start = Carbon::now()->subDays(29)->startOfDay();
+                $end = Carbon::now()->endOfDay();
+
+                $orders = Order::where('order_status', '!=', 'Cancelled')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total) as total_sales'))
+                    ->groupBy('date')
+                    ->pluck('total_sales', 'date')
+                    ->toArray();
+
+                for ($i = 29; $i >= 0; $i--) {
+                    $date = Carbon::now()->subDays($i)->format('Y-m-d');
+                    $dateObj = Carbon::parse($date);
+                    $labels[] = $dateObj->format('d M');
+                    $values[] = $orders[$date] ?? 0;
+                }
+                break;
+
+            case 'year':
+                // Monthly sales for the current year
+                $start = Carbon::now()->startOfYear();
+                $end = Carbon::now()->endOfYear();
+
+                $orders = Order::where('order_status', '!=', 'Cancelled')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->select(DB::raw('MONTH(created_at) as month'), DB::raw('SUM(total) as total_sales'))
+                    ->groupBy('month')
+                    ->pluck('total_sales', 'month')
+                    ->toArray();
+
+                for ($i = 1; $i <= 12; $i++) {
+                    $labels[] = Carbon::create()->month($i)->format('M');
+                    $values[] = $orders[$i] ?? 0;
+                }
+                break;
+
+            case 'all':
+            default:
+                // Sales by year-month for all time (up to 12 labels)
+                $orders = Order::where('order_status', '!=', 'Cancelled')
+                    ->select(DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month_year'), DB::raw('SUM(total) as total_sales'))
+                    ->groupBy('month_year')
+                    ->orderBy('month_year', 'asc')
+                    ->take(12)
+                    ->pluck('total_sales', 'month_year')
+                    ->toArray();
+
+                if (empty($orders)) {
+                    $labels[] = Carbon::now()->format('Y');
+                    $values[] = 0;
+                } else {
+                    foreach ($orders as $monthYear => $totalSales) {
+                        $dateObj = Carbon::parse($monthYear . '-01');
+                        $labels[] = $dateObj->format('M Y');
+                        $values[] = $totalSales;
+                    }
+                }
+                break;
+        }
+
+        return response()->json([
+            'labels' => $labels,
+            'values' => $values,
+            'total' => '₹' . number_format(array_sum($values), 2),
+            'orders_count' => Order::where('order_status', '!=', 'Cancelled')->count(),
+        ]);
+    }
+
     // ── PRODUCTS CRUD ───────────────────────────────────────────
 
-    public function products()
+    public function products(Request $request)
     {
-        $products = Product::with('category')->latest()->paginate(10);
-        return view('admin.products.index', compact('products'));
+        $query = Product::with('category');
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('slug', 'LIKE', "%{$search}%")
+                  ->orWhere('badge', 'LIKE', "%{$search}%")
+                  ->orWhere('seo_title', 'LIKE', "%{$search}%")
+                  ->orWhere('seo_description', 'LIKE', "%{$search}%");
+                  
+                if (is_numeric($search)) {
+                    $q->orWhere('id', $search);
+                }
+            });
+        }
+
+        // Category filter
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        // Stock status filter
+        if ($request->filled('stock_status')) {
+            $status = $request->input('stock_status');
+            if ($status === 'in_stock') {
+                $query->where(function($q) {
+                    $q->where(function($sq) {
+                        $sq->where('has_sizes', false)
+                           ->where('stock', '>', 0);
+                    })->orWhere(function($sq) {
+                        $sq->where('has_sizes', true)
+                           ->whereHas('sizes', function($ssq) {
+                               $ssq->where('stock', '>', 0);
+                           });
+                    });
+                });
+            } elseif ($status === 'out_of_stock') {
+                $query->where(function($q) {
+                    $q->where(function($sq) {
+                        $sq->where('has_sizes', false)
+                           ->where('stock', '<=', 0);
+                    })->orWhere(function($sq) {
+                        $sq->where('has_sizes', true)
+                           ->whereDoesntHave('sizes', function($ssq) {
+                               $ssq->where('stock', '>', 0);
+                           });
+                    });
+                });
+            }
+        }
+
+        // Sort option
+        $sortBy = $request->input('sort_by', 'latest');
+        switch ($sortBy) {
+            case 'price_low_high':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_high_low':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name_a_z':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_z_a':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'bestseller':
+                $query->orderBy('is_bestseller', 'desc')->latest();
+                break;
+            case 'latest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        $products = $query->paginate(15)->withQueryString();
+        $categories = Category::all();
+
+        return view('admin.products.index', compact('products', 'categories'));
     }
 
     public function createProduct()
@@ -59,8 +285,20 @@ class AdminController extends Controller
             'category_id'    => 'required|exists:categories,id',
             'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
             'image_url'      => 'nullable|url',
+            'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
+            'discount_type'  => 'nullable|in:percent,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'is_new_arrival' => 'nullable|boolean',
+            'new_arrival_expires_at' => 'nullable|date',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'seo_title'      => 'nullable|string|max:255',
+            'seo_description'=> 'nullable|string',
+            'seo_keywords'   => 'nullable|string|max:255',
+            'details'        => 'nullable|string',
+            'sizes'          => 'nullable|array',
+            'sizes.*'        => 'nullable|integer|min:0',
         ]);
 
         $slug = Str::slug($request->name);
@@ -78,25 +316,73 @@ class AdminController extends Controller
             $imageUrl = '/images/products/' . $filename;
         }
 
-        Product::create([
+        $gallery = array_fill(0, 7, null);
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $gFile) {
+                if ($index >= 0 && $index < 7 && $gFile) {
+                    $gFilename = time() . '_gallery_' . uniqid() . '_' . $gFile->getClientOriginalName();
+                    $gFile->move(public_path('images/products'), $gFilename);
+                    $gallery[$index] = '/images/products/' . $gFilename;
+                }
+            }
+        }
+        $gallery = array_values(array_filter($gallery));
+
+        $sizeChartUrl = null;
+        if ($request->hasFile('size_chart_image')) {
+            $file = $request->file('size_chart_image');
+            $filename = time() . '_sc_' . $file->getClientOriginalName();
+            $file->move(public_path('images/products'), $filename);
+            $sizeChartUrl = 'images/products/' . $filename;
+        }
+
+        $details = null;
+        if ($request->filled('details')) {
+            $details = array_values(array_filter(array_map('trim', explode("\n", $request->details))));
+        }
+
+        $product = Product::create([
             'name'           => $request->name,
             'slug'           => $slug,
             'price'          => $request->price,
             'original_price' => $request->original_price,
             'category_id'    => $request->category_id,
+            'has_sizes'      => $request->has_sizes == '1',
+            'stock'          => $request->has_sizes == '1' ? 0 : (int)$request->stock,
             'image_url'      => $imageUrl,
+            'size_chart_image'=> $sizeChartUrl,
             'badge'          => $request->badge,
             'is_bestseller'  => $request->has('is_bestseller'),
             'rating'         => 5.0,
             'review_count'   => 0,
+            'discount_type'  => $request->discount_type,
+            'discount_value' => $request->discount_value,
+            'is_new_arrival' => $request->has('is_new_arrival'),
+            'new_arrival_expires_at' => $request->new_arrival_expires_at ? Carbon::parse($request->new_arrival_expires_at) : null,
+            'gallery_images' => $gallery,
+            'seo_title'      => $request->seo_title,
+            'seo_description'=> $request->seo_description,
+            'seo_keywords'   => $request->seo_keywords,
+            'details'        => $details,
         ]);
+
+        if ($request->has_sizes == '1' && $request->has('sizes')) {
+            foreach ($request->sizes as $size => $stock) {
+                if ($stock !== null && $stock !== '') {
+                    $product->sizes()->create([
+                        'size' => $size,
+                        'stock' => (int)$stock
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('admin.products.index')->with('success', 'Product added successfully.');
     }
 
     public function editProduct($id)
     {
-        $product    = Product::findOrFail($id);
+        $product    = Product::with('sizes')->findOrFail($id);
         $categories = Category::all();
         return view('admin.products.edit', compact('product', 'categories'));
     }
@@ -114,6 +400,18 @@ class AdminController extends Controller
             'image_url'      => 'nullable|url',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
+            'discount_type'  => 'nullable|in:percent,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+            'is_new_arrival' => 'nullable|boolean',
+            'new_arrival_expires_at' => 'nullable|date',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'existing_gallery' => 'nullable|array',
+            'seo_title'      => 'nullable|string|max:255',
+            'seo_description'=> 'nullable|string',
+            'seo_keywords'   => 'nullable|string|max:255',
+            'details'        => 'nullable|string',
+            'sizes'          => 'nullable|array',
+            'sizes.*'        => 'nullable|integer|min:0',
         ]);
 
         $slug = $product->slug;
@@ -134,16 +432,78 @@ class AdminController extends Controller
             $imageUrl = '/images/products/' . $filename;
         }
 
+        $gallery = array_fill(0, 7, null);
+        if ($request->has('existing_gallery')) {
+            foreach ($request->existing_gallery as $index => $imgUrl) {
+                if ($index >= 0 && $index < 7) {
+                    $gallery[$index] = $imgUrl;
+                }
+            }
+        }
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $gFile) {
+                if ($index >= 0 && $index < 7 && $gFile) {
+                    $gFilename = time() . '_gallery_' . uniqid() . '_' . $gFile->getClientOriginalName();
+                    $gFile->move(public_path('images/products'), $gFilename);
+                    $gallery[$index] = '/images/products/' . $gFilename;
+                }
+            }
+        }
+        $gallery = array_values(array_filter($gallery));
+
+        $sizeChartUrl = $product->size_chart_image;
+        if ($request->hasFile('size_chart_image')) {
+            $file = $request->file('size_chart_image');
+            $filename = time() . '_sc_' . $file->getClientOriginalName();
+            $file->move(public_path('images/products'), $filename);
+            $sizeChartUrl = 'images/products/' . $filename;
+        }
+
+        $details = $product->details;
+        if ($request->has('details')) {
+            $details = null;
+            if ($request->filled('details')) {
+                $details = array_values(array_filter(array_map('trim', explode("\n", $request->details))));
+            }
+        }
+
         $product->update([
             'name'           => $request->name,
             'slug'           => $slug,
             'price'          => $request->price,
             'original_price' => $request->original_price,
             'category_id'    => $request->category_id,
+            'has_sizes'      => $request->has_sizes == '1',
+            'stock'          => $request->has_sizes == '1' ? 0 : (int)$request->stock,
             'image_url'      => $imageUrl,
+            'size_chart_image'=> $sizeChartUrl,
             'badge'          => $request->badge,
             'is_bestseller'  => $request->has('is_bestseller'),
+            'discount_type'  => $request->discount_type,
+            'discount_value' => $request->discount_value,
+            'is_new_arrival' => $request->has('is_new_arrival'),
+            'new_arrival_expires_at' => $request->new_arrival_expires_at ? Carbon::parse($request->new_arrival_expires_at) : null,
+            'gallery_images' => $gallery,
+            'seo_title'      => $request->seo_title,
+            'seo_description'=> $request->seo_description,
+            'seo_keywords'   => $request->seo_keywords,
+            'details'        => $details,
         ]);
+
+        if ($request->has_sizes == '1') {
+            if ($request->has('sizes')) {
+                foreach ($request->sizes as $size => $stock) {
+                    if ($stock !== null && $stock !== '') {
+                        $product->sizes()->updateOrCreate(
+                            ['size' => $size],
+                            ['stock' => (int)$stock]
+                        );
+                    }
+                }
+            }
+        } else {
+            $product->sizes()->delete();
+        }
 
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
@@ -156,9 +516,60 @@ class AdminController extends Controller
 
     // ── CATEGORIES (COLLECTIONS) CRUD ────────────────────────────
 
-    public function categories()
+    public function categories(Request $request)
     {
-        $categories = Category::withCount('products')->latest()->get();
+        $query = Category::withCount('products');
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('slug', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Product count range filter
+        if ($request->filled('product_count_range')) {
+            $range = $request->input('product_count_range');
+            switch ($range) {
+                case 'empty':
+                    $query->having('products_count', '=', 0);
+                    break;
+                case '1_10':
+                    $query->having('products_count', '>=', 1)->having('products_count', '<=', 10);
+                    break;
+                case '11_50':
+                    $query->having('products_count', '>=', 11)->having('products_count', '<=', 50);
+                    break;
+                case '50_plus':
+                    $query->having('products_count', '>', 50);
+                    break;
+            }
+        }
+
+        // Sort option
+        $sortBy = $request->input('sort_by', 'latest');
+        switch ($sortBy) {
+            case 'name_a_z':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_z_a':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'products_desc':
+                $query->orderBy('products_count', 'desc');
+                break;
+            case 'products_asc':
+                $query->orderBy('products_count', 'asc');
+                break;
+            case 'latest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        $categories = $query->get();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -173,6 +584,7 @@ class AdminController extends Controller
             'name'      => 'required|string|max:255|unique:categories,name',
             'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
             'image_url' => 'nullable|url',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -185,10 +597,19 @@ class AdminController extends Controller
             $imageUrl = '/images/categories/' . $filename;
         }
 
+        $sizeChartUrl = null;
+        if ($request->hasFile('size_chart_image')) {
+            $file = $request->file('size_chart_image');
+            $filename = time() . '_sc_' . $file->getClientOriginalName();
+            $file->move(public_path('images/categories'), $filename);
+            $sizeChartUrl = '/images/categories/' . $filename;
+        }
+
         Category::create([
             'name'      => $request->name,
             'slug'      => $slug,
             'image_url' => $imageUrl,
+            'size_chart_image' => $sizeChartUrl,
         ]);
 
         return redirect()->route('admin.categories.index')->with('success', 'Collection created successfully.');
@@ -208,6 +629,7 @@ class AdminController extends Controller
             'name'      => 'required|string|max:255|unique:categories,name,' . $id,
             'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
             'image_url' => 'nullable|url',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -220,10 +642,19 @@ class AdminController extends Controller
             $imageUrl = '/images/categories/' . $filename;
         }
 
+        $sizeChartUrl = $category->size_chart_image;
+        if ($request->hasFile('size_chart_image')) {
+            $file = $request->file('size_chart_image');
+            $filename = time() . '_sc_' . $file->getClientOriginalName();
+            $file->move(public_path('images/categories'), $filename);
+            $sizeChartUrl = '/images/categories/' . $filename;
+        }
+
         $category->update([
             'name'      => $request->name,
             'slug'      => $slug,
             'image_url' => $imageUrl,
+            'size_chart_image' => $sizeChartUrl,
         ]);
 
         return redirect()->route('admin.categories.index')->with('success', 'Collection updated successfully.');
@@ -239,8 +670,9 @@ class AdminController extends Controller
 
     public function orders(Request $request)
     {
-        $query = Order::with(['items.product', 'user'])->latest();
+        $query = Order::with(['items.product', 'user']);
 
+        // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -251,11 +683,45 @@ class AdminController extends Controller
             });
         }
 
+        // Order status filter
         if ($request->filled('status')) {
             $query->where('order_status', $request->status);
         }
 
-        $orders = $query->paginate(10);
+        // Payment status filter
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        // Min price filter
+        if ($request->filled('min_price')) {
+            $query->where('total', '>=', $request->min_price);
+        }
+
+        // Max price filter
+        if ($request->filled('max_price')) {
+            $query->where('total', '<=', $request->max_price);
+        }
+
+        // Sorting options
+        $sortBy = $request->input('sort_by', 'latest');
+        switch ($sortBy) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'total_high_low':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_low_high':
+                $query->orderBy('total', 'asc');
+                break;
+            case 'latest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        $orders = $query->paginate(15)->withQueryString();
         return view('admin.orders.index', compact('orders'));
     }
 
@@ -272,6 +738,15 @@ class AdminController extends Controller
             'order_status'   => $request->order_status,
             'payment_status' => $request->payment_status,
         ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order status updated successfully.',
+                'order_status' => $order->order_status,
+                'payment_status' => $order->payment_status
+            ]);
+        }
 
         return redirect()->route('admin.orders.index')->with('success', 'Order status updated successfully.');
     }
@@ -299,9 +774,32 @@ class AdminController extends Controller
 
     public function usersCartWishlist()
     {
-        $users = User::with(['cartItems.product', 'wishlistItems.product'])
-                     ->latest()
-                     ->paginate(15);
+        $query = User::with(['cartItems.product', 'wishlistItems.product', 'orders'])
+                     ->withSum('orders', 'total');
+
+        // Search by name or email
+        if (request()->filled('search')) {
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('email', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Filter by role
+        if (request()->filled('role')) {
+            $query->where('role', request('role'));
+        }
+
+        // Filter by total spend range
+        if (request()->filled('min_spend')) {
+            $query->having('orders_sum_total', '>=', request('min_spend'));
+        }
+        if (request()->filled('max_spend')) {
+            $query->having('orders_sum_total', '<=', request('max_spend'));
+        }
+
+        $users = $query->latest()->paginate(15);
 
         $totalCartsCount    = CartItem::sum('quantity');
         $totalWishlistCount = WishlistItem::count();
@@ -325,23 +823,48 @@ class AdminController extends Controller
     }
 
     /**
-     * Update a user's role. Only SuperAdmin can do this.
+     * Update a user's role.
      */
     public function updateUserRole(Request $request, $id)
     {
-        // Only superadmin can change roles
-        if (!auth()->user()->isSuperAdmin()) {
-            abort(403, 'Only the Super Administrator can change user roles.');
+        $user = User::findOrFail($id);
+
+        // Protect SuperAdmins from being changed by non-SuperAdmins
+        if ($user->role === 'superadmin' && !auth()->user()->isSuperAdmin()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only Super Administrators can modify a Super Admin.'
+                ], 403);
+            }
+            return redirect()->route('admin.users.index')
+                             ->with('error', 'Only Super Administrators can modify a Super Admin.');
         }
 
         $request->validate([
             'role' => 'required|in:customer,admin,superadmin',
         ]);
 
-        $user = User::findOrFail($id);
+        // Prevent non-superadmins from assigning superadmin role
+        if ($request->role === 'superadmin' && !auth()->user()->isSuperAdmin()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only Super Administrators can assign the Super Admin role.'
+                ], 403);
+            }
+            return redirect()->route('admin.users.index')
+                             ->with('error', 'Only Super Administrators can assign the Super Admin role.');
+        }
 
         // Prevent changing another superadmin's role
-        if ($user->isSuperAdmin() && $user->id !== auth()->id()) {
+        if ($user->role === 'superadmin' && $user->id !== auth()->id()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot change another Super Administrator\'s role.'
+                ], 403);
+            }
             return redirect()->route('admin.users.index')
                              ->with('error', 'You cannot change another Super Administrator\'s role.');
         }
@@ -350,6 +873,14 @@ class AdminController extends Controller
             'role'     => $request->role,
             'is_admin' => in_array($request->role, ['admin', 'superadmin']),
         ]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Role for {$user->name} updated to " . ucfirst($request->role) . '.',
+                'role' => $request->role
+            ]);
+        }
 
         return redirect()->route('admin.users.index')
                          ->with('success', "Role for {$user->name} updated to " . ucfirst($request->role) . '.');
@@ -436,6 +967,15 @@ class AdminController extends Controller
         $coupon->update(['is_active' => !$coupon->is_active]);
 
         $status = $coupon->is_active ? 'activated' : 'deactivated';
+        
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Coupon {$coupon->code} {$status}.",
+                'is_active' => $coupon->is_active
+            ]);
+        }
+
         return redirect()->route('admin.coupons.index')->with('success', "Coupon {$coupon->code} {$status}.");
     }
 
@@ -454,12 +994,150 @@ class AdminController extends Controller
         $about       = Setting::get('about_settings', []);
         $signinImage = Setting::get('signin_image', '');
 
-        return view('admin.design.index', compact('heroSlides', 'lookbook', 'about', 'signinImage'));
+        // Fetch homepage layout settings
+        $defaultSections = [
+            ['id' => 'hero', 'name' => 'Hero Carousel', 'visible' => true],
+            ['id' => 'categories', 'name' => 'Category Circles', 'visible' => true],
+            ['id' => 'dual_banners', 'name' => 'Dual Banners', 'visible' => true],
+            ['id' => 'new_arrivals', 'name' => 'New Arrivals Slider', 'visible' => true],
+            ['id' => 'promo_banner', 'name' => 'Promo Banner', 'visible' => true],
+            ['id' => 'bestsellers', 'name' => 'Bestsellers Grid', 'visible' => true],
+            ['id' => 'lookbook', 'name' => 'Lookbook Grid', 'visible' => true],
+            ['id' => 'instagram_feed', 'name' => 'Instagram Feed', 'visible' => true],
+            ['id' => 'newsletter', 'name' => 'Newsletter Atelier', 'visible' => true],
+        ];
+        $homepageSections = Setting::get('homepage_sections', $defaultSections);
+
+        // Fetch lookbook layout settings
+        $defaultLookbookSections = [
+            ['id' => 'cover', 'name' => 'Cinematic Cover', 'visible' => true],
+            ['id' => 'chapters', 'name' => 'Editorial Chapters Stack', 'visible' => true],
+            ['id' => 'interlude', 'name' => 'Full Width Interlude Image', 'visible' => true],
+            ['id' => 'bts', 'name' => 'Behind The Scenes Grid', 'visible' => true],
+            ['id' => 'cta', 'name' => 'Call To Action (Shop the Look)', 'visible' => true],
+        ];
+        $lookbookSections = Setting::get('lookbook_sections', $defaultLookbookSections);
+
+        // Fetch Dual Banners settings
+        $defaultDualBanners = [
+            'banner1' => [
+                'image_url' => 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=900&q=80&auto=format&fit=crop',
+                'eyebrow' => 'New Season',
+                'title' => 'Saree Glow',
+                'link' => '/collection'
+            ],
+            'banner2' => [
+                'image_url' => 'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=900&q=80&auto=format&fit=crop',
+                'eyebrow' => 'Trending',
+                'title' => 'Co-ord Sets',
+                'link' => '/collection'
+            ],
+            'banner3' => [
+                'image_url' => 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900&q=80&auto=format&fit=crop',
+                'eyebrow' => 'Most Loved',
+                'title' => 'Kurta Sets',
+                'link' => '/collection'
+            ],
+        ];
+        $dualBanners = Setting::get('dual_banners_settings', $defaultDualBanners);
+
+        // Fetch Promo Banner settings
+        $defaultPromoBanner = [
+            'image_url' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&q=80&auto=format&fit=crop',
+            'eyebrow' => 'Limited Time',
+            'title' => "Up to 40% Off\nBestsellers",
+            'button_text' => 'Shop the Sale',
+            'button_link' => '/collection'
+        ];
+        $promoBanner = Setting::get('promo_banner_settings', $defaultPromoBanner);
+
+        // Fetch Newsletter settings
+        $defaultNewsletter = [
+            'eyebrow' => 'Stay Close',
+            'title' => 'Join the <em>Atelier</em>',
+            'description' => 'Early access, exclusive drops, editorial stories.'
+        ];
+        $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
+
+        return view('admin.design.index', compact(
+            'heroSlides', 'lookbook', 'about', 'signinImage', 
+            'homepageSections', 'lookbookSections', 'dualBanners', 'promoBanner', 'newsletter'
+        ));
     }
 
     public function updateDesignSettings(Request $request)
     {
         $type = $request->input('type');
+
+        // ── Homepage Layout & Banners ─────────────────────────────
+        if ($type === 'layout') {
+            // Save sections order and visibility
+            if ($request->has('sections_json')) {
+                $sections = json_decode($request->input('sections_json'), true);
+                if (is_array($sections)) {
+                    Setting::set('homepage_sections', $sections);
+                }
+            }
+
+            // Save Dual Banners settings
+            $dualBanners = Setting::get('dual_banners_settings', []);
+            $banners = ['banner1', 'banner2', 'banner3'];
+            foreach ($banners as $bKey) {
+                if (!isset($dualBanners[$bKey])) {
+                    $dualBanners[$bKey] = [];
+                }
+                $dualBanners[$bKey]['eyebrow'] = $request->input("{$bKey}_eyebrow");
+                $dualBanners[$bKey]['title'] = $request->input("{$bKey}_title");
+                $dualBanners[$bKey]['link'] = $request->input("{$bKey}_link");
+
+                $dualBanners[$bKey]['image_url'] = $request->input("{$bKey}_image_url") ?? ($dualBanners[$bKey]['image_url'] ?? '');
+                if ($request->hasFile("{$bKey}_file")) {
+                    if (!is_dir(public_path('images/banners'))) {
+                        mkdir(public_path('images/banners'), 0777, true);
+                    }
+                    $file = $request->file("{$bKey}_file");
+                    $filename = time() . '_' . $bKey . '_' . $file->getClientOriginalName();
+                    $file->move(public_path('images/banners'), $filename);
+                    $dualBanners[$bKey]['image_url'] = '/images/banners/' . $filename;
+                }
+            }
+            Setting::set('dual_banners_settings', $dualBanners);
+
+            // Save Promo Banner settings
+            $promoBanner = Setting::get('promo_banner_settings', []);
+            $promoBanner['eyebrow'] = $request->input('promo_eyebrow');
+            $promoBanner['title'] = $request->input('promo_title');
+            $promoBanner['button_text'] = $request->input('promo_button_text');
+            $promoBanner['button_link'] = $request->input('promo_button_link');
+
+            $promoBanner['image_url'] = $request->input('promo_image_url') ?? ($promoBanner['image_url'] ?? '');
+            if ($request->hasFile('promo_file')) {
+                if (!is_dir(public_path('images/banners'))) {
+                    mkdir(public_path('images/banners'), 0777, true);
+                }
+                $file = $request->file('promo_file');
+                $filename = time() . '_promo_' . $file->getClientOriginalName();
+                $file->move(public_path('images/banners'), $filename);
+                $promoBanner['image_url'] = '/images/banners/' . $filename;
+            }
+            Setting::set('promo_banner_settings', $promoBanner);
+
+            // Save Newsletter Settings
+            $newsletter = Setting::get('newsletter_settings', []);
+            $newsletter['eyebrow'] = $request->input('news_eyebrow');
+            $newsletter['title'] = $request->input('news_title');
+            $newsletter['description'] = $request->input('news_desc');
+            Setting::set('newsletter_settings', $newsletter);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Homepage layout and banner configurations saved successfully.'
+                ]);
+            }
+
+            return redirect()->route('admin.design.index')->with('success', 'Homepage layout and banner configurations saved successfully.');
+        }
 
         // ── Signin Image ──────────────────────────────────────────
         if ($type === 'signin') {
@@ -476,6 +1154,12 @@ class AdminController extends Controller
             }
 
             Setting::set('signin_image', $signinImage);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sign-In page image updated.'
+                ]);
+            }
             return redirect()->route('admin.design.index')->with('success', 'Sign-In page image updated.');
         }
 
@@ -509,6 +1193,12 @@ class AdminController extends Controller
                 }
             }
             Setting::set('hero_slides', $slides);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Hero Carousel updated successfully.'
+                ]);
+            }
             return redirect()->route('admin.design.index')->with('success', 'Hero Carousel updated successfully.');
         }
 
@@ -516,36 +1206,79 @@ class AdminController extends Controller
         if ($type === 'lookbook') {
             $lookbook = Setting::get('lookbook_settings', []);
 
-            $lookbook['cover_eyebrow']        = $request->input('cover_eyebrow');
-            $lookbook['cover_title']          = $request->input('cover_title');
-            $lookbook['chapter1_eyebrow']     = $request->input('chapter1_eyebrow');
-            $lookbook['chapter1_title']       = $request->input('chapter1_title');
-            $lookbook['chapter1_description'] = $request->input('chapter1_description');
-            $lookbook['chapter2_eyebrow']     = $request->input('chapter2_eyebrow');
-            $lookbook['chapter2_title']       = $request->input('chapter2_title');
-            $lookbook['chapter2_description'] = $request->input('chapter2_description');
+            $lookbook['cover_eyebrow'] = $request->input('cover_eyebrow');
+            $lookbook['cover_title']   = $request->input('cover_title');
 
-            $imageFields = [
-                'cover_image'           => ['input' => 'cover_image',          'file' => 'cover_file',           'dir' => 'lookbook', 'prefix' => 'lb_cover'],
-                'chapter1_image'        => ['input' => 'chapter1_image',       'file' => 'chapter1_file',        'dir' => 'lookbook', 'prefix' => 'lb_ch1'],
-                'chapter1_inset_image'  => ['input' => 'chapter1_inset_image', 'file' => 'chapter1_inset_file',  'dir' => 'lookbook', 'prefix' => 'lb_ch1_inset'],
-                'middle_image'          => ['input' => 'middle_image',         'file' => 'middle_file',          'dir' => 'lookbook', 'prefix' => 'lb_middle'],
-                'chapter2_image'        => ['input' => 'chapter2_image',       'file' => 'chapter2_file',        'dir' => 'lookbook', 'prefix' => 'lb_ch2'],
-            ];
-
-            foreach ($imageFields as $key => $cfg) {
-                $lookbook[$key] = $request->input($cfg['input']) ?? ($lookbook[$key] ?? '');
-                if ($request->hasFile($cfg['file'])) {
-                    if (!is_dir(public_path('images/' . $cfg['dir']))) {
-                        mkdir(public_path('images/' . $cfg['dir']), 0777, true);
-                    }
-                    $file = $request->file($cfg['file']);
-                    $filename = time() . '_' . $cfg['prefix'] . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('images/' . $cfg['dir']), $filename);
-                    $lookbook[$key] = '/images/' . $cfg['dir'] . '/' . $filename;
+            if ($request->has('lookbook_sections_json')) {
+                $lbSections = json_decode($request->input('lookbook_sections_json'), true);
+                if (is_array($lbSections)) {
+                    Setting::set('lookbook_sections', $lbSections);
                 }
             }
 
+            // Cover Image
+            $lookbook['cover_image'] = $request->input('cover_image') ?? ($lookbook['cover_image'] ?? '');
+            if ($request->hasFile('cover_file')) {
+                if (!is_dir(public_path('images/lookbook'))) {
+                    mkdir(public_path('images/lookbook'), 0777, true);
+                }
+                $file = $request->file('cover_file');
+                $filename = time() . '_lb_cover_' . $file->getClientOriginalName();
+                $file->move(public_path('images/lookbook'), $filename);
+                $lookbook['cover_image'] = '/images/lookbook/' . $filename;
+            }
+
+            // Middle Image
+            $lookbook['middle_image'] = $request->input('middle_image') ?? ($lookbook['middle_image'] ?? '');
+            if ($request->hasFile('middle_file')) {
+                if (!is_dir(public_path('images/lookbook'))) {
+                    mkdir(public_path('images/lookbook'), 0777, true);
+                }
+                $file = $request->file('middle_file');
+                $filename = time() . '_lb_middle_' . $file->getClientOriginalName();
+                $file->move(public_path('images/lookbook'), $filename);
+                $lookbook['middle_image'] = '/images/lookbook/' . $filename;
+            }
+
+            // Dynamic Chapters List
+            $chapters = [];
+            if ($request->has('chapters')) {
+                foreach ($request->input('chapters') as $index => $chapData) {
+                    $imageUrl = $chapData['image_url'] ?? '';
+                    if ($request->hasFile("chapters.{$index}.image_file")) {
+                        if (!is_dir(public_path('images/lookbook'))) {
+                            mkdir(public_path('images/lookbook'), 0777, true);
+                        }
+                        $file = $request->file("chapters.{$index}.image_file");
+                        $filename = time() . '_lb_chap_' . $index . '_' . $file->getClientOriginalName();
+                        $file->move(public_path('images/lookbook'), $filename);
+                        $imageUrl = '/images/lookbook/' . $filename;
+                    }
+
+                    $insetUrl = $chapData['inset_image_url'] ?? '';
+                    if ($request->hasFile("chapters.{$index}.inset_file")) {
+                        if (!is_dir(public_path('images/lookbook'))) {
+                            mkdir(public_path('images/lookbook'), 0777, true);
+                        }
+                        $file = $request->file("chapters.{$index}.inset_file");
+                        $filename = time() . '_lb_inset_' . $index . '_' . $file->getClientOriginalName();
+                        $file->move(public_path('images/lookbook'), $filename);
+                        $insetUrl = '/images/lookbook/' . $filename;
+                    }
+
+                    $chapters[] = [
+                        'image_url'       => $imageUrl,
+                        'inset_image_url' => $insetUrl,
+                        'eyebrow'         => $chapData['eyebrow'] ?? '',
+                        'title'           => $chapData['title'] ?? '',
+                        'description'     => $chapData['description'] ?? '',
+                        'link_url'        => $chapData['link_url'] ?? '',
+                    ];
+                }
+            }
+            $lookbook['chapters'] = $chapters;
+
+            // BTS Grid
             $bts = $lookbook['bts_images'] ?? [];
             for ($i = 0; $i < 6; $i++) {
                 $bts[$i] = $request->input("bts_images.{$i}") ?? ($bts[$i] ?? '');
@@ -562,7 +1295,13 @@ class AdminController extends Controller
             $lookbook['bts_images'] = $bts;
 
             Setting::set('lookbook_settings', $lookbook);
-            return redirect()->route('admin.design.index')->with('success', 'Lookbook Editorial settings updated.');
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Lookbook Campaign Chapters saved successfully.'
+                ]);
+            }
+            return redirect()->route('admin.design.index')->with('success', 'Lookbook Campaign Chapters saved successfully.');
         }
 
         // ── About Us ──────────────────────────────────────────────
@@ -596,9 +1335,21 @@ class AdminController extends Controller
             }
 
             Setting::set('about_settings', $about);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'About Us settings updated.'
+                ]);
+            }
             return redirect()->route('admin.design.index')->with('success', 'About Us settings updated.');
         }
 
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid setting update type.'
+            ], 400);
+        }
         return redirect()->route('admin.design.index')->with('error', 'Invalid setting update type.');
     }
 }

@@ -7,15 +7,67 @@
             <h2 class="font-display text-2xl mb-1 text-primary">Manage Products</h2>
             <p class="text-xs text-muted">Create, update, or remove products from the storefront catalog.</p>
         </div>
-        <a href="{{ route('admin.products.create') }}" class="btn-primary !py-3 !px-6 text-[10px] tracking-[0.25em]">
-            ✦ Add New Product
-        </a>
+        <div class="flex items-center gap-4">
+            <button type="button" onclick="document.getElementById('filter-section').classList.toggle('hidden')" class="btn-secondary !py-3 !px-6 text-[10px] tracking-[0.25em]">
+                Filters
+            </button>
+            <a href="{{ route('admin.products.create') }}" class="btn-primary !py-3 !px-6 text-[10px] tracking-[0.25em]">
+                ✦ Add New Product
+            </a>
+        </div>
+    </div>
+
+    {{-- Search and Filter Form --}}
+    <div id="filter-section" class="hidden mb-8">
+        <form action="{{ route('admin.products.index') }}" method="GET" class="bg-white border border-gray-150 p-6">
+        <div class="flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-wrap gap-3 items-center flex-1 max-w-4xl">
+                <input type="text" 
+                       name="search" 
+                       value="{{ request('search') }}" 
+                       placeholder="Search products, slug, tags..." 
+                       class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none w-full sm:w-64">
+
+                <select name="category_id" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="">All Collections</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                    @endforeach
+                </select>
+
+                <select name="stock_status" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="">All Stock Status</option>
+                    <option value="in_stock" {{ request('stock_status') === 'in_stock' ? 'selected' : '' }}>In Stock</option>
+                    <option value="out_of_stock" {{ request('stock_status') === 'out_of_stock' ? 'selected' : '' }}>Out of Stock</option>
+                </select>
+
+                <select name="sort_by" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="latest" {{ request('sort_by') === 'latest' || !request('sort_by') ? 'selected' : '' }}>Latest</option>
+                    <option value="price_low_high" {{ request('sort_by') === 'price_low_high' ? 'selected' : '' }}>Price: Low to High</option>
+                    <option value="price_high_low" {{ request('sort_by') === 'price_high_low' ? 'selected' : '' }}>Price: High to Low</option>
+                    <option value="name_a_z" {{ request('sort_by') === 'name_a_z' ? 'selected' : '' }}>Name: A to Z</option>
+                    <option value="name_z_a" {{ request('sort_by') === 'name_z_a' ? 'selected' : '' }}>Name: Z to A</option>
+                    <option value="bestseller" {{ request('sort_by') === 'bestseller' ? 'selected' : '' }}>Bestsellers First</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button type="submit" class="btn-primary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase">
+                    Apply Filters
+                </button>
+                <a href="{{ route('admin.products.index') }}" class="btn-secondary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase text-center">
+                    Clear
+                </a>
+            </div>
+        </div>
+        </form>
     </div>
 
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-left">
             <thead>
                 <tr class="border-b border-gray-100 text-[10px] font-bold tracking-widest uppercase text-muted">
+                    <th class="py-4 w-16">ID</th>
                     <th class="py-4">Product</th>
                     <th class="py-4">Collection</th>
                     <th class="py-4">Price</th>
@@ -27,6 +79,9 @@
             <tbody class="divide-y divide-gray-50 text-sm">
                 @forelse($products as $product)
                 <tr class="hover:bg-slate-50/30 transition-colors">
+                    <td class="py-4 font-mono text-muted text-xs">
+                        #{{ str_pad($product->id, 4, '0', STR_PAD_LEFT) }}
+                    </td>
                     <td class="py-4 flex items-center gap-3">
                         @if($product->image_url)
                             <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-10 h-12 object-cover bg-silk">

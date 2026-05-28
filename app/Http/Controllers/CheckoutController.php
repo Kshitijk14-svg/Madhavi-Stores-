@@ -38,8 +38,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $tax = round($subtotal * 0.18, 2);
-        $total = ($subtotal - $discount) + $tax;
+        $tax = 0;
+        $total = $subtotal - $discount;
 
         return view('pages.checkout', compact('cartItems', 'subtotal', 'discount', 'tax', 'total', 'coupon'));
     }
@@ -77,8 +77,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $tax = round($subtotal * 0.18, 2);
-        $total = ($subtotal - $discount) + $tax;
+        $tax = 0;
+        $total = $subtotal - $discount;
 
         // Generate unique order number
         $orderNumber = 'MS-' . strtoupper(Str::random(8));
@@ -120,6 +120,21 @@ class CheckoutController extends Controller
                 'size' => $item->size,
                 'color' => $item->color,
             ]);
+
+            // Decrement Stock
+            if ($item->product->has_sizes && $item->size) {
+                $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
+                                                      ->where('size', $item->size)
+                                                      ->first();
+                if ($productSize) {
+                    $productSize->stock = max(0, $productSize->stock - $item->quantity);
+                    $productSize->save();
+                }
+            } else {
+                $product = $item->product;
+                $product->stock = max(0, $product->stock - $item->quantity);
+                $product->save();
+            }
         }
 
         // Clear cart

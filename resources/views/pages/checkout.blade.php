@@ -62,30 +62,35 @@
                 <div class="bg-background p-8 lg:p-10">
                     <h3 class="text-xs tracking-widest uppercase font-bold text-primary mb-8 border-b border-primary/10 pb-4">Your Order</h3>
                     <div class="space-y-6 mb-8">
+                        @foreach($cartItems as $item)
                         <div class="flex gap-4">
-                            <div class="w-16 h-20 bg-white overflow-hidden flex-shrink-0">
-                                <img src="https://images.unsplash.com/photo-1583391733958-6c78278104ba?w=200&q=80" alt="Item" class="w-full h-full object-cover">
+                            <div class="w-16 h-20 bg-white overflow-hidden flex-shrink-0 border border-primary/10">
+                                <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1583391733958-6c78278104ba?w=200&q=80' }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-grow flex flex-col justify-center">
-                                <p class="text-sm font-medium">Ivory Chanderi Kurta</p>
-                                <p class="text-xs text-muted">Size: M × 1</p>
-                                <p class="text-sm mt-1">₹4,500</p>
+                                <p class="text-sm font-medium">{{ $item->product->name }}</p>
+                                <p class="text-xs text-muted">Size: {{ $item->size ?? 'Standard' }} &times; {{ $item->quantity }}</p>
+                                <p class="text-sm mt-1">₹{{ number_format($item->product->price * $item->quantity) }}</p>
                             </div>
                         </div>
+                        @endforeach
                     </div>
                     
                     <div class="space-y-3 pt-6 border-t border-primary/10">
                         <div class="flex justify-between text-sm text-muted">
                             <span>Subtotal</span>
-                            <span>₹9,000</span>
+                            <span>₹{{ number_format($subtotal) }}</span>
                         </div>
-                        <div class="flex justify-between text-sm text-muted">
-                            <span>Shipping</span>
-                            <span class="text-secondary uppercase text-[10px] font-bold">Free</span>
+                        @if($discount > 0)
+                        <div class="flex justify-between text-sm text-rose-600">
+                            <span>Discount ({{ $coupon->code ?? 'Coupon' }})</span>
+                            <span>-₹{{ number_format($discount) }}</span>
                         </div>
+                        @endif
+
                         <div class="flex justify-between text-lg font-medium text-primary pt-3 border-t border-primary/10 mt-3">
                             <span>Total</span>
-                            <span>₹10,620</span>
+                            <span>₹{{ number_format($total) }}</span>
                         </div>
                     </div>
                 </div>

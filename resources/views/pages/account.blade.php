@@ -39,7 +39,7 @@
           <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">Order History</h2>
           @if(empty($orders))
             <p style="color: var(--muted);">You haven't placed any orders yet.</p>
-            <a href="{{ route('collection') }}" class="btn-primary" style="display: inline-block; margin-top: 16px;">Explore Collections</a>
+            <a href="{{ route('shop') }}" class="btn-primary" style="display: inline-block; margin-top: 16px;">Explore Collections</a>
           @else
             {{-- Order list logic would go here --}}
           @endif

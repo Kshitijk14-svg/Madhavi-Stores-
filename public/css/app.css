@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=Manrope:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 /* 
   MADHAVI STORES - CORE DESIGN SYSTEM
@@ -18,7 +18,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Outfit', sans-serif;
   color: var(--primary);
   background-color: var(--white);
   line-height: 1.5;
@@ -26,7 +26,7 @@ body {
 }
 
 h1, h2, h3, h4, .font-display {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Playfair Display', serif;
 }
 
 .wrap {
@@ -78,7 +78,7 @@ h1, h2, h3, h4, .font-display {
   padding: 16px 32px;
   background: var(--primary);
   color: var(--white);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -99,7 +99,7 @@ h1, h2, h3, h4, .font-display {
   border: 1px solid var(--primary);
   background: transparent;
   color: var(--primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -118,7 +118,7 @@ h1, h2, h3, h4, .font-display {
   padding: 16px 32px;
   background: var(--white);
   color: var(--primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
@@ -161,7 +161,7 @@ h1, h2, h3, h4, .font-display {
   background: var(--primary);
   color: var(--white);
   padding: 4px 10px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -200,7 +200,7 @@ h1, h2, h3, h4, .font-display {
   background: rgba(24,24,24,0.9);
   color: var(--white);
   text-align: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -215,7 +215,7 @@ h1, h2, h3, h4, .font-display {
 
 .disc-badge {
   color: #16a34a;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -227,11 +227,37 @@ h1, h2, h3, h4, .font-display {
 }
 
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.price-display {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--primary);
+  font-style: italic;
+}
+.price-display.line-through {
+  font-size: 1rem;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.price-display {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--primary);
+  font-style: italic;
+}
+.price-display.line-through {
+  font-size: 1.25rem;
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 /* ── LAYOUT ────────────────────────────── */
@@ -278,7 +304,7 @@ h1, h2, h3, h4, .font-display {
   color: var(--white);
   text-align: center;
   padding: 8px 0;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -316,7 +342,7 @@ h1, h2, h3, h4, .font-display {
 }
 
 .nav-link {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -350,7 +376,7 @@ h1, h2, h3, h4, .font-display {
   border-radius: 999px;
   border: none;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   transition: background 0.3s ease;
 }
@@ -363,7 +389,7 @@ h1, h2, h3, h4, .font-display {
   right: -4px;
   background: var(--secondary);
   color: var(--primary);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   width: 16px;
   height: 16px;
@@ -465,7 +491,7 @@ h1, h2, h3, h4, .font-display {
   padding: 6px 14px;
   background: #f5f5f5;
   color: var(--primary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-decoration: none;
@@ -572,7 +598,7 @@ h1, h2, h3, h4, .font-display {
 .cat-pill:hover .cat-pill-img { transform: scale(1.05); }
 .cat-pill-img img { width: 100%; height: 100%; object-fit: cover; }
 .cat-pill span {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;

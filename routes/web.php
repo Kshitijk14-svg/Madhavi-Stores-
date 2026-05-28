@@ -12,7 +12,8 @@ use App\Http\Controllers\CheckoutController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Collection and Products
-Route::get('/collection', [ProductController::class, 'index'])->name('collection');
+Route::get('/shop', [ProductController::class, 'index'])->name('shop');
+Route::get('/collections', [ProductController::class, 'collections'])->name('collections.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 // Editorial & Static Pages
@@ -58,7 +59,8 @@ Route::middleware('auth')->group(function () {
 
     // Wishlist Operations
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
-    Route::post('/wishlist/toggle/{productId}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('/product/{product}/review', [ProductController::class, 'review'])->name('product.review');
 
     // Checkout Operations
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
@@ -68,6 +70,7 @@ Route::middleware('auth')->group(function () {
 // Admin Routes (Custom Blade Admin Dashboard)
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/sales-chart-data', [AdminController::class, 'salesChartData'])->name('sales.chart');
     
     // Products CRUD
     Route::get('/products', [AdminController::class, 'products'])->name('products.index');

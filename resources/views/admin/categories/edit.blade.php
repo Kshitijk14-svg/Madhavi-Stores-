@@ -45,6 +45,19 @@
                 <input type="url" id="image_url" name="image_url" placeholder="https://example.com/collection.jpg" value="{{ old('image_url', $category->image_url) }}"
                        class="w-full px-4 py-3 bg-slate-50 border border-gray-200 focus:border-secondary focus:bg-white focus:outline-none transition-colors text-sm">
             </div>
+            
+            {{-- Size Chart Image Upload --}}
+            <div>
+                <label for="size_chart_image" class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Update Default Size Chart (Optional)</label>
+                <input type="file" id="size_chart_image" name="size_chart_image" accept="image/*"
+                       class="w-full px-4 py-2.5 bg-slate-50 border border-gray-200 focus:border-secondary focus:bg-white focus:outline-none transition-colors text-sm file:mr-4 file:py-1 file:px-3 file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-secondary hover:file:text-primary transition-all">
+                <p class="text-[9px] text-muted mt-1">This will be used for products in this collection if they don't have their own size chart.</p>
+                @if($category->size_chart_image)
+                    <div class="mt-2 text-[10px] text-primary">
+                        Current: <a href="{{ asset($category->size_chart_image) }}" target="_blank" class="underline hover:text-secondary">View Size Chart</a>
+                    </div>
+                @endif
+            </div>
         </div>
 
         <div class="pt-6 border-t border-gray-100 flex justify-end gap-4">

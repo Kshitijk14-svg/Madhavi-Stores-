@@ -13,8 +13,8 @@ export default {
         gold: '#c5a84f',
       },
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'serif'],
-        body: ['"Manrope"', 'sans-serif'],
+        display: ['"Playfair Display"', 'serif'],
+        body: ['"Outfit"', 'sans-serif'],
       },
       letterSpacing: {
         luxury: '0.25em',

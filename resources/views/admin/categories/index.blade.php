@@ -12,6 +12,44 @@
         </a>
     </div>
 
+    {{-- Search and Filter Form --}}
+    <form action="{{ route('admin.categories.index') }}" method="GET" class="bg-white border border-gray-150 p-6 mb-8">
+        <div class="flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-wrap gap-3 items-center flex-1 max-w-4xl">
+                <input type="text" 
+                       name="search" 
+                       value="{{ request('search') }}" 
+                       placeholder="Search collection name, slug..." 
+                       class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none w-full sm:w-64">
+
+                <select name="product_count_range" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="">All Sizes</option>
+                    <option value="empty" {{ request('product_count_range') === 'empty' ? 'selected' : '' }}>Empty Collections (0 Items)</option>
+                    <option value="1_10" {{ request('product_count_range') === '1_10' ? 'selected' : '' }}>Small (1 - 10 Items)</option>
+                    <option value="11_50" {{ request('product_count_range') === '11_50' ? 'selected' : '' }}>Medium (11 - 50 Items)</option>
+                    <option value="50_plus" {{ request('product_count_range') === '50_plus' ? 'selected' : '' }}>Large (50+ Items)</option>
+                </select>
+
+                <select name="sort_by" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="latest" {{ request('sort_by') === 'latest' || !request('sort_by') ? 'selected' : '' }}>Latest</option>
+                    <option value="name_a_z" {{ request('sort_by') === 'name_a_z' ? 'selected' : '' }}>Name: A to Z</option>
+                    <option value="name_z_a" {{ request('sort_by') === 'name_z_a' ? 'selected' : '' }}>Name: Z to A</option>
+                    <option value="products_desc" {{ request('sort_by') === 'products_desc' ? 'selected' : '' }}>Items: High to Low</option>
+                    <option value="products_asc" {{ request('sort_by') === 'products_asc' ? 'selected' : '' }}>Items: Low to High</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button type="submit" class="btn-primary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase">
+                    Apply Filters
+                </button>
+                <a href="{{ route('admin.categories.index') }}" class="btn-secondary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase text-center">
+                    Clear
+                </a>
+            </div>
+        </div>
+    </form>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($categories as $category)
         <div class="border border-gray-100 bg-slate-50/20 p-6 flex flex-col justify-between hover:border-secondary/40 transition-colors">

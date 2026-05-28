@@ -26,7 +26,7 @@
       </div>
       <h2 class="font-display text-2xl font-light">Your wishlist is empty</h2>
       <p class="text-muted text-sm font-light leading-relaxed">Discover our collection of handcrafted ethnic silhouettes, sarees, and fine textiles, and save your favorites here.</p>
-      <a href="{{ route('collection') }}" class="btn-primary inline-flex mt-4">Discover Silhouettes</a>
+      <a href="{{ route('shop') }}" class="btn-primary inline-flex mt-4">Discover Silhouettes</a>
     </div>
   @else
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

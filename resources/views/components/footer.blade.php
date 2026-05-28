@@ -23,7 +23,7 @@
       <p style="font-size:9px;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:28px;">Shop</p>
       <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;">
         @foreach(['New Arrivals','Bestsellers','Sarees','Kurta Sets','Lehengas','Co-ord Sets'] as $l)
-          <li><a href="{{ route('collection') }}" style="font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;"
+          <li><a href="{{ route('shop') }}" style="font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;"
              onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">{{ $l }}</a></li>
         @endforeach
       </ul>

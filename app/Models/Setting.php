@@ -23,4 +23,38 @@ class Setting extends Model
         $encoded = is_array($value) || is_object($value) ? json_encode($value) : $value;
         return self::updateOrCreate(['key' => $key], ['value' => $encoded]);
     }
+
+    /**
+     * Parse rich typography formats (like *emphasis*, **bold**, newlines) securely 
+     * for non-technical admins without needing raw HTML inputs.
+     *
+     * @param string|null $text
+     * @return string
+     */
+    public static function format($text)
+    {
+        if (empty($text)) {
+            return '';
+        }
+
+        // Convert literal '\n' and '\\n' strings to actual newline characters
+        $text = str_replace(['\n', '\\n'], "\n", $text);
+
+        // 1. Escape HTML for security
+        $text = e($text);
+
+        // 2. Parse bold: **text** -> <strong>text</strong>
+        $text = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $text);
+
+        // 3. Parse italic: *text* -> <em>$1</em>
+        $text = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $text);
+
+        // 4. Parse italic: _text_ -> <em>$1</em>
+        $text = preg_replace('/_(.*?)_/', '<em>$1</em>', $text);
+
+        // 5. Convert newlines to breaks
+        $text = nl2br($text);
+
+        return $text;
+    }
 }

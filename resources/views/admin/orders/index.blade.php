@@ -12,38 +12,69 @@
             ✕ {{ session('error') }}
         </div>
     @endif
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
             <h2 class="text-xl font-semibold text-primary">Customer Orders</h2>
             <p class="text-xs text-muted mt-1">Review purchases, update fulfillment progress, and process payment actions.</p>
         </div>
-        
-        {{-- Filtering and Search --}}
-        <form action="{{ route('admin.orders.index') }}" method="GET" class="w-full lg:w-auto flex flex-col sm:flex-row gap-3">
-            <div class="relative flex-1 sm:w-64">
+    </div>
+
+    {{-- Search and Filter Form --}}
+    <form action="{{ route('admin.orders.index') }}" method="GET" class="bg-white border border-gray-150 p-6 mb-8">
+        <div class="flex flex-wrap gap-4 items-center justify-between">
+            <div class="flex flex-wrap gap-3 items-center flex-1 max-w-5xl">
                 <input type="text" 
                        name="search" 
                        value="{{ request('search') }}" 
-                       placeholder="Search by Order # or Client..." 
-                       class="w-full text-xs text-primary bg-silk border border-gray-200/80 px-4 py-2.5 outline-none focus:border-secondary transition-colors">
-            </div>
-            
-            <div class="w-full sm:w-44">
-                <select name="status" 
-                        onchange="this.form.submit()" 
-                        class="w-full text-xs text-primary bg-silk border border-gray-200/80 px-4 py-2.5 outline-none cursor-pointer">
-                    <option value="">All Statuses</option>
+                       placeholder="Search order #, client name, email..." 
+                       class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none w-full sm:w-64">
+
+                <select name="status" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="">All Order Statuses</option>
                     @foreach(['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'] as $st)
                         <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ $st }}</option>
                     @endforeach
                 </select>
+
+                <select name="payment_status" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="">All Payment Statuses</option>
+                    @foreach(['Pending', 'Paid', 'Refunded'] as $pst)
+                        <option value="{{ $pst }}" {{ request('payment_status') === $pst ? 'selected' : '' }}>{{ $pst }}</option>
+                    @endforeach
+                </select>
+
+                <div class="flex items-center gap-2">
+                    <input type="number" 
+                           name="min_price" 
+                           value="{{ request('min_price') }}" 
+                           placeholder="Min ₹" 
+                           class="text-xs text-primary bg-white border border-gray-200 px-3 py-2.5 outline-none w-20">
+                    <span class="text-xs text-muted">-</span>
+                    <input type="number" 
+                           name="max_price" 
+                           value="{{ request('max_price') }}" 
+                           placeholder="Max ₹" 
+                           class="text-xs text-primary bg-white border border-gray-200 px-3 py-2.5 outline-none w-20">
+                </div>
+
+                <select name="sort_by" class="text-xs text-primary bg-white border border-gray-200 px-4 py-2.5 outline-none">
+                    <option value="latest" {{ request('sort_by') === 'latest' || !request('sort_by') ? 'selected' : '' }}>Latest</option>
+                    <option value="oldest" {{ request('sort_by') === 'oldest' ? 'selected' : '' }}>Oldest</option>
+                    <option value="total_high_low" {{ request('sort_by') === 'total_high_low' ? 'selected' : '' }}>Total: High to Low</option>
+                    <option value="total_low_high" {{ request('sort_by') === 'total_low_high' ? 'selected' : '' }}>Total: Low to High</option>
+                </select>
             </div>
             
-            @if(request()->filled('search') || request()->filled('status'))
-                <a href="{{ route('admin.orders.index') }}" class="btn-secondary !py-2.5 text-center text-[10px]">Clear</a>
-            @endif
-        </form>
-    </div>
+            <div class="flex items-center gap-2">
+                <button type="submit" class="btn-primary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase">
+                    Apply Filters
+                </button>
+                <a href="{{ route('admin.orders.index') }}" class="btn-secondary !py-2.5 !px-5 text-[9px] tracking-[0.15em] font-semibold uppercase text-center">
+                    Clear
+                </a>
+            </div>
+        </div>
+    </form>
 
     {{-- Order ledger --}}
     @if($orders->isEmpty())
@@ -120,7 +151,7 @@
                         </tr>
 
                         {{-- Order Details Modal --}}
-                        <div id="order-modal-{{ $order->id }}" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <div id="order-modal-{{ $order->id }}" class="fixed inset-0 z-[1000] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm">
                             <div class="bg-white border border-gray-100 w-full max-w-4xl p-6 md:p-8 max-h-[90vh] overflow-y-auto shadow-xl flex flex-col gap-6">
                                 <div class="flex justify-between items-center pb-4 border-b border-gray-100">
                                     <div>
@@ -199,7 +230,7 @@
                                         {{-- Status Editor --}}
                                         <div class="bg-silk/20 border border-gray-100 p-4">
                                             <h4 class="text-[10px] font-bold tracking-widest text-primary uppercase mb-3">Update Status</h4>
-                                            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST" class="space-y-4">
+                                            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST" class="space-y-4 order-update-form">
                                                 @csrf
                                                 <div>
                                                     <label class="text-[9px] font-semibold text-muted uppercase tracking-wider block mb-1.5">Order Status</label>
