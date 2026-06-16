@@ -3,9 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.">
+  @hasSection('meta_description')
+    <meta name="description" content="@yield('meta_description')">
+  @else
+    <meta name="description" content="Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.">
+  @endif
+  @hasSection('meta_keywords')
+    <meta name="keywords" content="@yield('meta_keywords')">
+  @endif
   <meta name="csrf-token" content="{{ csrf_token() }}">
   @yield('meta')
+
+  {{-- Canonical Link --}}
+  <link rel="canonical" href="{{ url()->current() }}">
+
+  {{-- OpenGraph Tags --}}
+  <meta property="og:site_name" content="Madhavi Stores">
+  <meta property="og:title" content="@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')">
+  <meta property="og:description" content="@yield('meta_description', 'Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.')">
+  <meta property="og:type" content="@yield('og_type', 'website')">
+  <meta property="og:url" content="{{ url()->current() }}">
+  <meta property="og:image" content="@yield('og_image', asset('images/logo.png'))">
+
+  {{-- Twitter Card Tags --}}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')">
+  <meta name="twitter:description" content="@yield('meta_description', 'Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.')">
+  <meta name="twitter:image" content="@yield('og_image', asset('images/logo.png'))">
+
   <title>@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')</title>
 
   {{-- Static CSS — no Vite needed --}}
@@ -45,6 +70,7 @@
 
   <main id="main">
     @yield('content')
+    @yield('scripts')
   </main>
 
   @include('components.footer')
@@ -152,6 +178,19 @@
                         const currentMain = document.getElementById('main');
                         if (newMainContent && currentMain) {
                             currentMain.innerHTML = newMainContent.innerHTML;
+                            
+                            // Extract and run script tags inside the swapped container
+                            const scripts = currentMain.querySelectorAll('script');
+                            scripts.forEach(oldScript => {
+                                const newScript = document.createElement('script');
+                                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                                newScript.textContent = oldScript.textContent;
+                                oldScript.parentNode.replaceChild(newScript, oldScript);
+                            });
+                        } else {
+                            // Fallback for non-PJAX target pages (e.g. auth layout pages)
+                            window.location.href = url;
+                            return;
                         }
                         
                         if (pushState) {
@@ -962,6 +1001,5 @@
     });
   </script>
 
-  @yield('scripts')
 </body>
 </html>

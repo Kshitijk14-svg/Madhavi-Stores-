@@ -1,2 +1,14 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Disallow private user/admin routes
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /checkout
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /account
+
+# Sitemap URL
+Sitemap: http://localhost/Madhavi-Stores-/public/sitemap.xml

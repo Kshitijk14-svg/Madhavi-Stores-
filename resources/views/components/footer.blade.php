@@ -33,7 +33,7 @@
     <div>
       <p style="font-size:9px;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:28px;">Atelier</p>
       <ul style="list-style:none;display:flex;flex-direction:column;gap:14px;">
-        @foreach(['Our Story','Lookbook','Sustainability','Press','Careers','Contact'] as $l)
+        @foreach(['Our Story','Sustainability','Press','Careers','Contact'] as $l)
           <li><a href="#" style="font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s;"
              onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">{{ $l }}</a></li>
         @endforeach

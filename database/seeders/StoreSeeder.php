@@ -39,7 +39,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'ivory-chanderi-kurta',
                 'rating' => 4.5,
                 'review_count' => 24,
-                'is_bestseller' => false
+                'is_bestseller' => false,
+                'is_new_arrival' => true
             ],
             [
                 'category_id' => $kurtaId,
@@ -51,7 +52,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'midnight-anarkali-set',
                 'rating' => 5.0,
                 'review_count' => 12,
-                'is_bestseller' => false
+                'is_bestseller' => false,
+                'is_new_arrival' => true
             ],
             [
                 'category_id' => null,
@@ -63,7 +65,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'terracotta-block-print-dupatta',
                 'rating' => 4.0,
                 'review_count' => 56,
-                'is_bestseller' => false
+                'is_bestseller' => false,
+                'is_new_arrival' => false
             ],
             [
                 'category_id' => $coordsId,
@@ -75,7 +78,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'emerald-silk-coord',
                 'rating' => 4.8,
                 'review_count' => 18,
-                'is_bestseller' => false
+                'is_bestseller' => false,
+                'is_new_arrival' => true
             ],
             [
                 'category_id' => $sareesId,
@@ -87,7 +91,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'blush-organza-saree',
                 'rating' => 4.9,
                 'review_count' => 31,
-                'is_bestseller' => true
+                'is_bestseller' => true,
+                'is_new_arrival' => false
             ],
             [
                 'category_id' => null,
@@ -99,7 +104,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'onyx-velvet-tunic',
                 'rating' => 4.2,
                 'review_count' => 9,
-                'is_bestseller' => true
+                'is_bestseller' => true,
+                'is_new_arrival' => true
             ],
             [
                 'category_id' => $kurtaId,
@@ -111,7 +117,8 @@ class StoreSeeder extends Seeder
                 'slug' => 'mustard-handloom-kurta',
                 'rating' => 4.6,
                 'review_count' => 42,
-                'is_bestseller' => true
+                'is_bestseller' => true,
+                'is_new_arrival' => false
             ],
             [
                 'category_id' => $lehengasId,
@@ -123,12 +130,13 @@ class StoreSeeder extends Seeder
                 'slug' => 'pearl-embroidered-lehenga',
                 'rating' => 5.0,
                 'review_count' => 7,
-                'is_bestseller' => true
+                'is_bestseller' => true,
+                'is_new_arrival' => false
             ]
         ];
 
         foreach ($products as $prodData) {
-            Product::firstOrCreate(['slug' => $prodData['slug']], $prodData);
+            Product::updateOrCreate(['slug' => $prodData['slug']], $prodData);
         }
     }
 }

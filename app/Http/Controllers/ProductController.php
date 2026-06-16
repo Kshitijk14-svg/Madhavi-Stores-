@@ -31,11 +31,46 @@ class ProductController extends Controller
     {
         $query = Product::query();
 
-        // Filter by category (collections)
-        if ($request->filled('category')) {
-            $categories = is_array($request->category) ? $request->category : [$request->category];
-            $query->whereHas('category', function($q) use ($categories) {
-                $q->whereIn('slug', $categories);
+        // Filter by Collections (Category checkboxes + Special category markers: new arrivals / bestsellers)
+        $hasNewCollectionFilter = $request->filled('new_arrivals') || $request->input('filter') === 'new-arrivals' || $request->input('filter') === 'new_arrivals';
+        $hasBestsellersCollectionFilter = $request->filled('bestsellers') || $request->input('filter') === 'bestsellers' || $request->input('filter') === 'bestseller';
+        $hasCategoryFilter = $request->filled('category');
+
+        if ($hasNewCollectionFilter || $hasBestsellersCollectionFilter || $hasCategoryFilter) {
+            $query->where(function($q) use ($request, $hasNewCollectionFilter, $hasBestsellersCollectionFilter, $hasCategoryFilter) {
+                $first = true;
+
+                if ($hasNewCollectionFilter) {
+                    if (Product::where('is_new_arrival', true)->exists()) {
+                        $q->where('is_new_arrival', true);
+                        $first = false;
+                    }
+                }
+
+                if ($hasBestsellersCollectionFilter) {
+                    if (Product::where('is_bestseller', true)->exists()) {
+                        if ($first) {
+                            $q->where('is_bestseller', true);
+                            $first = false;
+                        } else {
+                            $q->orWhere('is_bestseller', true);
+                        }
+                    }
+                }
+
+                if ($hasCategoryFilter) {
+                    $categories = is_array($request->category) ? $request->category : [$request->category];
+                    if ($first) {
+                        $q->whereHas('category', function($subQ) use ($categories) {
+                            $subQ->whereIn('slug', $categories);
+                        });
+                        $first = false;
+                    } else {
+                        $q->orWhereHas('category', function($subQ) use ($categories) {
+                            $subQ->whereIn('slug', $categories);
+                        });
+                    }
+                }
             });
         }
 
@@ -85,7 +120,7 @@ class ProductController extends Controller
         }
 
         $products = $query->get();
-        $categories = Category::all();
+        $categories = Category::withCount('products')->get();
         
         // Extract unique tags from all products for the filter sidebar
         $allTags = Product::whereNotNull('tags')->pluck('tags')->flatten()->unique()->filter()->values()->toArray();

@@ -15,6 +15,10 @@
       <h1 class="font-display text-4xl lg:text-5xl italic font-light">
         @if(request('category'))
           {{ $categories->where('slug', request('category'))->first()->name ?? 'Women\'s Collection' }}
+        @elseif(request('filter') === 'new-arrivals' || request('filter') === 'new_arrivals')
+          New Arrivals
+        @elseif(request('filter') === 'bestsellers' || request('filter') === 'bestseller')
+          Bestsellers
         @else
           Women's Collection
         @endif
@@ -39,13 +43,32 @@
         <div>
           <h3 class="text-[10px] font-bold tracking-[0.35em] uppercase text-primary mb-4 pb-3 border-b border-gray-100">Collections</h3>
           <ul class="space-y-3">
+            {{-- Permanent special filters --}}
+            <li>
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" name="new_arrivals" value="1" class="accent-secondary w-4 h-4 cursor-pointer" 
+                       {{ request('new_arrivals') == '1' || request('filter') === 'new-arrivals' || request('filter') === 'new_arrivals' ? 'checked' : '' }}>
+                <span class="text-sm text-muted group-hover:text-primary transition-colors flex-1">New Arrivals</span>
+                <span class="text-[10px] text-muted/50">{{ \App\Models\Product::where('is_new_arrival', true)->exists() ? \App\Models\Product::where('is_new_arrival', true)->count() : \App\Models\Product::count() }}</span>
+              </label>
+            </li>
+            <li>
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input type="checkbox" name="bestsellers" value="1" class="accent-secondary w-4 h-4 cursor-pointer" 
+                       {{ request('bestsellers') == '1' || request('filter') === 'bestsellers' || request('filter') === 'bestseller' ? 'checked' : '' }}>
+                <span class="text-sm text-muted group-hover:text-primary transition-colors flex-1">Bestsellers</span>
+                <span class="text-[10px] text-muted/50">{{ \App\Models\Product::where('is_bestseller', true)->exists() ? \App\Models\Product::where('is_bestseller', true)->count() : \App\Models\Product::count() }}</span>
+              </label>
+            </li>
+            <li class="border-b border-gray-100 my-2"></li>
+
             @foreach($categories as $cat)
               <li>
                 <label class="flex items-center gap-3 cursor-pointer group">
                   <input type="checkbox" name="category[]" value="{{ $cat->slug }}" class="accent-secondary w-4 h-4 cursor-pointer" 
                          {{ in_array($cat->slug, (array)request('category', [])) ? 'checked' : '' }}>
                   <span class="text-sm text-muted group-hover:text-primary transition-colors flex-1">{{ $cat->name }}</span>
-                  <span class="text-[10px] text-muted/50">{{ $cat->products()->count() }}</span>
+                  <span class="text-[10px] text-muted/50">{{ $cat->products_count }}</span>
                 </label>
               </li>
             @endforeach
@@ -81,7 +104,7 @@
         </div>
 
         <button type="submit" class="w-full btn-primary py-3 text-[10px]">Apply Filters</button>
-        @if(request()->anyFilled(['category', 'tags', 'price_min', 'price_max']))
+        @if(request()->anyFilled(['category', 'tags', 'price_min', 'price_max', 'new_arrivals', 'bestsellers', 'filter']))
             <a href="{{ route('shop') }}" class="block text-center text-xs text-secondary mt-3 hover:underline">Clear Filters</a>
         @endif
       </form>
@@ -139,8 +162,8 @@
                 {{-- Heart form --}}
                 <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" class="absolute top-3 right-3 z-10">
                   @csrf
-                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product->id)->exists() ? 'text-red-500' : 'text-primary' }}" title="Save Piece">
-                    <svg class="w-4 h-4" fill="{{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product->id)->exists() ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" title="Save Piece">
+                    <svg class="w-4 h-4" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                       <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
                     </svg>
                   </button>

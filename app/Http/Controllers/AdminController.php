@@ -310,19 +310,17 @@ class AdminController extends Controller
 
         $imageUrl = $request->image_url;
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('images/products'), $filename);
-            $imageUrl = '/images/products/' . $filename;
+            $imageUrl = $this->convertToWebp($request->file('image'), 'images/products') ?: $imageUrl;
         }
 
         $gallery = array_fill(0, 7, null);
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $index => $gFile) {
                 if ($index >= 0 && $index < 7 && $gFile) {
-                    $gFilename = time() . '_gallery_' . uniqid() . '_' . $gFile->getClientOriginalName();
-                    $gFile->move(public_path('images/products'), $gFilename);
-                    $gallery[$index] = '/images/products/' . $gFilename;
+                    $webpUrl = $this->convertToWebp($gFile, 'images/products');
+                    if ($webpUrl) {
+                        $gallery[$index] = $webpUrl;
+                    }
                 }
             }
         }
@@ -330,10 +328,10 @@ class AdminController extends Controller
 
         $sizeChartUrl = null;
         if ($request->hasFile('size_chart_image')) {
-            $file = $request->file('size_chart_image');
-            $filename = time() . '_sc_' . $file->getClientOriginalName();
-            $file->move(public_path('images/products'), $filename);
-            $sizeChartUrl = 'images/products/' . $filename;
+            $webpUrl = $this->convertToWebp($request->file('size_chart_image'), 'images/products');
+            if ($webpUrl) {
+                $sizeChartUrl = ltrim($webpUrl, '/');
+            }
         }
 
         $details = null;
@@ -426,10 +424,7 @@ class AdminController extends Controller
 
         $imageUrl = $request->image_url ?? $product->image_url;
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('images/products'), $filename);
-            $imageUrl = '/images/products/' . $filename;
+            $imageUrl = $this->convertToWebp($request->file('image'), 'images/products') ?: $imageUrl;
         }
 
         $gallery = array_fill(0, 7, null);
@@ -443,9 +438,10 @@ class AdminController extends Controller
         if ($request->hasFile('gallery_images')) {
             foreach ($request->file('gallery_images') as $index => $gFile) {
                 if ($index >= 0 && $index < 7 && $gFile) {
-                    $gFilename = time() . '_gallery_' . uniqid() . '_' . $gFile->getClientOriginalName();
-                    $gFile->move(public_path('images/products'), $gFilename);
-                    $gallery[$index] = '/images/products/' . $gFilename;
+                    $webpUrl = $this->convertToWebp($gFile, 'images/products');
+                    if ($webpUrl) {
+                        $gallery[$index] = $webpUrl;
+                    }
                 }
             }
         }
@@ -453,10 +449,10 @@ class AdminController extends Controller
 
         $sizeChartUrl = $product->size_chart_image;
         if ($request->hasFile('size_chart_image')) {
-            $file = $request->file('size_chart_image');
-            $filename = time() . '_sc_' . $file->getClientOriginalName();
-            $file->move(public_path('images/products'), $filename);
-            $sizeChartUrl = 'images/products/' . $filename;
+            $webpUrl = $this->convertToWebp($request->file('size_chart_image'), 'images/products');
+            if ($webpUrl) {
+                $sizeChartUrl = ltrim($webpUrl, '/');
+            }
         }
 
         $details = $product->details;
@@ -591,18 +587,12 @@ class AdminController extends Controller
         $imageUrl = $request->image_url;
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('images/categories'), $filename);
-            $imageUrl = '/images/categories/' . $filename;
+            $imageUrl = $this->convertToWebp($request->file('image'), 'images/categories') ?: $imageUrl;
         }
 
         $sizeChartUrl = null;
         if ($request->hasFile('size_chart_image')) {
-            $file = $request->file('size_chart_image');
-            $filename = time() . '_sc_' . $file->getClientOriginalName();
-            $file->move(public_path('images/categories'), $filename);
-            $sizeChartUrl = '/images/categories/' . $filename;
+            $sizeChartUrl = $this->convertToWebp($request->file('size_chart_image'), 'images/categories') ?: $sizeChartUrl;
         }
 
         Category::create([
@@ -636,18 +626,12 @@ class AdminController extends Controller
         $imageUrl = $request->image_url ?? $category->image_url;
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('images/categories'), $filename);
-            $imageUrl = '/images/categories/' . $filename;
+            $imageUrl = $this->convertToWebp($request->file('image'), 'images/categories') ?: $imageUrl;
         }
 
         $sizeChartUrl = $category->size_chart_image;
         if ($request->hasFile('size_chart_image')) {
-            $file = $request->file('size_chart_image');
-            $filename = time() . '_sc_' . $file->getClientOriginalName();
-            $file->move(public_path('images/categories'), $filename);
-            $sizeChartUrl = '/images/categories/' . $filename;
+            $sizeChartUrl = $this->convertToWebp($request->file('size_chart_image'), 'images/categories') ?: $sizeChartUrl;
         }
 
         $category->update([
@@ -990,7 +974,6 @@ class AdminController extends Controller
     public function designManager()
     {
         $heroSlides  = Setting::get('hero_slides', []);
-        $lookbook    = Setting::get('lookbook_settings', []);
         $about       = Setting::get('about_settings', []);
         $signinImage = Setting::get('signin_image', '');
 
@@ -1002,21 +985,13 @@ class AdminController extends Controller
             ['id' => 'new_arrivals', 'name' => 'New Arrivals Slider', 'visible' => true],
             ['id' => 'promo_banner', 'name' => 'Promo Banner', 'visible' => true],
             ['id' => 'bestsellers', 'name' => 'Bestsellers Grid', 'visible' => true],
-            ['id' => 'lookbook', 'name' => 'Lookbook Grid', 'visible' => true],
-            ['id' => 'instagram_feed', 'name' => 'Instagram Feed', 'visible' => true],
             ['id' => 'newsletter', 'name' => 'Newsletter Atelier', 'visible' => true],
         ];
         $homepageSections = Setting::get('homepage_sections', $defaultSections);
-
-        // Fetch lookbook layout settings
-        $defaultLookbookSections = [
-            ['id' => 'cover', 'name' => 'Cinematic Cover', 'visible' => true],
-            ['id' => 'chapters', 'name' => 'Editorial Chapters Stack', 'visible' => true],
-            ['id' => 'interlude', 'name' => 'Full Width Interlude Image', 'visible' => true],
-            ['id' => 'bts', 'name' => 'Behind The Scenes Grid', 'visible' => true],
-            ['id' => 'cta', 'name' => 'Call To Action (Shop the Look)', 'visible' => true],
-        ];
-        $lookbookSections = Setting::get('lookbook_sections', $defaultLookbookSections);
+        // Exclude lookbook and instagram feed sections
+        $homepageSections = array_values(array_filter($homepageSections, function($sec) {
+            return !in_array($sec['id'], ['lookbook', 'instagram_feed']);
+        }));
 
         // Fetch Dual Banners settings
         $defaultDualBanners = [
@@ -1060,8 +1035,8 @@ class AdminController extends Controller
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
         return view('admin.design.index', compact(
-            'heroSlides', 'lookbook', 'about', 'signinImage', 
-            'homepageSections', 'lookbookSections', 'dualBanners', 'promoBanner', 'newsletter'
+            'heroSlides', 'about', 'signinImage', 
+            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter'
         ));
     }
 
@@ -1092,13 +1067,10 @@ class AdminController extends Controller
 
                 $dualBanners[$bKey]['image_url'] = $request->input("{$bKey}_image_url") ?? ($dualBanners[$bKey]['image_url'] ?? '');
                 if ($request->hasFile("{$bKey}_file")) {
-                    if (!is_dir(public_path('images/banners'))) {
-                        mkdir(public_path('images/banners'), 0777, true);
+                    $webpUrl = $this->convertToWebp($request->file("{$bKey}_file"), 'images/banners');
+                    if ($webpUrl) {
+                        $dualBanners[$bKey]['image_url'] = $webpUrl;
                     }
-                    $file = $request->file("{$bKey}_file");
-                    $filename = time() . '_' . $bKey . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('images/banners'), $filename);
-                    $dualBanners[$bKey]['image_url'] = '/images/banners/' . $filename;
                 }
             }
             Setting::set('dual_banners_settings', $dualBanners);
@@ -1112,13 +1084,10 @@ class AdminController extends Controller
 
             $promoBanner['image_url'] = $request->input('promo_image_url') ?? ($promoBanner['image_url'] ?? '');
             if ($request->hasFile('promo_file')) {
-                if (!is_dir(public_path('images/banners'))) {
-                    mkdir(public_path('images/banners'), 0777, true);
+                $webpUrl = $this->convertToWebp($request->file('promo_file'), 'images/banners');
+                if ($webpUrl) {
+                    $promoBanner['image_url'] = $webpUrl;
                 }
-                $file = $request->file('promo_file');
-                $filename = time() . '_promo_' . $file->getClientOriginalName();
-                $file->move(public_path('images/banners'), $filename);
-                $promoBanner['image_url'] = '/images/banners/' . $filename;
             }
             Setting::set('promo_banner_settings', $promoBanner);
 
@@ -1144,13 +1113,10 @@ class AdminController extends Controller
             $signinImage = $request->input('signin_image', '');
 
             if ($request->hasFile('signin_file')) {
-                $file = $request->file('signin_file');
-                if (!is_dir(public_path('images/auth'))) {
-                    mkdir(public_path('images/auth'), 0777, true);
+                $webpUrl = $this->convertToWebp($request->file('signin_file'), 'images/auth');
+                if ($webpUrl) {
+                    $signinImage = $webpUrl;
                 }
-                $filename    = time() . '_signin_' . $file->getClientOriginalName();
-                $file->move(public_path('images/auth'), $filename);
-                $signinImage = '/images/auth/' . $filename;
             }
 
             Setting::set('signin_image', $signinImage);
@@ -1170,13 +1136,10 @@ class AdminController extends Controller
                 foreach ($request->input('slides') as $index => $slideData) {
                     $imageUrl = $slideData['image_url'] ?? '';
                     if ($request->hasFile("slides.{$index}.image_file")) {
-                        if (!is_dir(public_path('images/hero'))) {
-                            mkdir(public_path('images/hero'), 0777, true);
+                        $webpUrl = $this->convertToWebp($request->file("slides.{$index}.image_file"), 'images/hero');
+                        if ($webpUrl) {
+                            $imageUrl = $webpUrl;
                         }
-                        $file     = $request->file("slides.{$index}.image_file");
-                        $filename = time() . '_hero_' . $index . '_' . $file->getClientOriginalName();
-                        $file->move(public_path('images/hero'), $filename);
-                        $imageUrl = '/images/hero/' . $filename;
                     }
 
                     $slides[] = [
@@ -1202,107 +1165,7 @@ class AdminController extends Controller
             return redirect()->route('admin.design.index')->with('success', 'Hero Carousel updated successfully.');
         }
 
-        // ── Lookbook ──────────────────────────────────────────────
-        if ($type === 'lookbook') {
-            $lookbook = Setting::get('lookbook_settings', []);
 
-            $lookbook['cover_eyebrow'] = $request->input('cover_eyebrow');
-            $lookbook['cover_title']   = $request->input('cover_title');
-
-            if ($request->has('lookbook_sections_json')) {
-                $lbSections = json_decode($request->input('lookbook_sections_json'), true);
-                if (is_array($lbSections)) {
-                    Setting::set('lookbook_sections', $lbSections);
-                }
-            }
-
-            // Cover Image
-            $lookbook['cover_image'] = $request->input('cover_image') ?? ($lookbook['cover_image'] ?? '');
-            if ($request->hasFile('cover_file')) {
-                if (!is_dir(public_path('images/lookbook'))) {
-                    mkdir(public_path('images/lookbook'), 0777, true);
-                }
-                $file = $request->file('cover_file');
-                $filename = time() . '_lb_cover_' . $file->getClientOriginalName();
-                $file->move(public_path('images/lookbook'), $filename);
-                $lookbook['cover_image'] = '/images/lookbook/' . $filename;
-            }
-
-            // Middle Image
-            $lookbook['middle_image'] = $request->input('middle_image') ?? ($lookbook['middle_image'] ?? '');
-            if ($request->hasFile('middle_file')) {
-                if (!is_dir(public_path('images/lookbook'))) {
-                    mkdir(public_path('images/lookbook'), 0777, true);
-                }
-                $file = $request->file('middle_file');
-                $filename = time() . '_lb_middle_' . $file->getClientOriginalName();
-                $file->move(public_path('images/lookbook'), $filename);
-                $lookbook['middle_image'] = '/images/lookbook/' . $filename;
-            }
-
-            // Dynamic Chapters List
-            $chapters = [];
-            if ($request->has('chapters')) {
-                foreach ($request->input('chapters') as $index => $chapData) {
-                    $imageUrl = $chapData['image_url'] ?? '';
-                    if ($request->hasFile("chapters.{$index}.image_file")) {
-                        if (!is_dir(public_path('images/lookbook'))) {
-                            mkdir(public_path('images/lookbook'), 0777, true);
-                        }
-                        $file = $request->file("chapters.{$index}.image_file");
-                        $filename = time() . '_lb_chap_' . $index . '_' . $file->getClientOriginalName();
-                        $file->move(public_path('images/lookbook'), $filename);
-                        $imageUrl = '/images/lookbook/' . $filename;
-                    }
-
-                    $insetUrl = $chapData['inset_image_url'] ?? '';
-                    if ($request->hasFile("chapters.{$index}.inset_file")) {
-                        if (!is_dir(public_path('images/lookbook'))) {
-                            mkdir(public_path('images/lookbook'), 0777, true);
-                        }
-                        $file = $request->file("chapters.{$index}.inset_file");
-                        $filename = time() . '_lb_inset_' . $index . '_' . $file->getClientOriginalName();
-                        $file->move(public_path('images/lookbook'), $filename);
-                        $insetUrl = '/images/lookbook/' . $filename;
-                    }
-
-                    $chapters[] = [
-                        'image_url'       => $imageUrl,
-                        'inset_image_url' => $insetUrl,
-                        'eyebrow'         => $chapData['eyebrow'] ?? '',
-                        'title'           => $chapData['title'] ?? '',
-                        'description'     => $chapData['description'] ?? '',
-                        'link_url'        => $chapData['link_url'] ?? '',
-                    ];
-                }
-            }
-            $lookbook['chapters'] = $chapters;
-
-            // BTS Grid
-            $bts = $lookbook['bts_images'] ?? [];
-            for ($i = 0; $i < 6; $i++) {
-                $bts[$i] = $request->input("bts_images.{$i}") ?? ($bts[$i] ?? '');
-                if ($request->hasFile("bts_files.{$i}")) {
-                    if (!is_dir(public_path('images/lookbook'))) {
-                        mkdir(public_path('images/lookbook'), 0777, true);
-                    }
-                    $file = $request->file("bts_files.{$i}");
-                    $filename = time() . '_lb_bts_' . $i . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('images/lookbook'), $filename);
-                    $bts[$i] = '/images/lookbook/' . $filename;
-                }
-            }
-            $lookbook['bts_images'] = $bts;
-
-            Setting::set('lookbook_settings', $lookbook);
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Lookbook Campaign Chapters saved successfully.'
-                ]);
-            }
-            return redirect()->route('admin.design.index')->with('success', 'Lookbook Campaign Chapters saved successfully.');
-        }
 
         // ── About Us ──────────────────────────────────────────────
         if ($type === 'about') {
@@ -1325,13 +1188,10 @@ class AdminController extends Controller
 
             $about['cover_image'] = $request->input('cover_image') ?? ($about['cover_image'] ?? '');
             if ($request->hasFile('about_cover_file')) {
-                if (!is_dir(public_path('images/about'))) {
-                    mkdir(public_path('images/about'), 0777, true);
+                $webpUrl = $this->convertToWebp($request->file('about_cover_file'), 'images/about');
+                if ($webpUrl) {
+                    $about['cover_image'] = $webpUrl;
                 }
-                $file = $request->file('about_cover_file');
-                $filename = time() . '_about_cover_' . $file->getClientOriginalName();
-                $file->move(public_path('images/about'), $filename);
-                $about['cover_image'] = '/images/about/' . $filename;
             }
 
             Setting::set('about_settings', $about);
@@ -1351,5 +1211,56 @@ class AdminController extends Controller
             ], 400);
         }
         return redirect()->route('admin.design.index')->with('error', 'Invalid setting update type.');
+    }
+
+    private function convertToWebp($file, $destinationFolder)
+    {
+        $imageInfo = @getimagesize($file->getRealPath());
+        if (!$imageInfo) {
+            return null;
+        }
+        $mime = $imageInfo['mime'];
+
+        switch ($mime) {
+            case 'image/jpeg':
+            case 'image/jpg':
+                $image = @imagecreatefromjpeg($file->getRealPath());
+                break;
+            case 'image/png':
+                $image = @imagecreatefrompng($file->getRealPath());
+                if ($image) {
+                    imagepalettetotruecolor($image);
+                    imagealphablending($image, true);
+                    imagesavealpha($image, true);
+                }
+                break;
+            case 'image/webp':
+                $image = @imagecreatefromwebp($file->getRealPath());
+                break;
+            case 'image/gif':
+                $image = @imagecreatefromgif($file->getRealPath());
+                if ($image) {
+                    imagepalettetotruecolor($image);
+                }
+                break;
+            default:
+                return null;
+        }
+
+        if (!$image) {
+            return null;
+        }
+
+        $filename = time() . '_' . uniqid() . '.webp';
+        $destinationPath = public_path($destinationFolder);
+        if (!file_exists($destinationPath)) {
+            @mkdir($destinationPath, 0755, true);
+        }
+        $fullPath = $destinationPath . '/' . $filename;
+
+        @imagewebp($image, $fullPath, 80);
+        @imagedestroy($image);
+
+        return '/' . $destinationFolder . '/' . $filename;
     }
 }

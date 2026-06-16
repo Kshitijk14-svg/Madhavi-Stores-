@@ -12,29 +12,22 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $newArrivals = Product::latest()->take(4)->get();
-        $bestSellers = Product::where('is_bestseller', true)->take(4)->get();
+        // Query new arrivals tagged with is_new_arrival flag
+        $newArrivals = Product::where('is_new_arrival', true)->latest()->take(8)->get();
+        if ($newArrivals->isEmpty()) {
+            $newArrivals = Product::latest()->take(8)->get();
+        }
+
+        // Query bestsellers tagged with is_bestseller flag
+        $bestSellers = Product::where('is_bestseller', true)->latest()->take(8)->get();
+        if ($bestSellers->isEmpty()) {
+            $bestSellers = Product::latest()->take(8)->get();
+        }
+
         $categories = Category::all();
-        $products = Product::all();
 
         // Load dynamic hero slides
         $heroSlides = Setting::get('hero_slides', []);
-
-        // Load lookbook settings for dynamic sections
-        $lookbookSettings = Setting::get('lookbook_settings', []);
-
-        // Dynamic preview list
-        $lookbook = [];
-        if (!empty($lookbookSettings['bts_images'])) {
-            $lookbook = array_slice($lookbookSettings['bts_images'], 0, 4);
-        } else {
-            $lookbook = [
-                'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80',
-                'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&q=80',
-                'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80',
-                'https://images.unsplash.com/photo-1485230895905-31d1d1ebc325?w=1000&q=80'
-            ];
-        }
 
         // Cart count
         $cartCount = 0;
@@ -50,11 +43,13 @@ class HomeController extends Controller
             ['id' => 'new_arrivals', 'name' => 'New Arrivals Slider', 'visible' => true],
             ['id' => 'promo_banner', 'name' => 'Promo Banner', 'visible' => true],
             ['id' => 'bestsellers', 'name' => 'Bestsellers Grid', 'visible' => true],
-            ['id' => 'lookbook', 'name' => 'Lookbook Grid', 'visible' => true],
-            ['id' => 'instagram_feed', 'name' => 'Instagram Feed', 'visible' => true],
             ['id' => 'newsletter', 'name' => 'Newsletter Atelier', 'visible' => true],
         ];
         $homepageSections = Setting::get('homepage_sections', $defaultSections);
+        // Exclude lookbook and instagram feed sections
+        $homepageSections = array_values(array_filter($homepageSections, function($sec) {
+            return !in_array($sec['id'], ['lookbook', 'instagram_feed']);
+        }));
 
         // Load Dual Banners settings
         $defaultDualBanners = [
@@ -98,32 +93,13 @@ class HomeController extends Controller
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
         return view('pages.home', compact(
-            'products', 'newArrivals', 'bestSellers', 'categories', 'heroSlides', 
-            'lookbookSettings', 'cartCount', 'lookbook', 
+            'newArrivals', 'bestSellers', 'categories', 'heroSlides', 
+            'cartCount', 
             'homepageSections', 'dualBanners', 'promoBanner', 'newsletter'
         ));
     }
 
-    public function lookbook()
-    {
-        $lookbook = Setting::get('lookbook_settings', []);
 
-        $defaultLookbookSections = [
-            ['id' => 'cover', 'name' => 'Cinematic Cover', 'visible' => true],
-            ['id' => 'chapters', 'name' => 'Editorial Chapters Stack', 'visible' => true],
-            ['id' => 'interlude', 'name' => 'Full Width Interlude Image', 'visible' => true],
-            ['id' => 'bts', 'name' => 'Behind The Scenes Grid', 'visible' => true],
-            ['id' => 'cta', 'name' => 'Call To Action (Shop the Look)', 'visible' => true],
-        ];
-        $lookbookSections = Setting::get('lookbook_sections', $defaultLookbookSections);
-        
-        $cartCount = 0;
-        if (auth()->check()) {
-            $cartCount = CartItem::where('user_id', auth()->id())->sum('quantity');
-        }
-
-        return view('pages.lookbook', compact('lookbook', 'cartCount', 'lookbookSections'));
-    }
 
     public function about()
     {

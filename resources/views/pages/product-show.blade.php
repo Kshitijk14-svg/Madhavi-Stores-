@@ -2,14 +2,10 @@
 
 @section('title', $product->seo_title ?? ($product->name . ' | Madhavi Stores'))
 
-@section('meta')
-    @if($product->seo_description)
-        <meta name="description" content="{{ $product->seo_description }}">
-    @endif
-    @if($product->seo_keywords)
-        <meta name="keywords" content="{{ $product->seo_keywords }}">
-    @endif
-@endsection
+@section('meta_description', $product->seo_description ?: (Str::limit(strip_tags($product->description ?: 'Discover our exclusive handcrafted ethnic silhouettes, sarees, and fine textiles.'), 150)))
+@section('meta_keywords', $product->seo_keywords ?: ($product->name . ', ethnic wear, quiet luxury, handcrafted, indian heritage'))
+@section('og_image', $product->image_url ? asset($product->image_url) : asset('images/logo.png'))
+@section('og_type', 'product')
 
 @section('content')
 
@@ -163,8 +159,8 @@
                         <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" id="wishlist-form">
                             @csrf
                             <button type="submit" class="btn-secondary w-full" style="width:100%;text-align:center;padding:20px;display:flex;align-items:center;justify-content:center;gap:12px;">
-                                <svg width="16" height="16" fill="{{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product->id)->exists() ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-                                {{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product->id)->exists() ? 'Remove from Wishlist' : 'Add to Wishlist' }}
+                                <svg width="16" height="16" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+                                {{ in_array($product->id, $wishlistIds) ? 'Remove from Wishlist' : 'Add to Wishlist' }}
                             </button>
                         </form>
                     </div>
@@ -275,7 +271,11 @@
                     @if($related->badge)
                       <span class="pcard-badge">{{ $related->badge }}</span>
                     @endif
-                    <button class="pcard-wish" onclick="event.preventDefault(); document.getElementById('wishlist-form-{{ $related->id }}').submit();"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg></button>
+                    <button class="pcard-wish" onclick="event.preventDefault(); document.getElementById('wishlist-form-{{ $related->id }}').submit();">
+                      <svg width="16" height="16" fill="{{ in_array($related->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($related->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+                      </svg>
+                    </button>
                     <a href="{{ route('product.show', $related->slug) }}" class="pcard-quick">Add to Cart</a>
                     <form id="wishlist-form-{{ $related->id }}" action="{{ route('wishlist.toggle', $related->id) }}" method="POST" style="display:none;">@csrf</form>
                   </div>
@@ -359,13 +359,51 @@
     }
 </script>
 
+{{-- JSON-LD Product Schema for SEO --}}
+<script type="application/ld+json">
+{
+  "@@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ $product->name }}",
+  "image": [
+    "{{ asset($product->image_url) }}"
+    @if($product->gallery_images && is_array($product->gallery_images))
+      @foreach($product->gallery_images as $img)
+        ,"{{ asset($img) }}"
+      @endforeach
+    @endif
+  ],
+  "description": "{{ addslashes(strip_tags($product->description ?: ($product->seo_description ?: 'Madhavi Stores — Premium handcrafted Indian ethnic wear.'))) }}",
+  "sku": "MS-PROD-{{ $product->id }}",
+  "mpn": "MS-{{ $product->id }}",
+  "brand": {
+    "@type": "Brand",
+    "name": "Madhavi Stores"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ url()->current() }}",
+    "priceCurrency": "INR",
+    "price": "{{ $product->price }}",
+    "priceValidUntil": "{{ date('Y-m-d', strtotime('+1 year')) }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+    "seller": {
+      "@type": "Organization",
+      "name": "Madhavi Stores"
+    }
+  }
+}
+</script>
+
 @endsection
 
 @section('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
+  function initProductShow() {
     // Initialize Swiper for product gallery
-    if(typeof Swiper !== 'undefined') {
+    if(typeof Swiper !== 'undefined' && document.querySelector('.product-gallery-swiper')) {
         new Swiper('.product-gallery-swiper', {
             loop: true,
             effect: 'fade',
@@ -430,7 +468,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+  }
+
+  if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProductShow);
+  } else {
+      initProductShow();
+  }
+})();
 
 function openSizeGuide() {
     const modal = document.getElementById('size-guide-modal');

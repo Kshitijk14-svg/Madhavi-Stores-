@@ -33,7 +33,7 @@
                             <a href="{{ $slide['button_url'] ?: route('shop') }}" class="btn-white">{{ $slide['button_text'] }}</a>
                           @endif
                           @if(!empty($slide['has_second_button']) && !empty($slide['second_button_text']))
-                            <a href="{{ $slide['second_button_url'] ?: route('lookbook') }}" style="display:inline-flex;align-items:center;padding:14px 28px;border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;transition:background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='transparent'">{{ $slide['second_button_text'] }}</a>
+                            <a href="{{ $slide['second_button_url'] ?: route('shop') }}" style="display:inline-flex;align-items:center;padding:14px 28px;border:2px solid rgba(255,255,255,0.4);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;transition:background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='transparent'">{{ $slide['second_button_text'] }}</a>
                           @endif
                         </div>
                       </div>
@@ -126,9 +126,6 @@
               <p class="eyebrow" style="margin-bottom:8px;">Fresh In</p>
               <h2 class="section-title">New Arrivals</h2>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <a href="{{ route('shop') }}" style="font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--secondary);" id="arr-view-all">View All →</a>
-            </div>
           </div>
           <div class="grid-4">
             @foreach($newArrivals->take(8) as $product)
@@ -140,10 +137,10 @@
                 @if($product['badge'] ?? false)
                   <span class="pcard-badge">{{ $product['badge'] }}</span>
                 @endif
-                <form action="{{ route('wishlist.toggle', $product['id']) }}" method="POST" class="absolute top-3 right-3 z-10">
+                <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" class="absolute top-3 right-3 z-10">
                   @csrf
-                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product['id'])->exists() ? 'text-red-500' : 'text-primary' }}">
-                    <svg class="w-4 h-4" fill="{{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product['id'])->exists() ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}">
+                    <svg class="w-4 h-4" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
                   </button>
                 </form>
                 <a href="{{ route('product.show', $product['slug']) }}" class="pcard-quick">View Details</a>
@@ -175,7 +172,7 @@
             @endforeach
           </div>
           <div style="margin-top:40px;text-align:center;">
-            <a href="{{ route('shop') }}" class="btn-secondary">View All New Arrivals</a>
+            <a href="{{ route('shop', ['filter' => 'new-arrivals']) }}" class="btn-secondary">View All New Arrivals</a>
           </div>
         </div>
       </section>
@@ -204,7 +201,6 @@
               <p class="eyebrow" style="margin-bottom:8px;">Most Loved</p>
               <h2 class="section-title">Bestsellers</h2>
             </div>
-            <a href="{{ route('shop') }}" style="font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--secondary);" id="bs-view-all">View All →</a>
           </div>
           <div class="grid-4">
             @foreach($bestSellers as $product)
@@ -216,10 +212,10 @@
                 @if($product['badge'] ?? false)
                   <span class="pcard-badge">{{ $product['badge'] }}</span>
                 @endif
-                <form action="{{ route('wishlist.toggle', $product['id']) }}" method="POST" class="absolute top-3 right-3 z-10">
+                <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" class="absolute top-3 right-3 z-10">
                   @csrf
-                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product['id'])->exists() ? 'text-red-500' : 'text-primary' }}">
-                    <svg class="w-4 h-4" fill="{{ Auth::check() && Auth::user()->wishlistItems()->where('product_id', $product['id'])->exists() ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+                  <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:text-red-500 transition-colors {{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}">
+                    <svg class="w-4 h-4" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
                   </button>
                 </form>
                 <a href="{{ route('product.show', $product['slug']) }}" class="pcard-quick">View Details</a>
@@ -250,39 +246,13 @@
             @endforeach
           </div>
           <div style="margin-top:40px;text-align:center;">
-            <a href="{{ route('shop') }}" class="btn-secondary">View All Bestsellers</a>
+            <a href="{{ route('shop', ['filter' => 'bestsellers']) }}" class="btn-secondary">View All Bestsellers</a>
           </div>
         </div>
       </section>
     @endif
 
-    @if($section['id'] === 'lookbook')
-      {{-- ═══ 7. LOOKBOOK GRID ═══ --}}
-      <section style="padding:56px 0;background:#fff;">
-        <div class="wrap">
-          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
-            <div>
-              <p class="eyebrow" style="margin-bottom:8px;">2026 Editorial</p>
-              <h2 class="section-title">The Lookbook</h2>
-            </div>
-            <a href="{{ route('lookbook') }}" style="font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--secondary);">View Editorial →</a>
-          </div>
-          <div class="lookbook-grid">
-            @foreach($lookbook as $i => $img)
-            <a href="{{ route('lookbook') }}" style="display:block;position:relative;overflow:hidden;aspect-ratio:3/4;">
-              <img src="{{ $img }}" alt="Lookbook {{ $i+1 }}" loading="lazy"
-                   style="width:100%;height:100%;object-fit:cover;transition:transform 0.7s ease;">
-            </a>
-            @endforeach
-          </div>
-        </div>
-      </section>
-    @endif
 
-    @if($section['id'] === 'instagram_feed')
-      {{-- ═══ INSTAGRAM FEED ═══ --}}
-      <x-instagram-feed />
-    @endif
 
     @if($section['id'] === 'newsletter')
       {{-- ═══ 8. NEWSLETTER ═══ --}}
@@ -311,31 +281,35 @@
 
 @section('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  // Show "View All" on desktop
-  var va = document.getElementById('arr-view-all'), bva = document.getElementById('bs-view-all');
-  if(window.innerWidth >= 1024){ if(va) va.style.display='inline'; }
+(function() {
+  function initHome() {
 
-  // Hero Swiper
-  new Swiper('.hero-swiper', {
-    loop: true, speed: 800,
-    autoplay: { delay: 5000, disableOnInteraction: false },
-    navigation: { prevEl: '.hero-prev', nextEl: '.hero-next' },
-    pagination: { el: '.hero-dots', clickable: true },
-    effect: 'fade', fadeEffect: { crossFade: true },
-  });
 
-  // Arrivals Swiper
-  new Swiper('.arrivals-swiper', {
-    slidesPerView: 'auto', spaceBetween: 16, grabCursor: true,
-    navigation: { prevEl: '.arr-prev', nextEl: '.arr-next' },
-  });
+    // Hero Swiper
+    if (document.querySelector('.hero-swiper')) {
+      new Swiper('.hero-swiper', {
+        loop: true, speed: 800,
+        autoplay: { delay: 5000, disableOnInteraction: false },
+        navigation: { prevEl: '.hero-prev', nextEl: '.hero-next' },
+        pagination: { el: '.hero-dots', clickable: true },
+        effect: 'fade', fadeEffect: { crossFade: true },
+      });
+    }
 
-  // Lookbook hover
-  document.querySelectorAll('.lookbook-grid a img').forEach(function(img){
-    img.parentElement.addEventListener('mouseenter', function(){ img.style.transform = 'scale(1.05)'; });
-    img.parentElement.addEventListener('mouseleave', function(){ img.style.transform = 'scale(1)'; });
-  });
-});
+    // Arrivals Swiper
+    if (document.querySelector('.arrivals-swiper')) {
+      new Swiper('.arrivals-swiper', {
+        slidesPerView: 'auto', spaceBetween: 16, grabCursor: true,
+        navigation: { prevEl: '.arr-prev', nextEl: '.arr-next' },
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHome);
+  } else {
+    initHome();
+  }
+})();
 </script>
 @endsection

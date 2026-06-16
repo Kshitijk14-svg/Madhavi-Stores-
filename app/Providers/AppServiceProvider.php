@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        view()->composer('*', function ($view) {
+            $wishlistIds = auth()->check() ? auth()->user()->wishlistItems()->pluck('product_id')->toArray() : [];
+            $view->with('wishlistIds', $wishlistIds);
+        });
     }
 }

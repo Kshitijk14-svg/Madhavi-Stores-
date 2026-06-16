@@ -23,7 +23,6 @@
         <a href="{{ route('home') }}"       class="nav-link {{ request()->routeIs('home')       ? 'active' : '' }}">Home</a>
         <a href="{{ route('shop') }}"       class="nav-link {{ request()->routeIs('shop')       ? 'active' : '' }}">Shop</a>
         <a href="{{ route('collections.index') }}" class="nav-link {{ request()->routeIs('collections.index') ? 'active' : '' }}">Collections</a>
-        <a href="{{ route('lookbook') }}"   class="nav-link {{ request()->routeIs('lookbook')   ? 'active' : '' }}">Lookbook</a>
         <a href="{{ route('about') }}"      class="nav-link {{ request()->routeIs('about')      ? 'active' : '' }}">Our Story</a>
       </nav>
 
@@ -85,7 +84,7 @@
     </button>
   </div>
   <nav style="flex:1;overflow-y:auto;padding:24px;">
-    @foreach([['Home',route('home')],['Shop',route('shop')],['Collections',route('collections.index')],['Lookbook',route('lookbook')],['Our Story',route('about')]] as [$l,$h])
+    @foreach([['Home',route('home')],['Shop',route('shop')],['Collections',route('collections.index')],['Our Story',route('about')],['Wishlist',route('wishlist')]] as [$l,$h])
     <a href="{{ $h }}" style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #f8f8f8;font-size:14px;font-weight:600;letter-spacing:0.05em;color:var(--primary);transition:color 0.2s;"
        onmouseover="this.style.color='var(--secondary)'" onmouseout="this.style.color='var(--primary)'">
       {{ $l }}
@@ -94,7 +93,11 @@
     @endforeach
   </nav>
   <div style="padding:24px;border-top:1px solid #f0f0f0;display:flex;gap:12px;">
-    <a href="{{ route('account') }}" class="btn-primary" style="flex:1;text-align:center;">Sign In</a>
+    @auth
+      <a href="{{ route('account') }}" class="btn-primary" style="flex:1;text-align:center;">Account</a>
+    @else
+      <a href="{{ route('login') }}" class="btn-primary" style="flex:1;text-align:center;">Sign In</a>
+    @endauth
     <a href="{{ route('cart') }}"    class="btn-secondary" style="flex:1;text-align:center;">Cart (<span id="mob-cart-count">{{ $cartCount ?? 0 }}</span>)</a>
   </div>
 </div>

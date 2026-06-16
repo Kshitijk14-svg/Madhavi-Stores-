@@ -8,8 +8,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\SitemapController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Collection and Products
 Route::get('/shop', [ProductController::class, 'index'])->name('shop');
@@ -17,7 +19,6 @@ Route::get('/collections', [ProductController::class, 'collections'])->name('col
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 // Editorial & Static Pages
-Route::get('/lookbook', [HomeController::class, 'lookbook'])->name('lookbook');
 Route::get('/about',    [HomeController::class, 'about'])->name('about');
 
 // ── Auth Routes ────────────────────────────────────────────
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
     // Checkout Operations
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout/verify', [CheckoutController::class, 'verifyPayment'])->name('checkout.verify');
 });
 
 // Admin Routes (Custom Blade Admin Dashboard)

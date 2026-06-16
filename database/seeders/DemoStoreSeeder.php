@@ -63,9 +63,9 @@ class DemoStoreSeeder extends Seeder
                 'subtitle' => 'Handcrafted textiles. Ancient craft. Contemporary sensibility.',
                 'button_text' => 'Shop Now',
                 'button_url' => '/collection',
-                'has_second_button' => true,
-                'second_button_text' => 'View Lookbook',
-                'second_button_url' => '/lookbook'
+                'has_second_button' => false,
+                'second_button_text' => '',
+                'second_button_url' => ''
             ],
             [
                 'image_url' => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1920&q=85&auto=format&fit=crop',
@@ -92,31 +92,7 @@ class DemoStoreSeeder extends Seeder
         ];
         Setting::set('hero_slides', $heroSlides);
 
-        // Lookbook Settings
-        $lookbookSettings = [
-            'cover_image' => 'https://images.unsplash.com/photo-1485230895905-31d1d1ebc325?w=1920&q=85&auto=format&fit=crop',
-            'cover_eyebrow' => '2026 Seasonal Editorial',
-            'cover_title' => 'The<br><em>Modern</em><br>Muse',
-            'chapter1_title' => 'Silk &<br><em>Shadow</em>',
-            'chapter1_eyebrow' => 'Chapter 01',
-            'chapter1_description' => 'Exploring the delicate interplay between light and hand-woven textures. Our signature silk collection captures the fleeting moments of golden hour, where craft becomes poetry.',
-            'chapter1_image' => 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1200&q=80&auto=format&fit=crop',
-            'chapter1_inset_image' => 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&q=80&auto=format&fit=crop',
-            'middle_image' => 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1920&q=80&auto=format&fit=crop',
-            'chapter2_title' => 'Earthly<br><em>Grace</em>',
-            'chapter2_eyebrow' => 'Chapter 02',
-            'chapter2_description' => 'A tribute to natural dyes and organic cotton. This chapter celebrates beauty found in imperfection — the grace of simple silhouettes and the richness of undyed earth.',
-            'chapter2_image' => 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=80&auto=format&fit=crop',
-            'bts_images' => [
-                'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=400&q=75',
-                'https://images.unsplash.com/photo-1583391733958-6c78278104ba?w=400&q=75',
-                'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=400&q=75',
-                'https://images.unsplash.com/photo-1604928141064-207cea6f5722?w=400&q=75',
-                'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=75',
-                'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=75'
-            ]
-        ];
-        Setting::set('lookbook_settings', $lookbookSettings);
+
 
         // About Us Settings
         $aboutSettings = [
