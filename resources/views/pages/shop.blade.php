@@ -33,7 +33,7 @@
   <div class="flex flex-col lg:flex-row gap-10">
 
     {{-- SIDEBAR --}}
-    <aside class="w-full lg:w-56 xl:w-64 flex-shrink-0">
+    <aside class="hidden lg:block w-full lg:w-56 xl:w-64 flex-shrink-0">
       <form action="{{ route('shop') }}" method="GET" id="filter-form" class="lg:sticky lg:top-32 space-y-8">
         {{-- Preserve Search and Sort --}}
         @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
@@ -122,14 +122,9 @@
         </div>
       @endif
 
-      {{-- Mobile sort bar --}}
-      <div class="flex items-center justify-between mb-6 lg:hidden">
+      {{-- Mobile sort bar is moved to drawer --}}
+      <div class="lg:hidden mb-4">
         <p class="text-sm text-muted">{{ $products->count() }} products</p>
-        <select form="filter-form" name="sort" onchange="this.form.submit()" class="text-sm text-primary bg-transparent border border-gray-200 px-3 py-2 outline-none">
-          <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Newest</option>
-          <option value="price_low" {{ request('sort') === 'price_low' ? 'selected' : '' }}>Price: Low-High</option>
-          <option value="price_high" {{ request('sort') === 'price_high' ? 'selected' : '' }}>Price: High-Low</option>
-        </select>
       </div>
       
       {{-- Desktop sort --}}
@@ -147,7 +142,7 @@
           <a href="{{ route('shop') }}" class="btn-primary inline-flex">View All Products</a>
         </div>
       @else
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
           @foreach($products as $product)
             <div class="pcard">
               <div class="pcard-img">
@@ -202,10 +197,99 @@
             </div>
           @endforeach
         </div>
+        <div class="mt-10">
+          {{ $products->links() }}
+        </div>
       @endif
 
     </div>
   </div>
+{{-- ══ MOBILE FILTER BUTTON ══ --}}
+<div class="lg:hidden fixed bottom-[calc(70px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-40">
+  <button id="mob-filter-open" class="bg-primary text-white px-6 py-3 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-2">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/></svg>
+    Filter & Sort
+  </button>
 </div>
+
+{{-- ══ MOBILE FILTER DRAWER ══ --}}
+<div class="drawer-backdrop" id="filter-back"></div>
+<div class="mob-drawer-bottom" id="filter-panel">
+  <div class="flex items-center justify-between p-5 border-b border-gray-100">
+    <span class="text-[10px] font-bold tracking-widest uppercase text-primary">Filter & Sort</span>
+    <button id="filter-close" class="text-muted hover:text-primary">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="flex-1 overflow-y-auto p-5">
+    <form action="{{ route('shop') }}" method="GET" id="filter-form-mob" class="space-y-8">
+      @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+      
+      <div>
+        <h3 class="text-[10px] font-bold tracking-[0.35em] uppercase text-primary mb-4 pb-3 border-b border-gray-100">Sort By</h3>
+        <select name="sort" class="w-full text-sm border border-gray-200 px-3 py-3 outline-none focus:border-secondary">
+          <option value="newest" {{ request('sort') === 'newest' ? 'selected' : '' }}>Newest</option>
+          <option value="price_low" {{ request('sort') === 'price_low' ? 'selected' : '' }}>Price: Low-High</option>
+          <option value="price_high" {{ request('sort') === 'price_high' ? 'selected' : '' }}>Price: High-Low</option>
+        </select>
+      </div>
+
+      <div>
+        <h3 class="text-[10px] font-bold tracking-[0.35em] uppercase text-primary mb-4 pb-3 border-b border-gray-100">Collections</h3>
+        <ul class="space-y-4">
+          <li>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="new_arrivals" value="1" class="accent-secondary w-5 h-5 cursor-pointer" {{ request('new_arrivals') == '1' || request('filter') === 'new-arrivals' || request('filter') === 'new_arrivals' ? 'checked' : '' }}>
+              <span class="text-sm">New Arrivals</span>
+            </label>
+          </li>
+          <li>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="bestsellers" value="1" class="accent-secondary w-5 h-5 cursor-pointer" {{ request('bestsellers') == '1' || request('filter') === 'bestsellers' || request('filter') === 'bestseller' ? 'checked' : '' }}>
+              <span class="text-sm">Bestsellers</span>
+            </label>
+          </li>
+          <li class="border-b border-gray-100 my-2"></li>
+          @foreach($categories as $cat)
+            <li>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="category[]" value="{{ $cat->slug }}" class="accent-secondary w-5 h-5 cursor-pointer" {{ in_array($cat->slug, (array)request('category', [])) ? 'checked' : '' }}>
+                <span class="text-sm">{{ $cat->name }}</span>
+              </label>
+            </li>
+          @endforeach
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-[10px] font-bold tracking-[0.35em] uppercase text-primary mb-4 pb-3 border-b border-gray-100">Price</h3>
+        <div class="flex items-center gap-2">
+          <input type="number" name="price_min" placeholder="Min" value="{{ request('price_min') }}" class="w-full text-sm border border-gray-200 px-4 py-3 outline-none" min="0">
+          <span class="text-muted">-</span>
+          <input type="number" name="price_max" placeholder="Max" value="{{ request('price_max') }}" class="w-full text-sm border border-gray-200 px-4 py-3 outline-none" min="0">
+        </div>
+      </div>
+      
+    </form>
+  </div>
+  <div class="p-5 border-t border-gray-100">
+    <button type="submit" form="filter-form-mob" class="w-full btn-primary py-4 text-[10px]">Apply Filters</button>
+  </div>
+</div>
+
+<script>
+  document.getElementById('mob-filter-open')?.addEventListener('click', function(){
+    document.getElementById('filter-back').classList.add('open');
+    document.getElementById('filter-panel').classList.add('open');
+  });
+  document.getElementById('filter-close')?.addEventListener('click', function(){
+    document.getElementById('filter-back').classList.remove('open');
+    document.getElementById('filter-panel').classList.remove('open');
+  });
+  document.getElementById('filter-back')?.addEventListener('click', function(){
+    document.getElementById('filter-back').classList.remove('open');
+    document.getElementById('filter-panel').classList.remove('open');
+  });
+</script>
 
 @endsection

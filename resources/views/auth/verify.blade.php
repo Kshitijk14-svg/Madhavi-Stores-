@@ -28,18 +28,19 @@
     <div class="auth-alert error" style="margin-bottom:20px;">{{ $message }}</div>
   @enderror
 
-  <div class="form-group">
-    <label class="form-label" style="text-align:center;display:block;margin-bottom:16px;">Enter 6-digit code</label>
-    <div class="otp-inputs" id="otp-boxes">
-      @for($i = 0; $i < 6; $i++)
-        <input type="text" inputmode="numeric" maxlength="1" class="otp-digit"
-               autocomplete="off" data-index="{{ $i }}">
-      @endfor
+  <div class="form-group" style="margin-bottom:32px;">
+    <label class="form-label" style="text-align:center;display:block;margin-bottom:12px;">Enter 6-digit code</label>
+    <div style="position:relative; width: 100%; max-width: 280px; margin: 0 auto;">
+        <input type="text" inputmode="numeric" name="otp" id="otp-value"
+               autocomplete="one-time-code" maxlength="6"
+               style="width: 100%; background: transparent; border: none; border-bottom: 2px solid #e5e5e5; font-size: 2.5rem; font-weight: 300; letter-spacing: 0.5em; text-align: center; color: #181818; padding: 12px 0; outline: none; transition: border-color 0.3s; padding-left: 0.5em;"
+               onfocus="this.style.borderColor='#b8986e'"
+               onblur="this.style.borderColor=this.value.length === 6 ? '#b8986e' : '#e5e5e5'"
+               placeholder="------">
     </div>
-    <input type="hidden" name="otp" id="otp-value">
   </div>
 
-  <button type="submit" class="auth-submit" id="otp-submit" disabled>Verify Email</button>
+  <button type="submit" class="auth-submit" id="otp-submit" disabled>Verify Login</button>
 </form>
 
 <div class="resend-row">
@@ -56,35 +57,20 @@
 </div>
 
 <script>
-// OTP input auto-advance
-var boxes = document.querySelectorAll('.otp-digit');
-var hidden = document.getElementById('otp-value');
+// OTP input logic
+var input = document.getElementById('otp-value');
 var submitBtn = document.getElementById('otp-submit');
 
-boxes.forEach(function(box, idx) {
-  box.addEventListener('input', function(e) {
-    var val = e.target.value.replace(/\D/g,'');
-    e.target.value = val;
-    if(val && idx < 5) boxes[idx+1].focus();
-    updateHidden();
-  });
-  box.addEventListener('keydown', function(e) {
-    if(e.key==='Backspace' && !e.target.value && idx > 0) boxes[idx-1].focus();
-  });
-  box.addEventListener('paste', function(e) {
-    e.preventDefault();
-    var data = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
-    data.split('').forEach(function(c,i){ if(boxes[i]) boxes[i].value=c; });
-    updateHidden();
-    if(data.length===6) submitBtn.disabled=false;
-  });
-});
-
-function updateHidden() {
-  var val = Array.from(boxes).map(function(b){ return b.value; }).join('');
-  hidden.value = val;
+input.addEventListener('input', function(e) {
+  var val = e.target.value.replace(/\D/g, '').substring(0, 6);
+  e.target.value = val;
   submitBtn.disabled = val.length < 6;
-}
+  
+  // Auto submit when 6 digits are entered
+  if(val.length === 6) {
+    document.getElementById('otp-form').submit();
+  }
+});
 
 // Resend cooldown
 (function(){

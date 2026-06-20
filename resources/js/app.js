@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4 & 5. GSAP Animations
     const initGSAP = () => {
-        if (typeof gsap === 'undefined') return;
+        if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (prefersReducedMotion) return;

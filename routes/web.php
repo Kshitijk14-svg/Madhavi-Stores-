@@ -25,29 +25,24 @@ Route::get('/about',    [HomeController::class, 'about'])->name('about');
 Route::middleware('guest')->group(function () {
     // Login
     Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1')->name('login.post');
 
     // Register
     Route::get('/register',  [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1')->name('register.post');
 
     // Email OTP Verification (after registration)
     Route::get('/verify-email',  [AuthController::class, 'showVerify'])->name('verify.show');
-    Route::post('/verify-email', [AuthController::class, 'verify'])->name('verify.post');
-    Route::post('/verify-email/resend', [AuthController::class, 'resendOtp'])->name('verify.resend');
+    Route::post('/verify-email', [AuthController::class, 'verify'])->middleware('throttle:5,1')->name('verify.post');
+    Route::post('/verify-email/resend', [AuthController::class, 'resendOtp'])->middleware('throttle:3,10')->name('verify.resend');
 
-    // Forgot Password
-    Route::get('/forgot-password',  [AuthController::class, 'showForgot'])->name('password.forgot');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetOtp'])->name('password.forgot.post');
 
-    // Reset Password (OTP-based)
-    Route::get('/reset-password',  [AuthController::class, 'showReset'])->name('password.reset');
-    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.reset.post');
 });
 
 // ── Authenticated Routes ───────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AuthController::class, 'account'])->name('account');
+    Route::post('/account', [AuthController::class, 'updateProfile'])->name('account.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Cart Operations
@@ -95,6 +90,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('orders.update');
     Route::post('/orders/{id}/delete', [AdminController::class, 'deleteOrder'])->name('orders.delete');
     Route::get('/orders/{id}/invoice', [AdminController::class, 'orderInvoice'])->name('orders.invoice');
+    Route::post('/orders/{id}/send-invoice', [AdminController::class, 'sendInvoiceEmail'])->name('orders.send_invoice');
 
     // User Management with Role Control
     Route::get('/users', [AdminController::class, 'usersCartWishlist'])->name('users.index');

@@ -13,18 +13,20 @@ class HomeController extends Controller
     public function index()
     {
         // Query new arrivals tagged with is_new_arrival flag
-        $newArrivals = Product::where('is_new_arrival', true)->latest()->take(8)->get();
+        $newArrivals = Product::with('category')->where('is_new_arrival', true)->latest()->take(8)->get();
         if ($newArrivals->isEmpty()) {
-            $newArrivals = Product::latest()->take(8)->get();
+            $newArrivals = Product::with('category')->latest()->take(8)->get();
         }
 
         // Query bestsellers tagged with is_bestseller flag
-        $bestSellers = Product::where('is_bestseller', true)->latest()->take(8)->get();
+        $bestSellers = Product::with('category')->where('is_bestseller', true)->latest()->take(8)->get();
         if ($bestSellers->isEmpty()) {
-            $bestSellers = Product::latest()->take(8)->get();
+            $bestSellers = Product::with('category')->latest()->take(8)->get();
         }
 
-        $categories = Category::all();
+        $categories = \Illuminate\Support\Facades\Cache::remember('all_categories_no_count', 86400, function() {
+            return Category::all();
+        });
 
         // Load dynamic hero slides
         $heroSlides = Setting::get('hero_slides', []);

@@ -23,35 +23,19 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|min:6',
+            'email' => 'required|email',
         ]);
 
-        $credentials = $request->only('email', 'password');
-        $remember    = $request->boolean('remember');
+        $user = User::where('email', $request->email)->first();
 
-        if (Auth::attempt($credentials, $remember)) {
-            $user = Auth::user();
-
-            if (!$user->email_verified_at) {
-                Auth::logout();
-                $this->sendOtp($user->email, 'verify');
-                session(['otp_email' => $user->email, 'otp_purpose' => 'verify']);
-                return redirect()->route('verify.show')
-                    ->with('info', 'Please verify your email before logging in. A new code has been sent.');
-            }
-
-            $request->session()->regenerate();
-
-            // Admins go to dashboard
-            if ($user->is_admin) {
-                return redirect('/admin');
-            }
-
-            return redirect()->intended(route('account'));
+        if ($user) {
+            $this->sendOtp($user->email, 'login');
+            session(['otp_email' => $user->email, 'otp_purpose' => 'login', 'remember' => $request->boolean('remember')]);
+            return redirect()->route('verify.show')
+                ->with('info', 'A login code has been sent to your email.');
         }
 
-        return back()->withErrors(['email' => 'These credentials do not match our records.'])->withInput();
+        return back()->withErrors(['email' => 'We could not find an account with that email address.'])->withInput();
     }
 
     // ── SHOW REGISTER ───────────────────────────────────────
@@ -64,21 +48,19 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name'                  => 'required|string|max:100',
-            'email'                 => 'required|email|unique:users,email',
-            'password'              => 'required|min:8|confirmed',
-            'password_confirmation' => 'required',
+            'name'  => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email',
         ]);
 
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make(Str::random(32)),
         ]);
 
         // Send OTP
-        $this->sendOtp($user->email, 'verify');
-        session(['otp_email' => $user->email, 'otp_purpose' => 'verify']);
+        $this->sendOtp($user->email, 'login');
+        session(['otp_email' => $user->email, 'otp_purpose' => 'login']);
 
         return redirect()->route('verify.show')
             ->with('success', 'Account created! Please check your email for the verification code.');
@@ -101,102 +83,60 @@ class AuthController extends Controller
         $email = session('otp_email');
         if (!$email) return redirect()->route('login');
 
-        $record = DB::table('otp_codes')
+        // Atomically consume the OTP — prevents TOCTOU race condition
+        $deleted = DB::table('otp_codes')
             ->where('email', $email)
-            ->where('purpose', 'verify')
+            ->where('purpose', 'login')
+            ->where('code', $request->otp)
             ->where('expires_at', '>', now())
-            ->latest()
-            ->first();
+            ->delete();
 
-        if (!$record || $record->code !== $request->otp) {
+        if (!$deleted) {
             return back()->withErrors(['otp' => 'Invalid or expired code. Please try again.']);
         }
 
-        // Mark verified
-        User::where('email', $email)->update(['email_verified_at' => now()]);
-        DB::table('otp_codes')->where('email', $email)->delete();
-        session()->forget(['otp_email', 'otp_purpose']);
+        $user = User::where('email', $email)->first();
+        if (!$user->email_verified_at) {
+            $user->update(['email_verified_at' => now()]);
+        }
 
-        Auth::login(User::where('email', $email)->first());
-        return redirect()->route('account')->with('success', 'Email verified! Welcome to Madhavi Stores.');
+        DB::table('otp_codes')->where('email', $email)->delete();
+        $remember = session('remember', false);
+        session()->forget(['otp_email', 'otp_purpose', 'remember']);
+
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+
+        if ($user->is_admin) {
+            return redirect('/admin');
+        }
+
+        return redirect()->intended(route('account'))->with('success', 'Welcome to Madhavi Stores.');
     }
 
     // ── RESEND OTP ──────────────────────────────────────────
     public function resendOtp(Request $request)
     {
         $email   = session('otp_email');
-        $purpose = session('otp_purpose', 'verify');
+        $purpose = session('otp_purpose', 'login');
         if (!$email) return redirect()->route('login');
 
         $this->sendOtp($email, $purpose);
         return back()->with('success', 'A new code has been sent to ' . $email);
     }
 
-    // ── SHOW FORGOT ─────────────────────────────────────────
-    public function showForgot()
-    {
-        return view('auth.forgot');
-    }
 
-    // ── SEND RESET OTP ──────────────────────────────────────
-    public function sendResetOtp(Request $request)
-    {
-        $request->validate(['email' => 'required|email|exists:users,email']);
-
-        $this->sendOtp($request->email, 'reset');
-        session(['otp_email' => $request->email, 'otp_purpose' => 'reset']);
-
-        return redirect()->route('password.reset')
-            ->with('success', 'A 6-digit reset code has been sent to ' . $request->email);
-    }
-
-    // ── SHOW RESET ──────────────────────────────────────────
-    public function showReset()
-    {
-        if (!session('otp_email')) return redirect()->route('password.forgot');
-        return view('auth.reset');
-    }
-
-    // ── RESET PASSWORD ──────────────────────────────────────
-    public function resetPassword(Request $request)
-    {
-        $request->validate([
-            'otp'                   => 'required|digits:6',
-            'password'              => 'required|min:8|confirmed',
-            'password_confirmation' => 'required',
-        ]);
-
-        $email = session('otp_email');
-        if (!$email) return redirect()->route('password.forgot');
-
-        $record = DB::table('otp_codes')
-            ->where('email', $email)
-            ->where('purpose', 'reset')
-            ->where('expires_at', '>', now())
-            ->latest()
-            ->first();
-
-        if (!$record || $record->code !== $request->otp) {
-            return back()->withErrors(['otp' => 'Invalid or expired code.']);
-        }
-
-        User::where('email', $email)->update(['password' => Hash::make($request->password)]);
-        DB::table('otp_codes')->where('email', $email)->delete();
-        session()->forget(['otp_email', 'otp_purpose']);
-
-        return redirect()->route('login')->with('success', 'Password reset successfully. Please log in.');
-    }
 
     // ── ACCOUNT PAGE ────────────────────────────────────────
     public function account()
     {
         $user = Auth::user();
         
-        // Fetch all placed orders with purchased items and products
+        // Fetch placed orders with purchased items and products
         $orders = \App\Models\Order::where('user_id', $user->id)
                                    ->with('items.product')
                                    ->latest()
-                                   ->get();
+                                   ->paginate(10);
 
         // Fetch customer's wishlist items
         $wishlist = \App\Models\WishlistItem::where('user_id', $user->id)
@@ -208,6 +148,20 @@ class AuthController extends Controller
         $cartCount = \App\Models\CartItem::where('user_id', $user->id)->sum('quantity');
 
         return view('pages.account', compact('user', 'orders', 'wishlist', 'cartCount'));
+    }
+
+    // ── UPDATE PROFILE ──────────────────────────────────────
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+        ]);
+
+        $user = Auth::user();
+        $user->name = $request->name;
+        $user->save();
+
+        return redirect()->back()->with('success', 'Your profile settings have been updated successfully!');
     }
 
     // ── LOGOUT ──────────────────────────────────────────────
@@ -239,13 +193,14 @@ class AuthController extends Controller
             'created_at' => now(),
         ]);
 
-        // Send email with local fallback
+        // Queue email with local fallback
         try {
-            Mail::to($email)->send(new OtpMail($otp, $purpose));
+            Mail::to($email)->queue(new OtpMail($otp, $purpose));
         } catch (\Throwable $e) {
             logger()->error("Failed to send OTP email: " . $e->getMessage());
-            // Flash the OTP so local developers can verify their account without db access
-            session()->flash('local_otp', $otp);
+            if (app()->isLocal()) {
+                session()->flash('local_otp', $otp);
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ class AdminController extends Controller
     public function dashboard()
     {
         $revenue = Order::where('order_status', '!=', 'Cancelled')->sum('total');
-        $ordersCount = Order::count();
+        $ordersCount = Order::where('order_status', '!=', 'Cancelled')->count();
         $avgOrderValue = $ordersCount > 0 ? $revenue / $ordersCount : 0;
         $customersCount = User::where('role', 'customer')->count();
         if ($customersCount === 0) {
@@ -51,6 +51,7 @@ class AdminController extends Controller
         switch ($range) {
             case 'custom':
                 if ($request->has('start') && $request->has('end')) {
+                    $request->validate(['start' => 'required|date', 'end' => 'required|date|after_or_equal:start']);
                     $start = Carbon::parse($request->input('start'))->startOfDay();
                     $end = Carbon::parse($request->input('end'))->endOfDay();
                     
@@ -422,9 +423,14 @@ class AdminController extends Controller
             }
         }
 
+        $oldImageUrl = $product->image_url;
         $imageUrl = $request->image_url ?? $product->image_url;
         if ($request->hasFile('image')) {
-            $imageUrl = $this->convertToWebp($request->file('image'), 'images/products') ?: $imageUrl;
+            $newImageUrl = $this->convertToWebp($request->file('image'), 'images/products');
+            if ($newImageUrl) {
+                $this->deleteLocalFile($oldImageUrl);
+                $imageUrl = $newImageUrl;
+            }
         }
 
         $gallery = array_fill(0, 7, null);
@@ -506,7 +512,18 @@ class AdminController extends Controller
 
     public function deleteProduct($id)
     {
-        Product::findOrFail($id)->delete();
+        $product = Product::findOrFail($id);
+
+        // Delete associated image files from disk
+        $this->deleteLocalFile($product->image_url);
+        $this->deleteLocalFile($product->size_chart_image);
+        if (is_array($product->gallery_images)) {
+            foreach ($product->gallery_images as $galleryImg) {
+                $this->deleteLocalFile($galleryImg);
+            }
+        }
+
+        $product->delete();
         return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 
@@ -602,6 +619,9 @@ class AdminController extends Controller
             'size_chart_image' => $sizeChartUrl,
         ]);
 
+        \Illuminate\Support\Facades\Cache::forget('all_categories_no_count');
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+
         return redirect()->route('admin.categories.index')->with('success', 'Collection created successfully.');
     }
 
@@ -634,6 +654,14 @@ class AdminController extends Controller
             $sizeChartUrl = $this->convertToWebp($request->file('size_chart_image'), 'images/categories') ?: $sizeChartUrl;
         }
 
+        // Delete old image files if new ones were uploaded
+        if ($request->hasFile('image') && $category->image_url && $imageUrl !== $category->image_url) {
+            $this->deleteLocalFile($category->image_url);
+        }
+        if ($request->hasFile('size_chart_image') && $category->size_chart_image && $sizeChartUrl !== $category->size_chart_image) {
+            $this->deleteLocalFile($category->size_chart_image);
+        }
+
         $category->update([
             'name'      => $request->name,
             'slug'      => $slug,
@@ -641,12 +669,29 @@ class AdminController extends Controller
             'size_chart_image' => $sizeChartUrl,
         ]);
 
+        \Illuminate\Support\Facades\Cache::forget('all_categories_no_count');
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+
         return redirect()->route('admin.categories.index')->with('success', 'Collection updated successfully.');
     }
 
     public function deleteCategory($id)
     {
-        Category::findOrFail($id)->delete();
+        $category = Category::withCount('products')->findOrFail($id);
+
+        if ($category->products_count > 0) {
+            return redirect()->route('admin.categories.index')
+                ->with('error', 'Cannot delete "' . $category->name . '" — it has ' . $category->products_count . ' product(s) assigned to it. Reassign or delete those products first.');
+        }
+
+        $this->deleteLocalFile($category->image_url);
+        $this->deleteLocalFile($category->size_chart_image);
+
+        $category->delete();
+
+        \Illuminate\Support\Facades\Cache::forget('all_categories_no_count');
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+
         return redirect()->route('admin.categories.index')->with('success', 'Collection deleted successfully.');
     }
 
@@ -754,6 +799,28 @@ class AdminController extends Controller
         return $pdf->download('Invoice-' . $order->order_number . '.pdf');
     }
 
+    /**
+     * Dispatch an email with the PDF invoice attached to the customer.
+     */
+    public function sendInvoiceEmail($id)
+    {
+        $order = Order::with(['items.product', 'user'])->findOrFail($id);
+
+        if (!$order->user || !$order->user->email) {
+            return response()->json(['success' => false, 'message' => 'Customer email not found.']);
+        }
+
+        try {
+            \Illuminate\Support\Facades\Mail::to($order->user->email)
+                ->queue(new \App\Mail\InvoiceMail($order));
+            
+            return response()->json(['success' => true, 'message' => 'Invoice queued for sending successfully.']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Failed to queue invoice email: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to queue invoice email.']);
+        }
+    }
+
     // ── USER MANAGEMENT WITH ROLE CONTROL ──────────────────────
 
     public function usersCartWishlist()
@@ -783,7 +850,7 @@ class AdminController extends Controller
             $query->having('orders_sum_total', '<=', request('max_spend'));
         }
 
-        $users = $query->latest()->paginate(15);
+        $users = $query->latest()->paginate(15)->withQueryString();
 
         $totalCartsCount    = CartItem::sum('quantity');
         $totalWishlistCount = WishlistItem::count();
@@ -1213,38 +1280,56 @@ class AdminController extends Controller
         return redirect()->route('admin.design.index')->with('error', 'Invalid setting update type.');
     }
 
-    private function convertToWebp($file, $destinationFolder)
+    private function convertToWebp($file, $destinationFolder): ?string
     {
-        $imageInfo = @getimagesize($file->getRealPath());
+        try {
+            $imageInfo = getimagesize($file->getRealPath());
+        } catch (\Throwable $e) {
+            logger()->warning('convertToWebp: getimagesize failed — ' . $e->getMessage());
+            return null;
+        }
+
         if (!$imageInfo) {
             return null;
         }
-        $mime = $imageInfo['mime'];
 
-        switch ($mime) {
-            case 'image/jpeg':
-            case 'image/jpg':
-                $image = @imagecreatefromjpeg($file->getRealPath());
-                break;
-            case 'image/png':
-                $image = @imagecreatefrompng($file->getRealPath());
-                if ($image) {
-                    imagepalettetotruecolor($image);
-                    imagealphablending($image, true);
-                    imagesavealpha($image, true);
-                }
-                break;
-            case 'image/webp':
-                $image = @imagecreatefromwebp($file->getRealPath());
-                break;
-            case 'image/gif':
-                $image = @imagecreatefromgif($file->getRealPath());
-                if ($image) {
-                    imagepalettetotruecolor($image);
-                }
-                break;
-            default:
-                return null;
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            logger()->warning('convertToWebp: file too large (' . $file->getSize() . ' bytes)');
+            return null;
+        }
+
+        $mime = $imageInfo['mime'];
+        $image = null;
+
+        try {
+            switch ($mime) {
+                case 'image/jpeg':
+                case 'image/jpg':
+                    $image = imagecreatefromjpeg($file->getRealPath());
+                    break;
+                case 'image/png':
+                    $image = imagecreatefrompng($file->getRealPath());
+                    if ($image) {
+                        imagepalettetotruecolor($image);
+                        imagealphablending($image, true);
+                        imagesavealpha($image, true);
+                    }
+                    break;
+                case 'image/webp':
+                    $image = imagecreatefromwebp($file->getRealPath());
+                    break;
+                case 'image/gif':
+                    $image = imagecreatefromgif($file->getRealPath());
+                    if ($image) {
+                        imagepalettetotruecolor($image);
+                    }
+                    break;
+                default:
+                    return null;
+            }
+        } catch (\Throwable $e) {
+            logger()->warning('convertToWebp: image creation failed — ' . $e->getMessage());
+            return null;
         }
 
         if (!$image) {
@@ -1254,13 +1339,29 @@ class AdminController extends Controller
         $filename = time() . '_' . uniqid() . '.webp';
         $destinationPath = public_path($destinationFolder);
         if (!file_exists($destinationPath)) {
-            @mkdir($destinationPath, 0755, true);
+            mkdir($destinationPath, 0755, true);
         }
         $fullPath = $destinationPath . '/' . $filename;
 
-        @imagewebp($image, $fullPath, 80);
-        @imagedestroy($image);
+        $success = imagewebp($image, $fullPath, 80);
+        imagedestroy($image);
+
+        if (!$success) {
+            logger()->warning('convertToWebp: imagewebp() failed for destination ' . $fullPath);
+            return null;
+        }
 
         return '/' . $destinationFolder . '/' . $filename;
+    }
+
+    private function deleteLocalFile(?string $url): void
+    {
+        if (!$url) return;
+        // Only delete local files (paths starting with /)
+        if (str_starts_with($url, 'http')) return;
+        $path = public_path(ltrim($url, '/'));
+        if (file_exists($path)) {
+            unlink($path);
+        }
     }
 }

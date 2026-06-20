@@ -10,18 +10,22 @@ class Setting extends Model
 
     public static function get($key, $default = null)
     {
-        $setting = self::where('key', $key)->first();
-        if ($setting) {
-            $decoded = json_decode($setting->value, true);
-            return json_last_error() === JSON_ERROR_NONE ? $decoded : $setting->value;
-        }
-        return $default;
+        return \Illuminate\Support\Facades\Cache::rememberForever('setting_' . $key, function () use ($key, $default) {
+            $setting = self::where('key', $key)->first();
+            if ($setting) {
+                $decoded = json_decode($setting->value, true);
+                return json_last_error() === JSON_ERROR_NONE ? $decoded : $setting->value;
+            }
+            return $default;
+        });
     }
 
     public static function set($key, $value)
     {
         $encoded = is_array($value) || is_object($value) ? json_encode($value) : $value;
-        return self::updateOrCreate(['key' => $key], ['value' => $encoded]);
+        $result = self::updateOrCreate(['key' => $key], ['value' => $encoded]);
+        \Illuminate\Support\Facades\Cache::forget('setting_' . $key);
+        return $result;
     }
 
     /**

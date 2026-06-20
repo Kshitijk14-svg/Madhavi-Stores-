@@ -15,14 +15,14 @@
                 </a>
             </div>
         @else
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16">
                 
                 <!-- Cart Items List -->
-                <div class="lg:col-span-8">
+                <div class="md:col-span-7 lg:col-span-8">
                     <div class="space-y-10 border-t border-primary/10 pt-10" id="cart-items-list">
                         @foreach($cartItems as $item)
-                        <div class="flex flex-col sm:flex-row gap-8 pb-10 border-b border-primary/10 transition-all duration-300" id="cart-item-{{ $item->id }}">
-                            <div class="w-32 aspect-[3/4] flex-shrink-0 bg-background overflow-hidden border border-gray-100">
+                        <div class="flex flex-row gap-4 lg:gap-8 pb-8 lg:pb-10 border-b border-primary/10 transition-all duration-300" id="cart-item-{{ $item->id }}">
+                            <div class="w-24 lg:w-32 aspect-[3/4] flex-shrink-0 bg-background overflow-hidden border border-gray-100">
                                 <img src="{{ $item->product->image_url ?? 'https://images.unsplash.com/photo-1583391733958-6c78278104ba?w=400&q=80' }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
                             </div>
                             
@@ -71,7 +71,7 @@
                 </div>
 
                 <!-- Summary Panel -->
-                <div class="lg:col-span-4">
+                <div class="md:col-span-5 lg:col-span-4">
                     <div class="bg-background p-8 lg:p-10 sticky top-32 border border-primary/5">
                         <h2 class="text-[10px] tracking-widest uppercase font-bold text-primary mb-8 pb-4 border-b border-primary/10">Order Summary</h2>
                         

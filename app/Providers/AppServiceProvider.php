@@ -19,8 +19,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        view()->composer('*', function ($view) {
-            $wishlistIds = auth()->check() ? auth()->user()->wishlistItems()->pluck('product_id')->toArray() : [];
+        \Illuminate\Pagination\Paginator::useTailwind();
+
+        // Scope composer to layout views only — prevents one DB query per rendered sub-view
+        view()->composer(['layouts.app', 'mobile.layouts.app'], function ($view) {
+            static $wishlistIds = null;
+            if ($wishlistIds === null) {
+                $wishlistIds = auth()->check() ? auth()->user()->wishlistItems()->pluck('product_id')->toArray() : [];
+            }
             $view->with('wishlistIds', $wishlistIds);
         });
     }

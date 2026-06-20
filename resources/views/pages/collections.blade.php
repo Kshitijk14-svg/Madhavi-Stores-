@@ -47,6 +47,10 @@
             @endforeach
         </div>
 
+        <div class="mt-10">
+            {{ $collections->links() }}
+        </div>
+
         @if($collections->isEmpty())
             <div class="text-center py-20">
                 <p class="text-muted text-lg">No collections found.</p>

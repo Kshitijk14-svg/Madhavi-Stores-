@@ -33,42 +33,47 @@
 
   <title>@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')</title>
 
-  {{-- Static CSS — no Vite needed --}}
-  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#181818',
-            secondary: '#b8986e',
-            accent: '#d44d44',
-            silk: '#f0ebe3',
-            muted: '#888888',
-            border: '#e5e5e5',
-            background: '#faf8f5',
-          },
-          fontFamily: {
-            display: ['"Cormorant Garamond"', 'serif'],
-            sans: ['Manrope', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  @vite(['resources/css/app.css', 'resources/js/app.js'])
 
   {{-- Swiper CSS --}}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
   
   {{-- Chart.js (UMD Build for Global Scope) --}}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+
+  <script>
+    // Fix viewport height on mobile browsers
+    function setViewport() {
+      document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+      
+      // Calculate dynamic bottom padding to prevent content overlapping with mobile bottom bars
+      const main = document.getElementById('main');
+      if (main && window.innerWidth < 1024) {
+        const bottomBar = document.getElementById('mob-bottom-bar');
+        const productBar = document.getElementById('mob-product-bar');
+        
+        let bottomPadding = 0;
+        if (productBar && window.getComputedStyle(productBar).display !== 'none' && window.getComputedStyle(productBar).position === 'fixed') {
+          bottomPadding = productBar.offsetHeight;
+        } else if (bottomBar && window.getComputedStyle(bottomBar).display !== 'none') {
+          bottomPadding = bottomBar.offsetHeight;
+        }
+        
+        main.style.paddingBottom = bottomPadding + 'px';
+      } else if (main) {
+        main.style.paddingBottom = '0px';
+      }
+    }
+    window.addEventListener('resize', setViewport);
+    window.addEventListener('orientationchange', setViewport);
+    document.addEventListener('DOMContentLoaded', setViewport);
+  </script>
 </head>
 <body>
 
   @include('components.navbar', ['cartCount' => $cartCount ?? 0])
 
-  <main id="main">
+  <main id="main" class="pb-24 lg:pb-0">
     @yield('content')
     @yield('scripts')
   </main>
@@ -209,7 +214,7 @@
                         // Fade dynamic content back in
                         gsap.fromTo('#main', 
                             { opacity: 0, y: -8 },
-                            { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }
+                            { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', onComplete: () => { if(typeof setViewport === 'function') setViewport(); } }
                         );
                         
                         // Dismiss loader
@@ -473,7 +478,8 @@
                         const count = data.cartCount || data.cart_count || 0;
                         const mainBadge = document.getElementById('navbar-cart-count');
                         const mobBadge = document.getElementById('mob-cart-count');
-                        
+                        const mobBottomBadge = document.getElementById('mob-bottom-cart-count');
+
                         if (mainBadge) {
                             mainBadge.innerText = count;
                             if (count > 0) {
@@ -484,6 +490,11 @@
                         }
                         if (mobBadge) {
                             mobBadge.innerText = count;
+                        }
+                        if (mobBottomBadge) {
+                            mobBottomBadge.innerText = count;
+                            if (count > 0) mobBottomBadge.classList.remove('hidden');
+                            else mobBottomBadge.classList.add('hidden');
                         }
                     } else if(data) {
                         showToast(data.message || 'Failed to add item to bag.', 'error');
@@ -679,7 +690,13 @@
                             if (data.cart_count > 0) navbarBadge.classList.remove('hidden');
                             else navbarBadge.classList.add('hidden');
                         }
-                        
+                        const mobBottomBadge = document.getElementById('mob-bottom-cart-count');
+                        if (mobBottomBadge) {
+                            mobBottomBadge.innerText = data.cart_count;
+                            if (data.cart_count > 0) mobBottomBadge.classList.remove('hidden');
+                            else mobBottomBadge.classList.add('hidden');
+                        }
+
                         if (data.item_quantity === 0) {
                             const row = document.getElementById('cart-item-' + itemId);
                             if (row) {
@@ -737,7 +754,13 @@
                             if (data.cart_count > 0) navbarBadge.classList.remove('hidden');
                             else navbarBadge.classList.add('hidden');
                         }
-                        
+                        const mobBottomBadgeR = document.getElementById('mob-bottom-cart-count');
+                        if (mobBottomBadgeR) {
+                            mobBottomBadgeR.innerText = data.cart_count;
+                            if (data.cart_count > 0) mobBottomBadgeR.classList.remove('hidden');
+                            else mobBottomBadgeR.classList.add('hidden');
+                        }
+
                         const row = document.getElementById('cart-item-' + itemId);
                         if (row) {
                             gsap.to(row, {

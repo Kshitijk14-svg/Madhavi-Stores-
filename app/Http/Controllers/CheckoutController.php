@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Coupon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Razorpay\Api\Api;
 
@@ -24,6 +25,7 @@ class CheckoutController extends Controller
 
         $subtotal = 0;
         foreach ($cartItems as $item) {
+            if (!$item->product) continue;
             $subtotal += ($item->product->price * $item->quantity);
         }
 
@@ -32,10 +34,12 @@ class CheckoutController extends Controller
         $coupon = null;
         if ($couponCode) {
             $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValidFor($subtotal)) {
+            $userUsageCount = Order::where('user_id', $user->id)->where('coupon_code', $couponCode)->count();
+            if ($coupon && $coupon->isValidFor($subtotal, $userUsageCount)) {
                 $discount = $coupon->calculateDiscount($subtotal);
             } else {
                 session()->forget('applied_coupon');
+                $coupon = null;
             }
         }
 
@@ -69,79 +73,87 @@ class CheckoutController extends Controller
 
         $subtotal = 0;
         foreach ($cartItems as $item) {
+            if (!$item->product) continue;
             $subtotal += ($item->product->price * $item->quantity);
         }
 
         $discount = 0;
+        $coupon = null;
         $couponCode = session('applied_coupon');
         if ($couponCode) {
             $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValidFor($subtotal)) {
+            $userUsageCount = Order::where('user_id', $user->id)->where('coupon_code', $couponCode)->count();
+            if ($coupon && $coupon->isValidFor($subtotal, $userUsageCount)) {
                 $discount = $coupon->calculateDiscount($subtotal);
+            } else {
+                $coupon = null;
             }
         }
 
         $tax = 0;
         $total = $subtotal - $discount;
 
-        // If Cash on Delivery (COD)
         if ($request->payment_method === 'COD') {
-            // Generate unique order number
             $orderNumber = 'MS-' . strtoupper(Str::random(8));
             while (Order::where('order_number', $orderNumber)->exists()) {
                 $orderNumber = 'MS-' . strtoupper(Str::random(8));
             }
 
-            // Create Order
-            $order = Order::create([
-                'user_id' => $user->id,
-                'order_number' => $orderNumber,
-                'email' => $request->email,
-                'first_name' => $request->first_name,
-                'last_name' => $request->last_name,
-                'address' => $request->address,
-                'city' => $request->city,
-                'postal_code' => $request->postal_code,
-                'payment_method' => 'COD',
-                'payment_status' => 'Pending',
-                'order_status' => 'Pending',
-                'subtotal' => $subtotal,
-                'discount' => $discount,
-                'tax' => $tax,
-                'total' => $total,
-                'coupon_code' => $couponCode,
-            ]);
-
-            // Create Order Items and Decrement Stock
-            foreach ($cartItems as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'price' => $item->product->price,
-                    'quantity' => $item->quantity,
-                    'size' => $item->size,
-                    'color' => $item->color,
+            DB::transaction(function () use ($request, $user, $cartItems, $subtotal, $discount, $tax, $total, $couponCode, $coupon, $orderNumber) {
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'order_number' => $orderNumber,
+                    'email' => $request->email,
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'address' => $request->address,
+                    'city' => $request->city,
+                    'postal_code' => $request->postal_code,
+                    'payment_method' => 'COD',
+                    'payment_status' => 'Pending',
+                    'order_status' => 'Pending',
+                    'subtotal' => $subtotal,
+                    'discount' => $discount,
+                    'tax' => $tax,
+                    'total' => $total,
+                    'coupon_code' => $couponCode,
                 ]);
 
-                if ($item->product->has_sizes && $item->size) {
-                    $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
-                                                          ->where('size', $item->size)
-                                                          ->first();
-                    if ($productSize) {
-                        $productSize->stock = max(0, $productSize->stock - $item->quantity);
-                        $productSize->save();
-                    }
-                } else {
-                    $product = $item->product;
-                    $product->stock = max(0, $product->stock - $item->quantity);
-                    $product->save();
-                }
-            }
+                foreach ($cartItems as $item) {
+                    if (!$item->product) continue;
 
-            // Clear cart
-            CartItem::where('user_id', $user->id)->delete();
-            session()->forget('applied_coupon');
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'price' => $item->product->price,
+                        'quantity' => $item->quantity,
+                        'size' => $item->size,
+                        'color' => $item->color,
+                    ]);
+
+                    if ($item->product->has_sizes && $item->size) {
+                        $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
+                                                              ->where('size', $item->size)
+                                                              ->first();
+                        if ($productSize) {
+                            $productSize->stock = max(0, $productSize->stock - $item->quantity);
+                            $productSize->save();
+                        }
+                    } else {
+                        $product = $item->product;
+                        $product->stock = max(0, $product->stock - $item->quantity);
+                        $product->save();
+                    }
+                }
+
+                if ($coupon) {
+                    $coupon->incrementUsage();
+                }
+
+                CartItem::where('user_id', $user->id)->delete();
+                session()->forget('applied_coupon');
+            });
 
             session()->flash('success', 'Thank you! Your order ' . $orderNumber . ' was successfully placed.');
             return response()->json([
@@ -151,12 +163,18 @@ class CheckoutController extends Controller
             ]);
         }
 
-        // If Razorpay (Card or UPI)
+        // Razorpay (Card or UPI)
         $keyId = config('razorpay.key_id');
         $keySecret = config('razorpay.key_secret');
 
-        // Check if dummy keys are used
         if ($keyId === 'rzp_test_dummykey123' || empty($keyId) || empty($keySecret)) {
+            if (!app()->isLocal()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment gateway is not configured. Please contact support.'
+                ], 503);
+            }
+
             $razorpayOrderId = 'order_fake_' . Str::random(14);
             return response()->json([
                 'success' => true,
@@ -233,25 +251,29 @@ class CheckoutController extends Controller
 
         $subtotal = 0;
         foreach ($cartItems as $item) {
+            if (!$item->product) continue;
             $subtotal += ($item->product->price * $item->quantity);
         }
 
         $discount = 0;
+        $coupon = null;
         $couponCode = session('applied_coupon');
         if ($couponCode) {
             $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValidFor($subtotal)) {
+            $userUsageCount = Order::where('user_id', $user->id)->where('coupon_code', $couponCode)->count();
+            if ($coupon && $coupon->isValidFor($subtotal, $userUsageCount)) {
                 $discount = $coupon->calculateDiscount($subtotal);
+            } else {
+                $coupon = null;
             }
         }
 
         $tax = 0;
         $total = $subtotal - $discount;
 
-        // Perform Cryptographic Signature Verification
         $keyId = config('razorpay.key_id');
         $keySecret = config('razorpay.key_secret');
-        $isMock = ($keyId === 'rzp_test_dummykey123' || empty($keyId) || empty($keySecret) || Str::startsWith($request->razorpay_order_id, 'order_fake_'));
+        $isMock = app()->isLocal() && ($keyId === 'rzp_test_dummykey123' || empty($keyId) || empty($keySecret) || Str::startsWith($request->razorpay_order_id, 'order_fake_'));
 
         if (!$isMock) {
             try {
@@ -269,69 +291,71 @@ class CheckoutController extends Controller
                     'message' => 'Payment signature verification failed. Please contact support.'
                 ], 400);
             }
-        } else {
-            logger()->warning('Razorpay payment verified using MOCK fallback for checkout.');
         }
 
-        // Generate unique order number
         $orderNumber = 'MS-' . strtoupper(Str::random(8));
         while (Order::where('order_number', $orderNumber)->exists()) {
             $orderNumber = 'MS-' . strtoupper(Str::random(8));
         }
 
-        // Create Order
-        $order = Order::create([
-            'user_id' => $user->id,
-            'order_number' => $orderNumber,
-            'email' => $request->email,
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'address' => $request->address,
-            'city' => $request->city,
-            'postal_code' => $request->postal_code,
-            'payment_method' => $request->payment_method,
-            'razorpay_order_id' => $request->razorpay_order_id,
-            'razorpay_payment_id' => $request->razorpay_payment_id,
-            'razorpay_signature' => $request->razorpay_signature,
-            'payment_status' => 'Paid',
-            'order_status' => 'Pending',
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'tax' => $tax,
-            'total' => $total,
-            'coupon_code' => $couponCode,
-        ]);
-
-        // Create Order Items and Decrement Stock
-        foreach ($cartItems as $item) {
-            OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'product_name' => $item->product->name,
-                'price' => $item->product->price,
-                'quantity' => $item->quantity,
-                'size' => $item->size,
-                'color' => $item->color,
+        DB::transaction(function () use ($request, $user, $cartItems, $subtotal, $discount, $tax, $total, $couponCode, $coupon, $orderNumber) {
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => $orderNumber,
+                'email' => $request->email,
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'address' => $request->address,
+                'city' => $request->city,
+                'postal_code' => $request->postal_code,
+                'payment_method' => $request->payment_method,
+                'razorpay_order_id' => $request->razorpay_order_id,
+                'razorpay_payment_id' => $request->razorpay_payment_id,
+                'razorpay_signature' => $request->razorpay_signature,
+                'payment_status' => 'Paid',
+                'order_status' => 'Pending',
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'tax' => $tax,
+                'total' => $total,
+                'coupon_code' => $couponCode,
             ]);
 
-            if ($item->product->has_sizes && $item->size) {
-                $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
-                                                      ->where('size', $item->size)
-                                                      ->first();
-                if ($productSize) {
-                    $productSize->stock = max(0, $productSize->stock - $item->quantity);
-                    $productSize->save();
-                }
-            } else {
-                $product = $item->product;
-                $product->stock = max(0, $product->stock - $item->quantity);
-                $product->save();
-            }
-        }
+            foreach ($cartItems as $item) {
+                if (!$item->product) continue;
 
-        // Clear cart
-        CartItem::where('user_id', $user->id)->delete();
-        session()->forget('applied_coupon');
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product->name,
+                    'price' => $item->product->price,
+                    'quantity' => $item->quantity,
+                    'size' => $item->size,
+                    'color' => $item->color,
+                ]);
+
+                if ($item->product->has_sizes && $item->size) {
+                    $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
+                                                          ->where('size', $item->size)
+                                                          ->first();
+                    if ($productSize) {
+                        $productSize->stock = max(0, $productSize->stock - $item->quantity);
+                        $productSize->save();
+                    }
+                } else {
+                    $product = $item->product;
+                    $product->stock = max(0, $product->stock - $item->quantity);
+                    $product->save();
+                }
+            }
+
+            if ($coupon) {
+                $coupon->incrementUsage();
+            }
+
+            CartItem::where('user_id', $user->id)->delete();
+            session()->forget('applied_coupon');
+        });
 
         session()->flash('success', 'Thank you! Your order ' . $orderNumber . ' was successfully placed.');
         return response()->json([

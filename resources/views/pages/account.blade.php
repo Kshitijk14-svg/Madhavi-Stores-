@@ -59,7 +59,7 @@
         {{-- PROFILE TAB --}}
         <div id="content-profile" class="account-content" style="display: none;">
           <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">Profile Settings</h2>
-          <form action="#" method="POST" style="display: flex; flex-direction: column; gap: 20px;">
+          <form action="{{ route('account.update') }}" method="POST" style="display: flex; flex-direction: column; gap: 20px;">
             @csrf
             <div>
               <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);">Full Name</label>

@@ -19,10 +19,10 @@
             <span class="eyebrow" style="color:var(--primary);">{{ $product->name }}</span>
         </nav>
 
-        <div class="grid-12" style="gap:48px;">
+        <div class="grid-12 md:grid-cols-2 lg:grid-cols-12" style="gap:48px;">
             
             <!-- Product Gallery Carousel -->
-            <div class="lg:col-span-7">
+            <div class="md:col-span-1 lg:col-span-7">
                 <div class="swiper product-gallery-swiper" style="position:relative;overflow:hidden;aspect-ratio:3/4;background:var(--silk);">
                     <div class="swiper-wrapper">
                         @if($product->image_url)
@@ -54,7 +54,7 @@
             </div>
 
             <!-- Product Info -->
-            <div class="lg:col-span-5">
+            <div class="md:col-span-1 lg:col-span-5">
                 <div style="padding-top:24px;">
                     <div style="margin-bottom:32px;">
                         @if($product->badge)
@@ -113,7 +113,7 @@
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:12px;">
                             @php
-                                $sizes = $product->sizes->count() > 0 ? $product->sizes : collect(['XS','S','M','L','XL','XXL','XXXL'])->map(fn($s) => (object)['size' => $s, 'stock' => 10]);
+                                $sizes = $product->sizes;
                             @endphp
                             @foreach($sizes as $sizeModel)
                                 @php
@@ -143,24 +143,24 @@
                     @endif
 
                     <!-- Actions -->
-                    <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:48px;">
-                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form">
+                    <div id="mob-product-bar" class="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md shadow-[0_-8px_30px_rgb(0,0,0,0.08)] z-50 flex gap-3 pb-[calc(16px+env(safe-area-inset-bottom))] lg:static lg:p-0 lg:bg-transparent lg:shadow-none lg:flex-col lg:gap-4 lg:mb-12">
+                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form" class="flex-1">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="quantity" value="1">
                             @if($product->has_sizes)
                                 <input type="hidden" name="size" id="selected-size" value="">
                             @endif
-                            <button type="submit" class="btn-primary w-full" style="width:100%;text-align:center;padding:20px; {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity:0.5;cursor:not-allowed;' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
+                            <button type="submit" class="btn-primary w-full h-full min-h-[50px] lg:min-h-[60px]" style="text-align:center; {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity:0.5;cursor:not-allowed;' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
                                 Add to Bag
                             </button>
                         </form>
 
-                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" id="wishlist-form">
+                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" id="wishlist-form" class="flex-shrink-0 lg:w-full">
                             @csrf
-                            <button type="submit" class="btn-secondary w-full" style="width:100%;text-align:center;padding:20px;display:flex;align-items:center;justify-content:center;gap:12px;">
-                                <svg width="16" height="16" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-                                {{ in_array($product->id, $wishlistIds) ? 'Remove from Wishlist' : 'Add to Wishlist' }}
+                            <button type="submit" class="btn-secondary w-[50px] h-[50px] lg:w-full lg:h-[60px] flex items-center justify-center lg:gap-3 p-0">
+                                <svg width="18" height="18" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+                                <span class="hidden lg:inline">{{ in_array($product->id, $wishlistIds) ? 'Remove from Wishlist' : 'Add to Wishlist' }}</span>
                             </button>
                         </form>
                     </div>

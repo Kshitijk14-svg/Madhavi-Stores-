@@ -124,9 +124,27 @@ class CartController extends Controller
             'action' => 'required|in:increase,decrease',
         ]);
 
-        $cartItem = CartItem::findOrFail($request->cart_item_id);
-        
+        $cartItem = CartItem::where('user_id', Auth::id())->where('id', $request->cart_item_id)->firstOrFail();
+
         if ($request->action === 'increase') {
+            // Validate stock before increasing
+            if ($cartItem->product) {
+                if ($cartItem->product->has_sizes && $cartItem->size) {
+                    $productSize = \App\Models\ProductSize::where('product_id', $cartItem->product_id)
+                                                          ->where('size', $cartItem->size)->first();
+                    if ($productSize && $productSize->stock <= $cartItem->quantity) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Sorry, only ' . $productSize->stock . ' items available in size ' . $cartItem->size . '.'
+                        ], 422);
+                    }
+                } elseif ($cartItem->product->stock <= $cartItem->quantity) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Sorry, only ' . $cartItem->product->stock . ' items available in stock.'
+                    ], 422);
+                }
+            }
             $cartItem->quantity += 1;
             $cartItem->save();
         } else {

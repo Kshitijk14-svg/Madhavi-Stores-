@@ -263,6 +263,12 @@
                                                class="w-full flex items-center justify-center gap-2 py-2 text-[10px] text-primary bg-silk border border-gray-200 hover:bg-gray-50 transition-colors uppercase font-semibold tracking-wider">
                                                 ⬇ Download Invoice PDF
                                             </a>
+                                            <form action="{{ route('orders.send_invoice', $order->id) }}" method="POST" class="mt-2 invoice-email-form">
+                                                @csrf
+                                                <button type="submit" class="w-full py-2 text-[10px] text-secondary bg-white border border-secondary hover:bg-secondary hover:text-white transition-colors uppercase font-semibold tracking-wider">
+                                                    ✉ Email Invoice to Customer
+                                                </button>
+                                            </form>
                                         </div>
 
                                         {{-- Delete Order --}}
@@ -299,5 +305,37 @@
             modal.classList.add('hidden');
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.invoice-email-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = form.querySelector('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = 'Sending...';
+                btn.disabled = true;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(err => {
+                    alert('Error sending invoice.');
+                })
+                .finally(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+            });
+        });
+    });
 </script>
 @endsection

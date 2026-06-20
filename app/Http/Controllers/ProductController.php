@@ -23,13 +23,13 @@ class ProductController extends Controller
             $query->orderBy('name', 'asc');
         }
 
-        $collections = $query->get();
+        $collections = $query->paginate(12)->withQueryString();
         return view('pages.collections', compact('collections'));
     }
 
     public function index(Request $request)
     {
-        $query = Product::query();
+        $query = Product::with('category');
 
         // Filter by Collections (Category checkboxes + Special category markers: new arrivals / bestsellers)
         $hasNewCollectionFilter = $request->filled('new_arrivals') || $request->input('filter') === 'new-arrivals' || $request->input('filter') === 'new_arrivals';
@@ -41,20 +41,16 @@ class ProductController extends Controller
                 $first = true;
 
                 if ($hasNewCollectionFilter) {
-                    if (Product::where('is_new_arrival', true)->exists()) {
-                        $q->where('is_new_arrival', true);
-                        $first = false;
-                    }
+                    $q->where('is_new_arrival', true);
+                    $first = false;
                 }
 
                 if ($hasBestsellersCollectionFilter) {
-                    if (Product::where('is_bestseller', true)->exists()) {
-                        if ($first) {
-                            $q->where('is_bestseller', true);
-                            $first = false;
-                        } else {
-                            $q->orWhere('is_bestseller', true);
-                        }
+                    if ($first) {
+                        $q->where('is_bestseller', true);
+                        $first = false;
+                    } else {
+                        $q->orWhere('is_bestseller', true);
                     }
                 }
 
@@ -119,11 +115,15 @@ class ProductController extends Controller
             $query->latest();
         }
 
-        $products = $query->get();
-        $categories = Category::withCount('products')->get();
+        $products = $query->paginate(12)->withQueryString();
+        $categories = \Illuminate\Support\Facades\Cache::remember('all_categories', 86400, function() {
+            return Category::withCount('products')->get();
+        });
         
         // Extract unique tags from all products for the filter sidebar
-        $allTags = Product::whereNotNull('tags')->pluck('tags')->flatten()->unique()->filter()->values()->toArray();
+        $allTags = \Illuminate\Support\Facades\Cache::remember('all_tags', 86400, function() {
+            return Product::whereNotNull('tags')->pluck('tags')->flatten()->unique()->filter()->values()->toArray();
+        });
 
         return view('pages.shop', compact('products', 'categories', 'allTags'));
     }
