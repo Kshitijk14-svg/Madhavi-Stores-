@@ -263,7 +263,7 @@
                                                class="w-full flex items-center justify-center gap-2 py-2 text-[10px] text-primary bg-silk border border-gray-200 hover:bg-gray-50 transition-colors uppercase font-semibold tracking-wider">
                                                 ⬇ Download Invoice PDF
                                             </a>
-                                            <form action="{{ route('orders.send_invoice', $order->id) }}" method="POST" class="mt-2 invoice-email-form">
+                                            <form action="{{ route('admin.orders.send_invoice', $order->id) }}" method="POST" class="mt-2 invoice-email-form">
                                                 @csrf
                                                 <button type="submit" class="w-full py-2 text-[10px] text-secondary bg-white border border-secondary hover:bg-secondary hover:text-white transition-colors uppercase font-semibold tracking-wider">
                                                     ✉ Email Invoice to Customer
