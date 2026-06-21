@@ -132,33 +132,33 @@ Click **Create**. Write down:
 
 **In hPanel → Domains → Add Domain:** enter `madhavistores.in` and click **Add**.
 
-### Step 3.2: Set the document root (CRITICAL for Laravel)
-Laravel serves everything through `public/index.php`. The web server must point at `public/`, not the project root. If it points to the root, all your source code is publicly accessible.
+### Step 3.2: File layout — split upload method (no Document Root change needed)
+Hostinger shared hosting doesn't always expose a Document Root setting. Instead, the project is split into two locations so `public_html/` is the web root and the Laravel source stays hidden:
 
-**hPanel → Websites → Manage** → find the domain `madhavistores.in` → **Advanced** → **Document Root**
+```
+home/u750617805/
+└── domains/
+    └── madhavistores.in/
+        ├── madhavi-app/                    ← Laravel source (NOT web-accessible)
+        │   ├── app/
+        │   ├── bootstrap/
+        │   ├── config/
+        │   ├── database/
+        │   ├── resources/
+        │   ├── routes/
+        │   ├── storage/
+        │   ├── vendor/
+        │   └── .env
+        │
+        └── public_html/                    ← web root (madhavistores.in serves this)
+            ├── index.php                   ← modified to find madhavi-app/ automatically
+            ├── .htaccess
+            ├── build/                      ← Vite CSS/JS assets
+            ├── images/                     ← product/banner images
+            └── storage/                    ← symlink → madhavi-app/storage/app/public/
+```
 
-Change from: `/public_html`  
-Change to: `/public_html/public`
-
-Click **Save**.
-
-> After this, files will be uploaded to `/public_html/` (the project root), and the web server will serve from `/public_html/public/` (Laravel's public directory). This is the correct structure:
-> ```
-> public_html/              ← upload everything here
-> ├── app/
-> ├── bootstrap/
-> ├── config/
-> ├── database/
-> ├── resources/
-> ├── routes/
-> ├── storage/
-> ├── vendor/
-> ├── .env                  ← created in Phase 5
-> └── public/               ← document root points here
->     ├── index.php
->     ├── .htaccess
->     └── build/
-> ```
+**Why this exact layout:** `public/index.php` resolves the app root as `__DIR__.'/../madhavi-app'` (i.e. `public_html/../madhavi-app`), and `bootstrap/app.php` sets the public path to `dirname(__DIR__, 2).'/public_html'` (i.e. `madhavistores.in/public_html`). Both paths only work when the two folders are siblings inside `domains/madhavistores.in/`. No manual edits needed — the code auto-detects the layout at runtime.
 
 ### Step 3.3: Enable SSL (HTTPS)
 **Websites → Manage → SSL** → **Install Free SSL** (Let's Encrypt) → **Install**
@@ -170,47 +170,76 @@ Wait 5–10 minutes. Once installed:
 
 ## PHASE 4 — Upload Files to the Server
 
-Choose ONE of the three methods below.
+You upload in **two separate batches**: the Laravel app goes into `madhavi-app/`, the public files go into `public_html/`.
+
+### Step 4.1: Create two ZIPs on your computer
+
+**ZIP A — `madhavi-app.zip`**  
+Zip the entire project folder, but EXCLUDE:
+- `public/` folder entirely (goes separately)
+- `node_modules/`
+- `.git/`
+- `.env`
+
+**ZIP B — `public-files.zip`**  
+Zip only the **contents** of your local `public/` folder:
+- `index.php`
+- `.htaccess`
+- `build/` (Vite CSS/JS)
+- `images/` (product/banner images, if any)
+- `favicon.ico`, `robots.txt`, etc.
+
+Do NOT zip the `public/` folder itself — zip what's inside it.
+
+---
 
 ### Option A: File Manager (no extra software needed)
-1. **hPanel → File Manager** → navigate to `/public_html/`
-2. Click **Upload Files** → select `madhavi-stores.zip`
-3. Once uploaded, right-click the zip → **Extract** → extract into `/public_html/`
-4. If the files landed in a subfolder (e.g., `/public_html/Madhavi-Stores-/`), move them up:
-   - Select all files inside the subfolder → Cut → navigate to `/public_html/` → Paste
-   - Delete the now-empty subfolder
 
-**Verify:** `/public_html/public/index.php` must exist.
+**Upload the app (ZIP A):**
+1. **hPanel → File Manager** → navigate to the home directory (the folder that contains `public_html/` — usually one click up from `public_html/`)
+2. Click **New Folder** → name it `madhavi-app` → Create
+3. Enter the `madhavi-app/` folder
+4. Click **Upload** → select `madhavi-app.zip` → upload
+5. Right-click the zip → **Extract** — extract here (into `madhavi-app/`)
+6. Delete the zip file after extracting
+
+**Upload the public files (ZIP B):**
+1. Navigate to `public_html/`
+2. Click **Upload** → select `public-files.zip` → upload
+3. Right-click the zip → **Extract** — extract here (into `public_html/`)
+4. Delete the zip file after extracting
+
+**Verify the structure:**
+- `madhavi-app/vendor/autoload.php` must exist
+- `public_html/index.php` must exist
+- `public_html/build/manifest.json` must exist
 
 ### Option B: FTP via FileZilla (faster for large uploads)
-1. **hPanel → FTP Accounts** → note the FTP host, username, password, and port (21)
-2. Install [FileZilla](https://filezilla-project.org/) if you don't have it
-3. Open FileZilla → **File → Site Manager → New Site**
-   - Host: (from hPanel)
-   - Protocol: FTP
-   - Port: 21
-   - Logon type: Normal
-   - Username/Password: (from hPanel)
-4. Connect → navigate to `/public_html/` on the server (right panel)
-5. Drag the unzipped project folder from your computer (left panel) into `/public_html/`
-6. FileZilla uploads everything — may take 10–30 minutes for large `vendor/` folders
+1. **hPanel → FTP Accounts** → note the host, username, password, and port (21)
+2. Install [FileZilla](https://filezilla-project.org/) → connect
+3. In the right (server) panel, navigate to your home directory (parent of `public_html/`)
+4. Create a `madhavi-app/` folder if it doesn't exist
+5. **Drag** your local project folder (everything except `public/`, `node_modules/`, `.git/`, `.env`) into `madhavi-app/` on the server
+6. **Drag** the contents of your local `public/` folder into `public_html/` on the server
+7. Upload takes 10–30 minutes for large `vendor/` folders
 
-### Option C: Git clone via SSH (cleanest, requires SSH from Step 2.4)
-Only use this if your project is on GitHub and `.env` is in `.gitignore`:
+### Option C: Git via SSH (cleanest method)
+If your project is on GitHub (`.env` must be in `.gitignore`):
 ```bash
 ssh -p 65002 u123456789@srv123.hostinger.com
 
-# Navigate to web root
-cd ~/public_html
+# Create the app directory (MUST be a sibling of public_html inside domains/madhavistores.in/)
+mkdir -p ~/domains/madhavistores.in/madhavi-app
 
-# Clone your repository directly into public_html/
-git clone https://github.com/YOUR_USERNAME/Madhavi-Stores-.git .
+# Clone into it
+git clone https://github.com/YOUR_USERNAME/Madhavi-Stores-.git ~/domains/madhavistores.in/madhavi-app
 
-# Install production dependencies
+# Install production Composer dependencies
+cd ~/domains/madhavistores.in/madhavi-app
 composer install --no-dev --optimize-autoloader
 
-# Build CSS/JS (if Node.js is available on the server — usually it is on Hostinger)
-npm ci && npm run build
+# Copy public files to the web root
+cp -r ~/domains/madhavistores.in/madhavi-app/public/. ~/domains/madhavistores.in/public_html/
 ```
 
 ---
@@ -220,7 +249,7 @@ npm ci && npm run build
 This file holds all your secrets. **Never commit it to Git.**
 
 ### Step 5.1: Open File Manager
-**hPanel → File Manager** → navigate to `/public_html/`
+**hPanel → File Manager** → navigate to `madhavi-app/` (NOT public_html)
 
 ### Step 5.2: Create .env
 Click **New File** → name it `.env` → click **Create**
@@ -291,7 +320,7 @@ Click **Save**.
 Connect:
 ```bash
 ssh -p 65002 u123456789@srv123.hostinger.com
-cd ~/public_html
+cd ~/domains/madhavistores.in/madhavi-app
 ```
 
 Run these commands **in order** — do not skip any:
@@ -331,26 +360,30 @@ If `migrate:status` shows errors, check that the DB credentials in `.env` are co
 
 ## PHASE 7 — File Permissions
 
-Still in SSH:
+Still in SSH (you should already be inside `madhavi-app/`):
 
 ```bash
 # Storage and cache directories must be writable by the web server
 chmod -R 755 storage/
 chmod -R 755 bootstrap/cache/
-
-# Product image upload directory
-chmod -R 755 public/images/
-
-# The public/storage symlink (just in case)
-chmod -R 755 public/storage/
 ```
 
-If `public/images/` doesn't exist yet, create it:
+The public files live in `public_html/` (not inside `madhavi-app/`), so image and storage symlink permissions use the full path:
+
 ```bash
-mkdir -p public/images/products
-mkdir -p public/images/categories
-mkdir -p public/images/banners
-chmod -R 755 public/images/
+# Product image upload directory
+chmod -R 755 ~/domains/madhavistores.in/public_html/images/
+
+# The public_html/storage symlink created by storage:link
+chmod -R 755 ~/domains/madhavistores.in/public_html/storage/
+```
+
+If `public_html/images/` doesn't exist yet, create it:
+```bash
+mkdir -p ~/domains/madhavistores.in/public_html/images/products
+mkdir -p ~/domains/madhavistores.in/public_html/images/categories
+mkdir -p ~/domains/madhavistores.in/public_html/images/banners
+chmod -R 755 ~/domains/madhavistores.in/public_html/images/
 ```
 
 ---
@@ -367,7 +400,7 @@ The Laravel scheduler handles everything with a single cron entry:
 
 | Field | Value |
 |-------|-------|
-| **Command** | `cd /home/u123456789/public_html && php artisan schedule:run >> /dev/null 2>&1` |
+| **Command** | `cd /home/u750617805/domains/madhavistores.in/madhavi-app && php artisan schedule:run >> /dev/null 2>&1` |
 | **Frequency** | Every minute (`* * * * *`) |
 
 Replace `u123456789` with your actual Hostinger username.
@@ -420,7 +453,7 @@ Open **https://madhavistores.in** in an incognito browser window.
 ### Monitor error logs (SSH)
 ```bash
 ssh -p 65002 u123456789@srv123.hostinger.com
-tail -n 50 ~/public_html/storage/logs/laravel.log
+tail -n 50 ~/domains/madhavistores.in/madhavi-app/storage/logs/laravel.log
 ```
 
 Check this after the first few real orders to catch any unexpected errors.
@@ -429,19 +462,23 @@ Check this after the first few real orders to catch any unexpected errors.
 After making changes locally and pushing to Git (or creating a new zip):
 
 ```bash
-# 1. Upload new files (via FTP or git pull)
-git pull origin main    # if using Git
+# 1. SSH in and go to the app directory
+ssh -p 65002 u123456789@srv123.hostinger.com
+cd ~/domains/madhavistores.in/madhavi-app
 
-# 2. Run any new migrations
+# 2. Pull latest code (if using Git)
+git pull origin main
+
+# 3. Run any new migrations
 php artisan migrate --force
 
-# 3. Clear old caches
+# 4. Clear old caches
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
 
-# 4. Re-cache for production
+# 5. Re-cache for production
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -452,8 +489,8 @@ If you changed CSS or JS locally:
 # On your computer first:
 npm run build
 
-# Then upload the new public/build/ folder to the server
-# (overwrite the existing one via FTP or File Manager)
+# Then upload the new public/build/ folder to public_html/build/ on the server
+# (overwrite the existing one via FTP or File Manager — target: ~/domains/madhavistores.in/public_html/build/)
 ```
 
 ### Regular backups (do this monthly at minimum)
@@ -493,8 +530,8 @@ This backs up both your files and your database. Download the backup to your com
 # Connect
 ssh -p 65002 u123456789@srv123.hostinger.com
 
-# Go to project
-cd ~/public_html
+# Go to project (always run artisan from here)
+cd ~/domains/madhavistores.in/madhavi-app
 
 # Most-used Artisan commands
 php artisan env                          # check APP_ENV is "production"
@@ -504,7 +541,7 @@ php artisan config:cache                 # re-cache after .env changes
 php artisan config:clear                 # clear config cache
 php artisan cache:clear                  # clear application cache
 php artisan queue:work --once            # manually process one queued job
-php artisan storage:link                 # recreate public/storage symlink
+php artisan storage:link                 # recreate public_html/storage symlink
 tail -n 100 storage/logs/laravel.log     # view recent errors
 ```
 

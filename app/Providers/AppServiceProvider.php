@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Pagination\Paginator::useTailwind();
 
         // Scope composer to layout views only — prevents one DB query per rendered sub-view
-        view()->composer(['layouts.app', 'mobile.layouts.app'], function ($view) {
+        view()->composer('*', function ($view) {
             static $wishlistIds = null;
             if ($wishlistIds === null) {
                 $wishlistIds = auth()->check() ? auth()->user()->wishlistItems()->pluck('product_id')->toArray() : [];
