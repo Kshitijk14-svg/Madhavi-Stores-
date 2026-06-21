@@ -30,7 +30,7 @@ class AuthController extends Controller
 
         if ($user) {
             $this->sendOtp($user->email, 'login');
-            session(['otp_email' => $user->email, 'otp_purpose' => 'login', 'remember' => $request->boolean('remember')]);
+            session(['otp_email' => $user->email, 'otp_purpose' => 'login']);
             return redirect()->route('verify.show')
                 ->with('info', 'A login code has been sent to your email.');
         }
@@ -101,10 +101,9 @@ class AuthController extends Controller
         }
 
         DB::table('otp_codes')->where('email', $email)->delete();
-        $remember = session('remember', false);
-        session()->forget(['otp_email', 'otp_purpose', 'remember']);
+        session()->forget(['otp_email', 'otp_purpose']);
 
-        Auth::login($user, $remember);
+        Auth::login($user, true);
         $request->session()->regenerate();
 
         if ($user->is_admin) {

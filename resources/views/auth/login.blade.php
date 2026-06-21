@@ -30,12 +30,6 @@
 
 
 
-  {{-- Remember me --}}
-  <div class="form-group check-row" style="margin-bottom:28px;">
-    <input type="checkbox" id="remember" name="remember">
-    <label for="remember">Keep me logged in for 15 days</label>
-  </div>
-
   {{-- Submit --}}
   <button type="submit" class="auth-submit" id="login-btn">
     <span id="btn-text">Send Login Code</span>
