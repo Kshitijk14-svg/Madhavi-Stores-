@@ -57,7 +57,7 @@
 
     @if($section['id'] === 'categories')
       {{-- ═══ 2. CATEGORY CIRCLES ═══ --}}
-      <section style="padding:40px 0;border-bottom:1px solid #f0f0f0;">
+      <section style="padding:56px 0;border-bottom:1px solid #f0f0f0;">
         <div class="wrap">
           <div class="grid-cats">
             @foreach($categories as $category)
@@ -75,7 +75,7 @@
 
     @if($section['id'] === 'dual_banners')
       {{-- ═══ 3. DUAL BANNERS ═══ --}}
-      <section style="padding:32px 0;">
+      <section style="padding:56px 0;">
         <div class="wrap">
           <div class="dual-banner">
 

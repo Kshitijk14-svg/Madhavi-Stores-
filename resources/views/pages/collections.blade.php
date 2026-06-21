@@ -3,8 +3,8 @@
 @section('title', 'Collections | Madhavi Stores')
 
 @section('content')
-<section class="py-16 px-6 lg:px-16 mt-20">
-    <div class="max-w-7xl mx-auto">
+<section class="py-16">
+    <div class="wrap">
         <div class="flex flex-col md:flex-row justify-between items-end mb-12 border-b pb-4">
             <div>
                 <h1 class="font-display text-4xl lg:text-5xl text-primary italic mb-2">Our Collections</h1>

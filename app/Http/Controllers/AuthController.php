@@ -193,9 +193,8 @@ class AuthController extends Controller
             'created_at' => now(),
         ]);
 
-        // Queue email with local fallback
         try {
-            Mail::to($email)->queue(new OtpMail($otp, $purpose));
+            Mail::to($email)->send(new OtpMail($otp, $purpose));
         } catch (\Throwable $e) {
             logger()->error("Failed to send OTP email: " . $e->getMessage());
             if (app()->isLocal()) {

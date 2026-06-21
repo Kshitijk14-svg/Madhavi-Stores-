@@ -9,7 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
   <style>
-    .auth-page { min-height:100vh; display:grid; grid-template-columns:1fr; }
+    html, body { height:100%; overflow:hidden; }
+    .auth-page { height:100vh; display:grid; grid-template-columns:1fr; overflow:hidden; }
     @media(min-width:1024px){ .auth-page { grid-template-columns:1fr 1fr; } }
 
     .auth-image { display:none; position:relative; overflow:hidden; }
@@ -18,7 +19,7 @@
     .auth-image-overlay { position:absolute; inset:0; background:linear-gradient(to bottom,rgba(24,24,24,0.3),rgba(24,24,24,0.7)); }
     .auth-image-text { position:absolute; bottom:0; inset-x:0; padding:48px; color:#fff; }
 
-    .auth-panel { display:flex; flex-direction:column; min-height:100vh; background:#faf8f5; }
+    .auth-panel { display:flex; flex-direction:column; height:100vh; overflow-y:auto; background:#faf8f5; }
     .auth-panel-inner { flex:1; display:flex; flex-direction:column; justify-content:center; padding:48px 40px; max-width:480px; width:100%; margin:0 auto; }
     @media(min-width:640px){ .auth-panel-inner { padding:64px 48px; } }
 
