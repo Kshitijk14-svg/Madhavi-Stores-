@@ -40,7 +40,9 @@
     </div>
   </div>
 
-  <button type="submit" class="auth-submit" id="otp-submit" disabled>Verify Login</button>
+  <button type="submit" class="auth-submit" id="otp-submit" disabled>
+    {{ ($purpose ?? 'register') === 'reset' ? 'Verify & Continue' : 'Verify Email' }}
+  </button>
 </form>
 
 <div class="resend-row">

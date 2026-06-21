@@ -5,7 +5,7 @@
 
 @foreach($homepageSections as $section)
   @if(!isset($section['visible']) || $section['visible'])
-    
+
     @if($section['id'] === 'hero')
       {{-- ═══ 1. MOBILE HERO ═══ --}}
       <section style="position:relative;overflow:hidden;">
@@ -78,7 +78,7 @@
               <span style="font-size:10px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.5);align-self:flex-start;">Explore →</span>
             </div>
           </a>
-          
+
           <div class="grid grid-cols-2 gap-4">
             <a href="{{ $dualBanners['banner2']['link'] ?? route('shop') }}" class="relative block overflow-hidden" style="aspect-ratio:1/1;">
               <img src="{{ $dualBanners['banner2']['image_url'] }}" alt="{{ $dualBanners['banner2']['title'] }}" class="w-full h-full object-cover">
@@ -102,30 +102,27 @@
     @endif
 
     @if($section['id'] === 'new_arrivals')
-      {{-- ═══ 4. MOBILE HORIZONTAL PRODUCTS ═══ --}}
+      {{-- ═══ 4. MOBILE NEW ARRIVALS ═══ --}}
       <section style="padding:32px 0 16px;background:#fff;">
-        <div class="px-4 mb-6">
-          <p class="eyebrow" style="margin-bottom:4px;">Fresh In</p>
-          <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;">New Arrivals</h2>
+        <div class="flex items-end justify-between px-4 mb-6">
+          <div>
+            <p class="eyebrow" style="margin-bottom:4px;">Fresh In</p>
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;">New Arrivals</h2>
+          </div>
+          <a href="{{ route('shop', ['filter' => 'new-arrivals']) }}" class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">View All</a>
         </div>
-        
-        <div class="flex overflow-x-auto gap-4 px-4 pb-8 snap-x" style="-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+
+        <div class="flex overflow-x-auto gap-4 pb-8 snap-x hide-scrollbar" style="padding-left:16px;padding-right:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
           @foreach($newArrivals->take(6) as $product)
-            <div class="snap-start shrink-0" style="width: 70vw;">
+            <div class="snap-start shrink-0" style="width:70vw;">
               <div class="pcard">
-                <div class="pcard-img" style="aspect-ratio:3/4;">
+                <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
                   <a href="{{ route('product.show', $product['slug']) }}" class="block w-full h-full">
                     <img src="{{ $product['image_url'] }}" alt="{{ $product['name'] }}" loading="lazy" class="w-full h-full object-cover">
                   </a>
                   @if($product['badge'] ?? false)
                     <span class="pcard-badge text-[9px]">{{ $product['badge'] }}</span>
                   @endif
-                  <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" class="absolute top-2 right-2 z-10">
-                    @csrf
-                    <button type="submit" class="w-8 h-8 rounded-full bg-white/90 shadow-sm flex items-center justify-center {{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}">
-                      <svg class="w-4 h-4" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-                    </button>
-                  </form>
                 </div>
                 <div class="mt-3">
                   <h3 class="text-xs font-bold truncate"><a href="{{ route('product.show', $product['slug']) }}">{{ $product['name'] }}</a></h3>
@@ -142,10 +139,84 @@
         </div>
       </section>
     @endif
+
+    @if($section['id'] === 'promo_banner' && !empty($promoBanner['image_url']))
+      {{-- ═══ 5. PROMO BANNER ═══ --}}
+      <section style="margin:8px 16px;position:relative;overflow:hidden;aspect-ratio:16/9;">
+        <img src="{{ $promoBanner['image_url'] }}" alt="{{ $promoBanner['title'] ?? '' }}" class="w-full h-full object-cover">
+        <div style="position:absolute;inset:0;background:rgba(24,24,24,0.5);"></div>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff;">
+          @if(!empty($promoBanner['eyebrow']))
+            <p class="eyebrow" style="color:rgba(184,152,110,0.9);margin-bottom:10px;">{{ $promoBanner['eyebrow'] }}</p>
+          @endif
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-style:italic;font-weight:300;margin-bottom:16px;">{{ $promoBanner['title'] ?? '' }}</h2>
+          @if(!empty($promoBanner['button_text']))
+            <a href="{{ $promoBanner['button_link'] ?? route('shop') }}" class="btn-white" style="font-size:10px;">{{ $promoBanner['button_text'] }}</a>
+          @endif
+        </div>
+      </section>
+    @endif
+
+    @if($section['id'] === 'bestsellers')
+      {{-- ═══ 6. MOBILE BESTSELLERS ═══ --}}
+      <section style="padding:32px 0 16px;background:#fff;">
+        <div class="flex items-end justify-between px-4 mb-6">
+          <div>
+            <p class="eyebrow" style="margin-bottom:4px;">Most Loved</p>
+            <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;">Bestsellers</h2>
+          </div>
+          <a href="{{ route('shop', ['filter' => 'bestsellers']) }}" class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">View All</a>
+        </div>
+
+        <div class="flex overflow-x-auto gap-4 pb-8 snap-x hide-scrollbar" style="padding-left:16px;padding-right:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+          @foreach($bestSellers->take(6) as $product)
+            <div class="snap-start shrink-0" style="width:70vw;">
+              <div class="pcard">
+                <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
+                  <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">
+                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}" loading="lazy" class="w-full h-full object-cover">
+                  </a>
+                  @if($product->badge)
+                    <span class="pcard-badge text-[9px]">{{ $product->badge }}</span>
+                  @endif
+                </div>
+                <div class="mt-3">
+                  <h3 class="text-xs font-bold truncate"><a href="{{ route('product.show', $product->slug) }}">{{ $product->name }}</a></h3>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs font-bold text-primary tracking-wider">₹{{ number_format($product->price) }}</span>
+                    @if($product->original_price)
+                      <span class="text-[10px] text-muted line-through">₹{{ number_format($product->original_price) }}</span>
+                    @endif
+                  </div>
+                </div>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </section>
+    @endif
+
+    @if($section['id'] === 'newsletter' && !empty($newsletter))
+      {{-- ═══ 7. NEWSLETTER ═══ --}}
+      <section style="background:#181818;padding:48px 24px;text-align:center;margin-top:8px;">
+        <p class="eyebrow" style="color:rgba(184,152,110,0.8);margin-bottom:12px;">{{ $newsletter['eyebrow'] ?? 'Stay in the Know' }}</p>
+        <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;font-weight:300;color:#fff;margin-bottom:12px;">{{ $newsletter['title'] ?? 'Join the Inner Circle' }}</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:28px;line-height:1.6;">{{ $newsletter['description'] ?? '' }}</p>
+        <form action="{{ route('home') }}" method="POST" class="flex flex-col gap-3">
+          @csrf
+          <input type="email" name="email" placeholder="{{ $newsletter['placeholder'] ?? 'Your email address' }}"
+                 class="w-full px-4 py-3 bg-white/10 border border-white/20 text-white text-sm placeholder-white/40 focus:outline-none focus:border-secondary">
+          <button type="submit" class="w-full py-3 bg-secondary text-primary text-xs font-bold tracking-widest uppercase">
+            {{ $newsletter['button_text'] ?? 'Subscribe' }}
+          </button>
+        </form>
+      </section>
+    @endif
+
   @endif
 @endforeach
 
-<div style="padding: 32px 16px; text-align: center; background: var(--background);">
+<div style="padding:32px 16px;text-align:center;background:var(--background);">
   <a href="{{ route('shop') }}" class="btn-dark w-full py-4 text-xs">View Full Collection</a>
 </div>
 

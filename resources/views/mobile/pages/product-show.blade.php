@@ -151,16 +151,25 @@
 
   {{-- Related Products --}}
   @if($relatedProducts->isNotEmpty())
-  <div class="px-4 py-6">
-    <p class="eyebrow" style="color:var(--secondary);margin-bottom:16px;">You May Also Like</p>
-    <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
-      @foreach($relatedProducts as $rp)
-      <a href="{{ route('product.show', $rp->slug) }}" class="shrink-0 w-36">
-        <div class="aspect-[3/4] bg-gray-50 overflow-hidden mb-2">
-          <img src="{{ $rp->image_url }}" alt="{{ $rp->name }}" class="w-full h-full object-cover" loading="lazy">
+  <div class="py-6">
+    <p class="eyebrow px-4" style="color:var(--secondary);margin-bottom:16px;">You May Also Like</p>
+    <div class="grid grid-cols-2 gap-3 px-4">
+      @foreach($relatedProducts->take(4) as $rp)
+      <a href="{{ route('product.show', $rp->slug) }}" class="group block">
+        <div class="aspect-[3/4] bg-gray-50 overflow-hidden relative mb-2">
+          <img src="{{ $rp->image_url }}" alt="{{ $rp->name }}"
+               class="w-full h-full object-cover transition-transform duration-300 group-active:scale-105" loading="lazy">
+          @if($rp->badge)
+            <span class="absolute top-2 left-2 bg-secondary text-primary text-[9px] font-bold px-1.5 py-0.5 tracking-wider uppercase">{{ $rp->badge }}</span>
+          @endif
         </div>
         <p class="text-xs font-semibold text-primary line-clamp-2 leading-snug">{{ $rp->name }}</p>
-        <p class="text-xs text-secondary font-bold mt-0.5">₹{{ number_format($rp->price, 0) }}</p>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="text-xs font-bold text-secondary">₹{{ number_format($rp->price, 0) }}</span>
+          @if($rp->original_price && $rp->original_price > $rp->price)
+            <span class="text-[10px] text-gray-400 line-through">₹{{ number_format($rp->original_price, 0) }}</span>
+          @endif
+        </div>
       </a>
       @endforeach
     </div>

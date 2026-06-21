@@ -31,12 +31,16 @@ Route::middleware('guest')->group(function () {
     Route::get('/register',  [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1')->name('register.post');
 
-    // Email OTP Verification (after registration)
-    Route::get('/verify-email',  [AuthController::class, 'showVerify'])->name('verify.show');
-    Route::post('/verify-email', [AuthController::class, 'verify'])->middleware('throttle:5,1')->name('verify.post');
-    Route::post('/verify-email/resend', [AuthController::class, 'resendOtp'])->middleware('throttle:3,10')->name('verify.resend');
+    // OTP Verification (register email + reset password)
+    Route::get('/verify-email',          [AuthController::class, 'showVerify'])->name('verify.show');
+    Route::post('/verify-email',         [AuthController::class, 'verify'])->middleware('throttle:5,1')->name('verify.post');
+    Route::post('/verify-email/resend',  [AuthController::class, 'resendOtp'])->middleware('throttle:3,10')->name('verify.resend');
 
-
+    // Forgot / Reset Password (OTP-based)
+    Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('password.forgot');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1')->name('password.forgot.post');
+    Route::get('/reset-password',   [AuthController::class, 'showResetPassword'])->name('password.reset.show');
+    Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.reset.post');
 });
 
 // ── Authenticated Routes ───────────────────────────────────

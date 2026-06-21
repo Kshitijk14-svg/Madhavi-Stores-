@@ -28,14 +28,34 @@
     @enderror
   </div>
 
-
+  {{-- Password --}}
+  <div class="form-group">
+    <label class="form-label" for="password">Password</label>
+    <div class="form-input-wrap">
+      <input type="password" id="password" name="password"
+             class="form-input {{ $errors->has('password') ? 'error' : '' }}"
+             placeholder="••••••••" autocomplete="current-password" required>
+      <button type="button" class="pw-toggle" onclick="togglePw('password')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+    @error('password')
+      <span class="form-error">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        {{ $message }}
+      </span>
+    @enderror
+    <div style="text-align:right;margin-top:6px;">
+      <a href="{{ route('password.forgot') }}" class="auth-inline-link">Forgot password?</a>
+    </div>
+  </div>
 
   {{-- Submit --}}
   <button type="submit" class="auth-submit" id="login-btn">
-    <span id="btn-text">Send Login Code</span>
+    <span id="btn-text">Sign In</span>
     <span id="btn-loader" style="display:none;align-items:center;gap:8px;">
       <svg class="spin" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-      Sending Code…
+      Signing In…
     </span>
   </button>
 </form>
@@ -46,7 +66,6 @@
   New to Madhavi Stores? <a href="{{ route('register') }}">Create an account</a>
 </div>
 
-{{-- Inline style additions --}}
 <style>
 .input-icon {
   position:absolute; left:14px; top:50%; transform:translateY(-50%);
@@ -73,8 +92,11 @@
 </style>
 
 <script>
+function togglePw(id) {
+  var i = document.getElementById(id);
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
 
-// Loading state on submit
 document.getElementById('login-form').addEventListener('submit', function() {
   var btn    = document.getElementById('login-btn');
   var text   = document.getElementById('btn-text');

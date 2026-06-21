@@ -23,16 +23,11 @@
     function setViewport() {
       document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       const main = document.getElementById('main');
-      const bottomBar = document.getElementById('mob-bottom-bar');
       const productBar = document.getElementById('mob-product-bar');
-      
       let bottomPadding = 0;
       if (productBar && window.getComputedStyle(productBar).display !== 'none' && window.getComputedStyle(productBar).position === 'fixed') {
         bottomPadding = productBar.offsetHeight;
-      } else if (bottomBar && window.getComputedStyle(bottomBar).display !== 'none') {
-        bottomPadding = bottomBar.offsetHeight;
       }
-      
       if(main) main.style.paddingBottom = bottomPadding + 'px';
     }
     window.addEventListener('resize', setViewport);
@@ -40,7 +35,7 @@
     document.addEventListener('DOMContentLoaded', setViewport);
   </script>
 </head>
-<body class="bg-white text-primary pb-16">
+<body class="bg-white text-primary">
 
   @include('mobile.components.navbar', ['cartCount' => $cartCount ?? 0])
 
@@ -134,13 +129,6 @@
                         
                         if (pushState) history.pushState({ url: url }, doc.title, url);
                         
-                        // update mobile nav state
-                        document.querySelectorAll('#mob-bottom-bar a').forEach(a => {
-                            if(url.includes(new URL(a.href).pathname) && new URL(a.href).pathname !== '/') a.classList.add('text-secondary');
-                            else if(new URL(a.href).pathname === '/' && url === window.location.origin + '/') a.classList.add('text-secondary');
-                            else a.classList.remove('text-secondary');
-                        });
-
                         window.scrollTo({ top: 0, behavior: 'instant' });
                         gsap.fromTo('#main', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, onComplete: setViewport });
                         document.dispatchEvent(new Event('pjax:success'));
@@ -174,7 +162,7 @@
                     .then(data => {
                         showToast(data.message || (data.success ? 'Added to bag!' : 'Could not add item.'), data.success ? 'success' : 'error');
                         if (data.success) {
-                            const b = document.getElementById('mob-bottom-cart-count');
+                            const b = document.getElementById('mob-cart-count');
                             if (b) { b.innerText = data.cart_count || data.cartCount || 0; b.classList.remove('hidden'); }
                         }
                     }).catch(() => showToast('Connection error.', 'error'));

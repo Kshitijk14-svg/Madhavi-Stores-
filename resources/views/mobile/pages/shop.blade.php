@@ -34,37 +34,21 @@
   </div>
   @endif
 
-  {{-- Filter Chips Row --}}
-  <div class="flex gap-2 px-4 py-3 overflow-x-auto hide-scrollbar border-b border-gray-100">
-    {{-- Sort chips --}}
-    @foreach([
-      ['sort' => 'newest', 'label' => 'New'],
-      ['sort' => 'price_low', 'label' => 'Price ↑'],
-      ['sort' => 'price_high', 'label' => 'Price ↓'],
-    ] as $opt)
-      <a href="{{ route('shop', array_merge(request()->query(), ['sort' => $opt['sort']])) }}"
-         class="shrink-0 px-3 py-2 text-[10px] font-bold tracking-wider uppercase border transition-colors whitespace-nowrap {{ request('sort') === $opt['sort'] ? 'bg-primary text-white border-primary' : 'border-gray-200 text-primary bg-white' }}"
-         style="min-height:36px;display:flex;align-items:center;">{{ $opt['label'] }}</a>
-    @endforeach
+  {{-- Sort + Filter Buttons --}}
+  <div class="flex border-b border-gray-100">
+    <button type="button" onclick="document.getElementById('sort-drawer').classList.remove('hidden')"
+            class="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold tracking-wider uppercase border-r border-gray-100 {{ request('sort') ? 'text-secondary' : 'text-primary' }}"
+            style="min-height:44px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5h18M6 12h12M10 16.5h4"/></svg>
+      Sort{{ request('sort') ? ' ✓' : '' }}
+    </button>
     <button type="button" onclick="document.getElementById('filter-drawer').classList.remove('hidden')"
-            class="shrink-0 px-3 py-2 text-[10px] font-bold tracking-wider uppercase border border-gray-200 bg-white text-primary flex items-center gap-1.5"
-            style="min-height:36px;">
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM3.75 6H7.5M3.75 12h16.5M3.75 18h16.5"/></svg>
-      Filters
+            class="flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-bold tracking-wider uppercase {{ request()->hasAny(['category','price_min','price_max','tags','filter']) ? 'text-secondary' : 'text-primary' }}"
+            style="min-height:44px;">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM3.75 6H7.5M3.75 12h16.5M3.75 18h16.5"/></svg>
+      Filter{{ request()->hasAny(['category','price_min','price_max','tags','filter']) ? ' ✓' : '' }}
     </button>
   </div>
-
-  {{-- Category chips --}}
-  @if($categories->isNotEmpty())
-  <div class="flex gap-2 px-4 py-2 overflow-x-auto hide-scrollbar border-b border-gray-50">
-    <a href="{{ route('shop', array_diff_key(request()->query(), ['category' => '', 'filter' => ''])) }}"
-       class="shrink-0 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap {{ !request()->hasAny(['category', 'filter']) ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-500 bg-white' }}">All</a>
-    @foreach($categories as $cat)
-      <a href="{{ route('shop', array_merge(request()->query(), ['category' => $cat->slug])) }}"
-         class="shrink-0 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap {{ request('category') === $cat->slug ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-500 bg-white' }}">{{ $cat->name }}</a>
-    @endforeach
-  </div>
-  @endif
 
   {{-- Results count + product count --}}
   <div class="px-4 py-2 text-[10px] text-gray-400 flex items-center justify-between border-b border-gray-50">
@@ -133,6 +117,38 @@
   @endif
   @endif
 
+</div>
+
+{{-- Sort Drawer (bottom-sheet) --}}
+<div id="sort-drawer" class="hidden fixed inset-0 z-50 flex flex-col justify-end">
+  <div class="absolute inset-0 bg-black/40" onclick="document.getElementById('sort-drawer').classList.add('hidden')"></div>
+  <div class="relative bg-white w-full" style="border-radius:16px 16px 0 0;">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="text-xs font-bold tracking-widest uppercase">Sort By</h3>
+      <button onclick="document.getElementById('sort-drawer').classList.add('hidden')" class="text-gray-400 text-lg leading-none">✕</button>
+    </div>
+    <div class="py-2" style="padding-bottom:env(safe-area-inset-bottom);">
+      @foreach([
+        ['sort' => 'newest',     'label' => 'Newest First'],
+        ['sort' => 'price_low',  'label' => 'Price: Low to High'],
+        ['sort' => 'price_high', 'label' => 'Price: High to Low'],
+      ] as $opt)
+        <a href="{{ route('shop', array_merge(request()->query(), ['sort' => $opt['sort']])) }}"
+           class="flex items-center justify-between px-5 text-sm font-medium {{ request('sort') === $opt['sort'] ? 'text-secondary font-bold' : 'text-primary' }}"
+           style="min-height:52px;border-bottom:1px solid #f5f5f5;">
+          {{ $opt['label'] }}
+          @if(request('sort') === $opt['sort'])
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" class="text-secondary"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+          @endif
+        </a>
+      @endforeach
+      @if(request('sort'))
+        <a href="{{ route('shop', array_diff_key(request()->query(), ['sort' => ''])) }}"
+           class="flex items-center px-5 text-[11px] text-gray-400 font-semibold"
+           style="min-height:44px;">Clear sort</a>
+      @endif
+    </div>
+  </div>
 </div>
 
 {{-- Filter Drawer --}}
