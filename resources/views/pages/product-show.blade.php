@@ -72,12 +72,8 @@
                         
                         <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
                             @php
-                                $finalPrice = $product->price;
-                                if ($product->discount_type === 'percent' && $product->discount_value > 0) {
-                                    $finalPrice = $product->price - ($product->price * ($product->discount_value / 100));
-                                } elseif ($product->discount_type === 'fixed' && $product->discount_value > 0) {
-                                    $finalPrice = max(0, $product->price - $product->discount_value);
-                                }
+                                // Single source of truth for the charged price — matches cart & checkout.
+                                $finalPrice = $product->final_price;
                             @endphp
                             <span class="price-display">₹{{ number_format($finalPrice, 2) }}</span>
                             @if($product->original_price || $finalPrice < $product->price)

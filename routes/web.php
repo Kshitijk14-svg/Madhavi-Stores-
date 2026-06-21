@@ -21,6 +21,10 @@ Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product
 // Editorial & Static Pages
 Route::get('/about',    [HomeController::class, 'about'])->name('about');
 
+// Razorpay server-to-server webhook (no auth, CSRF-exempt — see bootstrap/app.php).
+// Signature-verified inside the controller.
+Route::post('/webhooks/razorpay', [CheckoutController::class, 'webhook'])->name('webhooks.razorpay');
+
 // ── Auth Routes ────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     // Login
@@ -54,18 +58,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
-    Route::post('/coupon/apply', [CartController::class, 'applyCoupon'])->name('coupon.apply');
+    // Coupon apply is brute-forceable for valid codes — throttle it.
+    Route::post('/coupon/apply', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('coupon.apply');
     Route::post('/coupon/remove', [CartController::class, 'removeCoupon'])->name('coupon.remove');
 
     // Wishlist Operations
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
     Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-    Route::post('/product/{product}/review', [ProductController::class, 'review'])->name('product.review');
+    Route::post('/product/{product}/review', [ProductController::class, 'review'])->middleware('throttle:10,1')->name('product.review');
 
-    // Checkout Operations
+    // Checkout Operations (throttled — each store() can hit the Razorpay API)
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::post('/checkout/verify', [CheckoutController::class, 'verifyPayment'])->name('checkout.verify');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
+    Route::post('/checkout/verify', [CheckoutController::class, 'verifyPayment'])->middleware('throttle:20,1')->name('checkout.verify');
 });
 
 // Admin Routes (Custom Blade Admin Dashboard)

@@ -39,11 +39,16 @@
       <p class="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-1">{{ $product->category->name }}</p>
     @endif
     <h1 style="font-family:'Cormorant Garamond',serif;font-size:1.625rem;font-weight:300;line-height:1.2;margin-bottom:8px;">{{ $product->name }}</h1>
+    @php
+      // final_price is the charged price (discount-aware) — matches cart & checkout.
+      $finalPrice = $product->final_price;
+      $wasPrice = $product->original_price ?: $product->price;
+    @endphp
     <div class="flex items-center gap-3 mb-3">
-      <span class="text-lg font-bold text-secondary">₹{{ number_format($product->price, 0) }}</span>
-      @if($product->original_price && $product->original_price > $product->price)
-        <span class="text-sm text-gray-400 line-through">₹{{ number_format($product->original_price, 0) }}</span>
-        @php $savePct = round((($product->original_price - $product->price) / $product->original_price) * 100); @endphp
+      <span class="text-lg font-bold text-secondary">₹{{ number_format($finalPrice, 0) }}</span>
+      @if($wasPrice > $finalPrice)
+        <span class="text-sm text-gray-400 line-through">₹{{ number_format($wasPrice, 0) }}</span>
+        @php $savePct = round((($wasPrice - $finalPrice) / $wasPrice) * 100); @endphp
         <span class="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5">{{ $savePct }}% off</span>
       @endif
     </div>

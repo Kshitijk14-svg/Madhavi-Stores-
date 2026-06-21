@@ -88,14 +88,15 @@ class ProductController extends Controller
             $query->where('price', '<=', $request->price_max);
         }
 
-        // Search query
+        // Search query (NB: products has no 'description' column — searching it
+        // threw an SQL error under strict mode, which broke search entirely).
         if ($request->has('search') && $request->search !== '') {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('seo_keywords', 'like', "%{$search}%")
                   ->orWhereJsonContains('tags', $search);
-                  
+
                 if (is_numeric($search)) {
                     $q->orWhere('id', $search);
                 }
@@ -174,16 +175,12 @@ class ProductController extends Controller
             return back()->with('error', 'You can only review products you have purchased.');
         }
 
+        // The Review model's saved/deleted hook recomputes the product's
+        // rating + review_count, so they stay correct even on review deletion.
         $product->reviews()->updateOrCreate(
             ['user_id' => auth()->id()],
             ['rating' => $request->rating, 'comment' => $request->comment]
         );
-
-        $avgRating = $product->reviews()->avg('rating');
-        $product->update([
-            'rating' => $avgRating,
-            'review_count' => $product->reviews()->count()
-        ]);
 
         return back()->with('success', 'Review submitted successfully.');
     }

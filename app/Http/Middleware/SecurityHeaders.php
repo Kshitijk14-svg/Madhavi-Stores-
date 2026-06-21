@@ -32,11 +32,20 @@ class SecurityHeaders
         ];
 
         // Apply headers
+        // NOTE: script-src still allows 'unsafe-inline'/'unsafe-eval' because the
+        // app relies on inline handlers/styles; tightening that is a separate,
+        // larger refactor (tracked as a known defence-in-depth gap).
         $response->headers->set('Content-Security-Policy', implode('; ', $cspDirectives));
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        // HSTS — force HTTPS for a year (incl. subdomains) once served over TLS.
+        // Only emitted on secure requests so it never breaks local http dev.
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
 
         return $response;
     }

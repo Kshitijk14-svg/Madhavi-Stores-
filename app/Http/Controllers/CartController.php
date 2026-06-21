@@ -2,96 +2,67 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Product;
 use App\Models\CartItem;
 use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductSize;
+use App\Services\CartService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
+    public function __construct(private CartService $cart)
+    {
+    }
+
     public function index()
     {
-        $user = Auth::user();
-        $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
-        
-        $subtotal = 0;
-        foreach ($cartItems as $key => $item) {
-            if (!$item->product) {
-                $item->delete();
-                $cartItems->forget($key);
-                continue;
-            }
-            $subtotal += ($item->product->price * $item->quantity);
-        }
+        $summary = $this->cart->getSummary(Auth::user());
 
-        // Apply coupon discount if set in session
-        $discount = 0;
-        $couponCode = session('applied_coupon');
-        $coupon = null;
-        if ($couponCode) {
-            $coupon = Coupon::where('code', $couponCode)->first();
-            if ($coupon && $coupon->isValidFor($subtotal)) {
-                $discount = $coupon->calculateDiscount($subtotal);
-            } else {
-                session()->forget('applied_coupon');
-            }
-        }
-
-        $tax = 0;
-        $total = $subtotal - $discount;
-
-        $cartCount = $cartItems->sum('quantity');
-
-        return view('pages.cart', compact('cartItems', 'subtotal', 'discount', 'tax', 'total', 'coupon', 'cartCount'));
+        return view('pages.cart', [
+            'cartItems' => $summary['cartItems'],
+            'subtotal'  => $summary['subtotal'],
+            'discount'  => $summary['discount'],
+            'tax'       => $summary['tax'],
+            'total'     => $summary['total'],
+            'coupon'    => $summary['coupon'],
+            'cartCount' => $summary['cartCount'],
+        ]);
     }
 
     public function add(Request $request)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'size' => 'nullable|string|max:10',
-            'quantity' => 'nullable|integer|min:1',
+            'size'       => 'nullable|string|max:10',
+            'quantity'   => 'nullable|integer|min:1',
         ]);
 
-        $user = Auth::user();
+        $user      = Auth::user();
         $productId = $request->product_id;
-        $product = Product::findOrFail($productId);
-        
-        $size = $product->has_sizes ? ($request->size ?? 'M') : null;
+        $product   = Product::findOrFail($productId);
+
+        $size     = $product->has_sizes ? ($request->size ?? 'M') : null;
         $quantity = $request->quantity ?? 1;
 
         $cartItem = CartItem::where('user_id', $user->id)
-                            ->where('product_id', $productId)
-                            ->where('size', $size)
-                            ->first();
+            ->where('product_id', $productId)
+            ->where('size', $size)
+            ->first();
 
         $requestedQuantity = $cartItem ? ($cartItem->quantity + $quantity) : $quantity;
 
-        // Validate stock
+        // Validate stock (best-effort, pre-checkout; the final authority is the
+        // locked sufficiency check inside CartService::createOrder).
         if ($product->has_sizes) {
-            $productSize = \App\Models\ProductSize::where('product_id', $productId)
-                                                  ->where('size', $size)
-                                                  ->first();
+            $productSize = ProductSize::where('product_id', $productId)->where('size', $size)->first();
             if ($productSize && $productSize->stock < $requestedQuantity) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Sorry, only ' . $productSize->stock . ' items available in size ' . $size . '.'
-                    ], 422);
-                }
-                return redirect()->back()->with('error', 'Sorry, only ' . $productSize->stock . ' items available in size ' . $size . '.');
+                return $this->stockError($request, 'Sorry, only ' . $productSize->stock . ' items available in size ' . $size . '.');
             }
-        } else {
-            if ($product->stock < $requestedQuantity) {
-                if ($request->ajax() || $request->wantsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Sorry, only ' . $product->stock . ' items available in stock.'
-                    ], 422);
-                }
-                return redirect()->back()->with('error', 'Sorry, only ' . $product->stock . ' items available in stock.');
-            }
+        } elseif ($product->stock < $requestedQuantity) {
+            return $this->stockError($request, 'Sorry, only ' . $product->stock . ' items available in stock.');
         }
 
         if ($cartItem) {
@@ -99,49 +70,56 @@ class CartController extends Controller
             $cartItem->save();
         } else {
             CartItem::create([
-                'user_id' => $user->id,
+                'user_id'    => $user->id,
                 'product_id' => $productId,
-                'size' => $size,
-                'quantity' => $quantity,
+                'size'       => $size,
+                'quantity'   => $quantity,
             ]);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Product added to your shopping bag.',
-                'cart_count' => CartItem::where('user_id', $user->id)->sum('quantity')
+                'success'    => true,
+                'message'    => 'Product added to your shopping bag.',
+                'cart_count' => CartItem::where('user_id', $user->id)->sum('quantity'),
             ]);
         }
 
         return redirect()->route('cart')->with('success', 'Product added to your shopping bag.');
     }
 
+    private function stockError(Request $request, string $message)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => $message], 422);
+        }
+        return redirect()->back()->with('error', $message);
+    }
+
     public function update(Request $request)
     {
         $request->validate([
             'cart_item_id' => 'required|exists:cart_items,id',
-            'action' => 'required|in:increase,decrease',
+            'action'       => 'required|in:increase,decrease',
         ]);
 
         $cartItem = CartItem::where('user_id', Auth::id())->where('id', $request->cart_item_id)->firstOrFail();
 
         if ($request->action === 'increase') {
-            // Validate stock before increasing
             if ($cartItem->product) {
                 if ($cartItem->product->has_sizes && $cartItem->size) {
-                    $productSize = \App\Models\ProductSize::where('product_id', $cartItem->product_id)
-                                                          ->where('size', $cartItem->size)->first();
+                    $productSize = ProductSize::where('product_id', $cartItem->product_id)
+                        ->where('size', $cartItem->size)->first();
                     if ($productSize && $productSize->stock <= $cartItem->quantity) {
                         return response()->json([
                             'success' => false,
-                            'message' => 'Sorry, only ' . $productSize->stock . ' items available in size ' . $cartItem->size . '.'
+                            'message' => 'Sorry, only ' . $productSize->stock . ' items available in size ' . $cartItem->size . '.',
                         ], 422);
                     }
                 } elseif ($cartItem->product->stock <= $cartItem->quantity) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Sorry, only ' . $cartItem->product->stock . ' items available in stock.'
+                        'message' => 'Sorry, only ' . $cartItem->product->stock . ' items available in stock.',
                     ], 422);
                 }
             }
@@ -153,41 +131,26 @@ class CartController extends Controller
                 $cartItem->save();
             } else {
                 $cartItem->delete();
-                $cartItem->quantity = 0;
             }
         }
 
         if ($request->ajax()) {
-            $user = Auth::user();
-            $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
-            $subtotal = $cartItems->sum(function($item) {
-                if (!$item->product) return 0;
-                return $item->product->price * $item->quantity;
-            });
-            
-            $discount = 0;
-            $couponCode = session('applied_coupon');
-            if ($couponCode) {
-                $coupon = Coupon::where('code', $couponCode)->first();
-                if ($coupon && $coupon->isValidFor($subtotal)) {
-                    $discount = $coupon->calculateDiscount($subtotal);
-                } else {
-                    session()->forget('applied_coupon');
-                }
-            }
-            $tax = 0;
-            $total = $subtotal - $discount;
+            $summary  = $this->cart->getSummary(Auth::user());
+            $stillIn  = $cartItem->exists;
+            $lineTotal = ($stillIn && $cartItem->product)
+                ? '₹' . number_format($cartItem->product->final_price * $cartItem->quantity)
+                : 0;
 
             return response()->json([
-                'success' => true,
-                'message' => 'Shopping bag updated.',
-                'cart_count' => $cartItems->sum('quantity'),
-                'item_quantity' => $cartItem->exists ? $cartItem->quantity : 0,
-                'item_total' => $cartItem->exists ? '₹' . number_format($cartItem->product->price * $cartItem->quantity) : 0,
-                'subtotal' => '₹' . number_format($subtotal),
-                'discount' => '₹' . number_format($discount),
-                'tax' => '₹' . number_format($tax),
-                'total' => '₹' . number_format($total)
+                'success'       => true,
+                'message'       => 'Shopping bag updated.',
+                'cart_count'    => $summary['cartCount'],
+                'item_quantity' => $stillIn ? $cartItem->quantity : 0,
+                'item_total'    => $lineTotal,
+                'subtotal'      => '₹' . number_format($summary['subtotal']),
+                'discount'      => '₹' . number_format($summary['discount']),
+                'tax'           => '₹' . number_format($summary['tax']),
+                'total'         => '₹' . number_format($summary['total']),
             ]);
         }
 
@@ -200,34 +163,16 @@ class CartController extends Controller
         $cartItem->delete();
 
         if (request()->ajax()) {
-            $user = Auth::user();
-            $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
-            $subtotal = $cartItems->sum(function($item) {
-                if (!$item->product) return 0;
-                return $item->product->price * $item->quantity;
-            });
-            
-            $discount = 0;
-            $couponCode = session('applied_coupon');
-            if ($couponCode) {
-                $coupon = Coupon::where('code', $couponCode)->first();
-                if ($coupon && $coupon->isValidFor($subtotal)) {
-                    $discount = $coupon->calculateDiscount($subtotal);
-                } else {
-                    session()->forget('applied_coupon');
-                }
-            }
-            $tax = 0;
-            $total = $subtotal - $discount;
+            $summary = $this->cart->getSummary(Auth::user());
 
             return response()->json([
-                'success' => true,
-                'message' => 'Product removed from your bag.',
-                'cart_count' => $cartItems->sum('quantity'),
-                'subtotal' => '₹' . number_format($subtotal),
-                'discount' => '₹' . number_format($discount),
-                'tax' => '₹' . number_format($tax),
-                'total' => '₹' . number_format($total)
+                'success'    => true,
+                'message'    => 'Product removed from your bag.',
+                'cart_count' => $summary['cartCount'],
+                'subtotal'   => '₹' . number_format($summary['subtotal']),
+                'discount'   => '₹' . number_format($summary['discount']),
+                'tax'        => '₹' . number_format($summary['tax']),
+                'total'      => '₹' . number_format($summary['total']),
             ]);
         }
 
@@ -236,49 +181,43 @@ class CartController extends Controller
 
     public function applyCoupon(Request $request)
     {
-        $request->validate([
-            'code' => 'required|string',
-        ]);
+        $request->validate(['code' => 'required|string']);
 
+        $user   = Auth::user();
         $coupon = Coupon::where('code', $request->code)->first();
 
         if (!$coupon) {
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Invalid coupon code.']);
-            }
-            return redirect()->route('cart')->with('error', 'Invalid coupon code.');
+            return $this->couponResponse($request, false, 'Invalid coupon code.');
         }
 
-        $user = Auth::user();
-        $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
-        
-        $subtotal = 0;
-        foreach ($cartItems as $key => $item) {
-            if (!$item->product) {
-                $item->delete();
-                $cartItems->forget($key);
-                continue;
-            }
-            $subtotal += ($item->product->price * $item->quantity);
-        }
+        // Compute subtotal with the same final_price logic the checkout uses.
+        $summary  = $this->cart->getSummary($user);
+        $subtotal = $summary['subtotal'];
 
-        if (!$coupon->isValidFor($subtotal)) {
-            $msg = 'Coupon is inactive or expired.';
+        // Validate exactly as checkout will (global + min cart + per-user limit),
+        // so a coupon accepted here is never rejected at checkout.
+        $userUsage = Order::where('user_id', $user->id)->where('coupon_code', $coupon->code)->count();
+        if (!$coupon->isValidFor($subtotal, $userUsage)) {
+            $msg = 'This coupon is inactive, expired, or no longer available.';
             if ($subtotal < $coupon->min_cart_value) {
                 $msg = 'Minimum spend for coupon ' . $coupon->code . ' is ₹' . number_format($coupon->min_cart_value);
+            } elseif ($userUsage >= $coupon->max_uses_per_user) {
+                $msg = 'You have already used coupon ' . $coupon->code . '.';
             }
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg]);
-            }
-            return redirect()->route('cart')->with('error', $msg);
+            return $this->couponResponse($request, false, $msg);
         }
 
         session(['applied_coupon' => $coupon->code]);
 
+        return $this->couponResponse($request, true, 'Coupon "' . $coupon->code . '" applied successfully!');
+    }
+
+    private function couponResponse(Request $request, bool $success, string $message)
+    {
         if ($request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Coupon "' . $coupon->code . '" applied successfully!']);
+            return response()->json(['success' => $success, 'message' => $message]);
         }
-        return redirect()->route('cart')->with('success', 'Coupon "' . $coupon->code . '" applied successfully!');
+        return redirect()->route('cart')->with($success ? 'success' : 'error', $message);
     }
 
     public function removeCoupon()

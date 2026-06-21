@@ -28,7 +28,7 @@ class AuthController extends Controller
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
             $request->session()->regenerate();
-            if (Auth::user()->is_admin) {
+            if (Auth::user()->isAdmin()) {
                 return redirect('/admin');
             }
             return redirect()->intended(route('account'))->with('success', 'Welcome back to Madhavi Stores.');
@@ -52,11 +52,16 @@ class AuthController extends Controller
             'password'              => 'required|min:8|confirmed',
         ]);
 
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        try {
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Concurrent insert beat the unique check — show a clean message.
+            return back()->withErrors(['email' => 'An account with this email already exists.'])->withInput();
+        }
 
         $this->sendOtp($user->email, 'register');
         session(['otp_email' => $user->email, 'otp_purpose' => 'register']);
@@ -115,7 +120,7 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        if ($user->is_admin) {
+        if ($user->isAdmin()) {
             return redirect('/admin');
         }
         return redirect()->intended(route('account'))->with('success', 'Welcome to Madhavi Stores.');
@@ -246,9 +251,11 @@ class AuthController extends Controller
         ]);
 
         try {
-            Mail::to($email)->send(new OtpMail($otp, $purpose));
+            // Queued (OtpMail implements ShouldQueue) so the SMTP handshake never
+            // blocks the auth request. Requires a running queue worker in prod.
+            Mail::to($email)->queue(new OtpMail($otp, $purpose));
         } catch (\Throwable $e) {
-            logger()->error("Failed to send OTP email: " . $e->getMessage());
+            logger()->error("Failed to queue OTP email: " . $e->getMessage());
             if (app()->isLocal()) {
                 session()->flash('local_otp', $otp);
             }

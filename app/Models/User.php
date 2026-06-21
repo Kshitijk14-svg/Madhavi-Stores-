@@ -16,20 +16,34 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_admin == 1;
+        return $this->isAdmin();
     }
 
     /**
      * The attributes that are mass assignable.
+     *
+     * NOTE: 'role' and 'is_admin' are intentionally NOT mass-assignable — they
+     * are privilege flags and must only ever be set explicitly (see
+     * AdminController::updateUserRole). 'is_admin' is additionally derived from
+     * 'role' by the saving() hook below, so 'role' is the single source of truth.
      */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'is_admin',
-        'role',
         'email_verified_at',
     ];
+
+    /**
+     * Keep the legacy is_admin column in sync with role on every save, so the
+     * two can never disagree. role is authoritative.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            $user->is_admin = in_array($user->role, ['admin', 'superadmin']);
+        });
+    }
 
     /**
      * The attributes that should be hidden for serialization.

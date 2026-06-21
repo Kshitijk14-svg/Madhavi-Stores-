@@ -23,8 +23,15 @@ class WishlistController extends Controller
 
     public function toggle(Request $request, $productId)
     {
+        // The {product} route param is a raw id (no model binding), so validate it
+        // exists before inserting — otherwise a bad/deleted id creates an orphan row.
+        \Illuminate\Support\Facades\Validator::make(
+            ['product_id' => $productId],
+            ['product_id' => 'required|exists:products,id']
+        )->validate();
+
         $user = Auth::user();
-        
+
         $exists = WishlistItem::where('user_id', $user->id)
                              ->where('product_id', $productId)
                              ->first();

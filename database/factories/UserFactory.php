@@ -42,4 +42,13 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * An admin user. role is not mass-assignable, so set it via forceFill;
+     * the User saving() hook then syncs is_admin.
+     */
+    public function admin(): static
+    {
+        return $this->afterMaking(fn (User $user) => $user->forceFill(['role' => 'admin']));
+    }
 }

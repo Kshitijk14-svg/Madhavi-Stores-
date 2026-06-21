@@ -284,6 +284,8 @@ class AdminController extends Controller
             'price'          => 'required|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'category_id'    => 'required|exists:categories,id',
+            'stock'          => 'nullable|integer|min:0',
+            'has_sizes'      => 'nullable|boolean',
             'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
             'image_url'      => 'nullable|url',
             'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
@@ -793,10 +795,16 @@ class AdminController extends Controller
     {
         $order = Order::with(['items.product', 'user'])->findOrFail($id);
 
-        $pdf = Pdf::loadView('admin.invoice', compact('order'))
-                  ->setPaper('a4', 'portrait');
+        try {
+            $pdf = Pdf::loadView('admin.invoice', compact('order'))
+                      ->setPaper('a4', 'portrait');
 
-        return $pdf->download('Invoice-' . $order->order_number . '.pdf');
+            return $pdf->download('Invoice-' . $order->order_number . '.pdf');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Invoice PDF generation failed: ' . $e->getMessage(), ['order_id' => $id]);
+            return redirect()->route('admin.orders.index')
+                ->with('error', 'Could not generate the invoice PDF for order ' . $order->order_number . '. Please try again.');
+        }
     }
 
     /**
@@ -920,10 +928,10 @@ class AdminController extends Controller
                              ->with('error', 'You cannot change another Super Administrator\'s role.');
         }
 
-        $user->update([
-            'role'     => $request->role,
-            'is_admin' => in_array($request->role, ['admin', 'superadmin']),
-        ]);
+        // role is the single source of truth; the User saving() hook keeps the
+        // legacy is_admin column in sync automatically.
+        $user->role = $request->role;
+        $user->save();
 
         if ($request->ajax()) {
             return response()->json([
@@ -1110,6 +1118,28 @@ class AdminController extends Controller
     public function updateDesignSettings(Request $request)
     {
         $type = $request->input('type');
+
+        // Link/URL fields are rendered into href/src on the storefront. Block
+        // dangerous schemes (javascript:, data:, vbscript:) while still allowing
+        // relative paths like "images/banners/x.webp" and normal http(s) URLs.
+        // Uploaded files must be real images (convertToWebp re-encodes them too).
+        $safeUrl = ['nullable', 'string', 'max:2048', 'not_regex:/^\s*(?:javascript|data|vbscript):/i'];
+        $image   = ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:2048'];
+
+        $request->validate([
+            'banner1_link'  => $safeUrl, 'banner2_link'  => $safeUrl, 'banner3_link'  => $safeUrl,
+            'banner1_image_url' => $safeUrl, 'banner2_image_url' => $safeUrl, 'banner3_image_url' => $safeUrl,
+            'banner1_file'  => $image, 'banner2_file'  => $image, 'banner3_file'  => $image,
+            'promo_button_link' => $safeUrl, 'promo_image_url' => $safeUrl, 'promo_file' => $image,
+            'signin_image'  => $safeUrl, 'signin_file' => $image,
+            'cover_image'   => $safeUrl, 'about_cover_file' => $image,
+            'slides.*.image_url'         => $safeUrl,
+            'slides.*.mobile_image_url'  => $safeUrl,
+            'slides.*.button_url'        => $safeUrl,
+            'slides.*.second_button_url' => $safeUrl,
+            'slides.*.image_file'        => $image,
+            'slides.*.mobile_image_file' => $image,
+        ]);
 
         // ── Homepage Layout & Banners ─────────────────────────────
         if ($type === 'layout') {
