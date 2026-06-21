@@ -135,7 +135,7 @@ class AuthController extends Controller
         $orders = \App\Models\Order::where('user_id', $user->id)
                                    ->with('items.product')
                                    ->latest()
-                                   ->paginate(10);
+                                   ->paginate(10)->withQueryString();
 
         // Fetch customer's wishlist items
         $wishlist = \App\Models\WishlistItem::where('user_id', $user->id)
@@ -193,7 +193,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            Mail::to($email)->send(new OtpMail($otp, $purpose));
+            Mail::to($email)->queue(new OtpMail($otp, $purpose));
         } catch (\Throwable $e) {
             logger()->error("Failed to send OTP email: " . $e->getMessage());
             if (app()->isLocal()) {

@@ -130,7 +130,7 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['sizes', 'reviews.user'])->where('slug', $slug)->firstOrFail();
+        $product = Product::with(['sizes', 'reviews.user', 'category'])->where('slug', $slug)->firstOrFail();
 
         // Get related products (same category, excluding current)
         $relatedProducts = Product::where('category_id', $product->category_id)

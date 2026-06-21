@@ -582,7 +582,7 @@ class AdminController extends Controller
                 break;
         }
 
-        $categories = $query->get();
+        $categories = $query->paginate(20)->withQueryString();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -1209,8 +1209,17 @@ class AdminController extends Controller
                         }
                     }
 
+                    $mobileImageUrl = $slideData['mobile_image_url'] ?? '';
+                    if ($request->hasFile("slides.{$index}.mobile_image_file")) {
+                        $webpUrl = $this->convertToWebp($request->file("slides.{$index}.mobile_image_file"), 'images/hero');
+                        if ($webpUrl) {
+                            $mobileImageUrl = $webpUrl;
+                        }
+                    }
+
                     $slides[] = [
                         'image_url'          => $imageUrl,
+                        'mobile_image_url'   => $mobileImageUrl,
                         'eyebrow'            => $slideData['eyebrow'] ?? '',
                         'title'              => $slideData['title'] ?? '',
                         'subtitle'           => $slideData['subtitle'] ?? '',

@@ -1,0 +1,204 @@
+@extends('mobile.layouts.app')
+@section('title', 'Shop — Madhavi Stores')
+
+@section('content')
+<div class="pb-24">
+
+  {{-- Search bar --}}
+  <form method="GET" action="{{ route('shop') }}" class="px-4 py-3 border-b border-gray-100 flex gap-2">
+    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search products..."
+           class="flex-1 border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary rounded-none"
+           id="mob-search-input">
+    <button type="submit" class="px-4 bg-primary text-white flex items-center justify-center" style="min-height:44px;">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+    </button>
+  </form>
+
+  {{-- Active Filters Summary --}}
+  @if(request()->hasAny(['category', 'sort', 'price_min', 'price_max', 'tags', 'filter']))
+  <div class="px-4 py-2 border-b border-gray-100 flex items-center gap-2 overflow-x-auto hide-scrollbar">
+    <span class="text-[10px] text-gray-400 shrink-0">Filters:</span>
+    @if(request('search'))
+      <a href="{{ route('shop', array_diff_key(request()->query(), ['search' => ''])) }}"
+         class="shrink-0 flex items-center gap-1 bg-primary/5 border border-primary/20 px-2 py-1 text-[10px] font-bold text-primary">
+         "{{ request('search') }}" <span class="text-gray-400">✕</span>
+      </a>
+    @endif
+    @foreach((array)request('category', []) as $cat)
+      <a href="{{ route('shop', array_diff_key(request()->query(), ['category' => ''])) }}"
+         class="shrink-0 flex items-center gap-1 bg-primary/5 border border-primary/20 px-2 py-1 text-[10px] font-bold text-primary capitalize">
+         {{ $cat }} <span class="text-gray-400">✕</span>
+      </a>
+    @endforeach
+    <a href="{{ route('shop') }}" class="shrink-0 text-[10px] text-red-400 font-semibold ml-auto">Clear all</a>
+  </div>
+  @endif
+
+  {{-- Filter Chips Row --}}
+  <div class="flex gap-2 px-4 py-3 overflow-x-auto hide-scrollbar border-b border-gray-100">
+    {{-- Sort chips --}}
+    @foreach([
+      ['sort' => 'newest', 'label' => 'New'],
+      ['sort' => 'price_low', 'label' => 'Price ↑'],
+      ['sort' => 'price_high', 'label' => 'Price ↓'],
+    ] as $opt)
+      <a href="{{ route('shop', array_merge(request()->query(), ['sort' => $opt['sort']])) }}"
+         class="shrink-0 px-3 py-2 text-[10px] font-bold tracking-wider uppercase border transition-colors whitespace-nowrap {{ request('sort') === $opt['sort'] ? 'bg-primary text-white border-primary' : 'border-gray-200 text-primary bg-white' }}"
+         style="min-height:36px;display:flex;align-items:center;">{{ $opt['label'] }}</a>
+    @endforeach
+    <button type="button" onclick="document.getElementById('filter-drawer').classList.remove('hidden')"
+            class="shrink-0 px-3 py-2 text-[10px] font-bold tracking-wider uppercase border border-gray-200 bg-white text-primary flex items-center gap-1.5"
+            style="min-height:36px;">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM3.75 6H7.5M3.75 12h16.5M3.75 18h16.5"/></svg>
+      Filters
+    </button>
+  </div>
+
+  {{-- Category chips --}}
+  @if($categories->isNotEmpty())
+  <div class="flex gap-2 px-4 py-2 overflow-x-auto hide-scrollbar border-b border-gray-50">
+    <a href="{{ route('shop', array_diff_key(request()->query(), ['category' => '', 'filter' => ''])) }}"
+       class="shrink-0 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap {{ !request()->hasAny(['category', 'filter']) ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-500 bg-white' }}">All</a>
+    @foreach($categories as $cat)
+      <a href="{{ route('shop', array_merge(request()->query(), ['category' => $cat->slug])) }}"
+         class="shrink-0 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase border whitespace-nowrap {{ request('category') === $cat->slug ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-500 bg-white' }}">{{ $cat->name }}</a>
+    @endforeach
+  </div>
+  @endif
+
+  {{-- Results count + product count --}}
+  <div class="px-4 py-2 text-[10px] text-gray-400 flex items-center justify-between border-b border-gray-50">
+    <span>{{ $products->total() }} products</span>
+    @if($products->hasPages())
+      <span>Page {{ $products->currentPage() }} of {{ $products->lastPage() }}</span>
+    @endif
+  </div>
+
+  {{-- Product Grid --}}
+  @if($products->isEmpty())
+    <div class="px-6 py-16 text-center">
+      <p class="text-sm text-gray-500 mb-4">No products found.</p>
+      <a href="{{ route('shop') }}" class="text-xs font-bold text-secondary underline">Clear filters</a>
+    </div>
+  @else
+  <div class="grid grid-cols-2 gap-3 p-4">
+    @foreach($products as $product)
+    <div class="border border-gray-100 overflow-hidden" style="border-radius:2px;">
+      <a href="{{ route('product.show', $product->slug) }}" class="block">
+        <div class="aspect-[3/4] overflow-hidden bg-gray-50 relative">
+          <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
+               class="w-full h-full object-cover" loading="lazy">
+          @if($product->badge)
+            <span class="absolute top-2 left-2 bg-secondary text-primary text-[9px] font-bold px-1.5 py-0.5 tracking-wider uppercase">{{ $product->badge }}</span>
+          @endif
+        </div>
+      </a>
+      <div class="p-2.5">
+        <a href="{{ route('product.show', $product->slug) }}"
+           class="text-xs font-semibold text-primary leading-snug line-clamp-2 block mb-1">{{ $product->name }}</a>
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-xs font-bold text-secondary">₹{{ number_format($product->price, 0) }}</span>
+            @if($product->original_price && $product->original_price > $product->price)
+              <span class="text-[10px] text-gray-400 line-through ml-1">₹{{ number_format($product->original_price, 0) }}</span>
+            @endif
+          </div>
+          @if($product->rating)
+            <div class="flex items-center gap-0.5">
+              <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24" class="text-amber-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              <span class="text-[10px] text-gray-500">{{ number_format($product->rating, 1) }}</span>
+            </div>
+          @endif
+        </div>
+        <form method="POST" action="{{ route('cart.add') }}" class="mt-2">
+          @csrf
+          <input type="hidden" name="product_id" value="{{ $product->id }}">
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit"
+                  class="w-full text-[10px] font-bold tracking-wider uppercase bg-primary text-white py-2.5 transition-opacity hover:opacity-80"
+                  style="min-height:36px;">
+            {{ $product->has_sizes ? 'Select Size' : 'Add to Bag' }}
+          </button>
+        </form>
+      </div>
+    </div>
+    @endforeach
+  </div>
+
+  {{-- Pagination --}}
+  @if($products->hasPages())
+  <div class="px-4 pb-4">
+    {{ $products->links() }}
+  </div>
+  @endif
+  @endif
+
+</div>
+
+{{-- Filter Drawer --}}
+<div id="filter-drawer" class="hidden fixed inset-0 z-50 flex">
+  <div class="absolute inset-0 bg-black/40" onclick="document.getElementById('filter-drawer').classList.add('hidden')"></div>
+  <div class="relative ml-auto w-72 h-full bg-white overflow-y-auto flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h3 class="text-xs font-bold tracking-widest uppercase">Filters</h3>
+      <button onclick="document.getElementById('filter-drawer').classList.add('hidden')" class="text-gray-400 text-lg leading-none">✕</button>
+    </div>
+    <form method="GET" action="{{ route('shop') }}" class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+      {{-- Keep search --}}
+      @if(request('search'))
+        <input type="hidden" name="search" value="{{ request('search') }}">
+      @endif
+
+      {{-- Price Range --}}
+      <div>
+        <p class="text-[10px] font-bold tracking-wider uppercase text-gray-500 mb-3">Price Range</p>
+        <div class="flex gap-2">
+          <input type="number" name="price_min" value="{{ request('price_min') }}" placeholder="Min"
+                 class="flex-1 border border-gray-200 px-2 py-2 text-xs outline-none">
+          <input type="number" name="price_max" value="{{ request('price_max') }}" placeholder="Max"
+                 class="flex-1 border border-gray-200 px-2 py-2 text-xs outline-none">
+        </div>
+      </div>
+
+      {{-- Categories --}}
+      @if($categories->isNotEmpty())
+      <div>
+        <p class="text-[10px] font-bold tracking-wider uppercase text-gray-500 mb-3">Category</p>
+        <div class="space-y-2">
+          @foreach($categories as $cat)
+          <label class="flex items-center gap-2 cursor-pointer" style="min-height:36px;">
+            <input type="checkbox" name="category[]" value="{{ $cat->slug }}"
+                   {{ in_array($cat->slug, (array)request('category', [])) ? 'checked' : '' }}
+                   class="accent-primary">
+            <span class="text-xs text-primary">{{ $cat->name }}</span>
+            <span class="text-[10px] text-gray-400 ml-auto">{{ $cat->products_count }}</span>
+          </label>
+          @endforeach
+        </div>
+      </div>
+      @endif
+
+      {{-- Tags --}}
+      @if(!empty($allTags))
+      <div>
+        <p class="text-[10px] font-bold tracking-wider uppercase text-gray-500 mb-3">Tags</p>
+        <div class="flex flex-wrap gap-2">
+          @foreach($allTags as $tag)
+          <label class="cursor-pointer">
+            <input type="checkbox" name="tags[]" value="{{ $tag }}"
+                   {{ in_array($tag, (array)request('tags', [])) ? 'checked' : '' }}
+                   class="sr-only peer">
+            <span class="inline-block px-2 py-1 text-[10px] font-bold border border-gray-200 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-colors">{{ $tag }}</span>
+          </label>
+          @endforeach
+        </div>
+      </div>
+      @endif
+
+      <button type="submit" class="w-full btn-primary py-3.5 text-xs font-bold tracking-widest uppercase" style="min-height:48px;">Apply Filters</button>
+      <a href="{{ route('shop') }}" class="block w-full text-center text-xs text-gray-400 py-2">Clear all</a>
+    </form>
+  </div>
+</div>
+
+@endsection

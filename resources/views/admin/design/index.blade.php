@@ -220,14 +220,29 @@
                                          alt="Slide {{ $index }}" 
                                          class="w-full h-32 object-cover border border-gray-200/50 mb-2">
                                 @endif
-                                <input type="text" 
-                                       name="slides[{{ $index }}][image_url]" 
-                                       value="{{ $slide['image_url'] ?? '' }}" 
+                                <input type="text"
+                                       name="slides[{{ $index }}][image_url]"
+                                       value="{{ $slide['image_url'] ?? '' }}"
                                        placeholder="Fallback Image URL..."
                                        class="w-full text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none">
                                 <span class="text-[9px] text-muted block text-center">or upload local file:</span>
-                                <input type="file" 
-                                       name="slides[{{ $index }}][image_file]" 
+                                <input type="file"
+                                       name="slides[{{ $index }}][image_file]"
+                                       class="w-full text-[10px] text-primary cursor-pointer">
+                                <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mt-4">Mobile Image (optional)</label>
+                                @if(!empty($slide['mobile_image_url']))
+                                    <img src="{{ $slide['mobile_image_url'] }}"
+                                         alt="Mobile Slide {{ $index }}"
+                                         class="w-full h-24 object-cover border border-gray-200/50 mb-2">
+                                @endif
+                                <input type="text"
+                                       name="slides[{{ $index }}][mobile_image_url]"
+                                       value="{{ $slide['mobile_image_url'] ?? '' }}"
+                                       placeholder="Mobile image URL (falls back to desktop)..."
+                                       class="w-full text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none">
+                                <span class="text-[9px] text-muted block text-center">or upload local file:</span>
+                                <input type="file"
+                                       name="slides[{{ $index }}][mobile_image_file]"
                                        class="w-full text-[10px] text-primary cursor-pointer">
                             </div>
 

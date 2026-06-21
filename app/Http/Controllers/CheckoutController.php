@@ -135,15 +135,18 @@ class CheckoutController extends Controller
                     if ($item->product->has_sizes && $item->size) {
                         $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
                                                               ->where('size', $item->size)
+                                                              ->lockForUpdate()
                                                               ->first();
                         if ($productSize) {
                             $productSize->stock = max(0, $productSize->stock - $item->quantity);
                             $productSize->save();
                         }
                     } else {
-                        $product = $item->product;
-                        $product->stock = max(0, $product->stock - $item->quantity);
-                        $product->save();
+                        $product = \App\Models\Product::where('id', $item->product_id)->lockForUpdate()->first();
+                        if ($product) {
+                            $product->stock = max(0, $product->stock - $item->quantity);
+                            $product->save();
+                        }
                     }
                 }
 
@@ -337,15 +340,18 @@ class CheckoutController extends Controller
                 if ($item->product->has_sizes && $item->size) {
                     $productSize = \App\Models\ProductSize::where('product_id', $item->product_id)
                                                           ->where('size', $item->size)
+                                                          ->lockForUpdate()
                                                           ->first();
                     if ($productSize) {
                         $productSize->stock = max(0, $productSize->stock - $item->quantity);
                         $productSize->save();
                     }
                 } else {
-                    $product = $item->product;
-                    $product->stock = max(0, $product->stock - $item->quantity);
-                    $product->save();
+                    $product = \App\Models\Product::where('id', $item->product_id)->lockForUpdate()->first();
+                    if ($product) {
+                        $product->stock = max(0, $product->stock - $item->quantity);
+                        $product->save();
+                    }
                 }
             }
 

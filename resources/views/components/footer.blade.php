@@ -45,6 +45,7 @@
       <p style="font-size:9px;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:28px;">Join the Atelier</p>
       <p style="font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;margin-bottom:20px;">New drops, exclusive offers, editorial content.</p>
       <form action="#" method="POST" style="display:flex;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:12px;">
+        @csrf
         <input type="email" placeholder="Your email" required
                style="flex:1;background:transparent;border:none;font-size:13px;color:#fff;font-family:'Manrope',sans-serif;outline:none;"
                onfocus="this.parentElement.style.borderBottomColor='#b8986e'" onblur="this.parentElement.style.borderBottomColor='rgba(255,255,255,0.15)'">

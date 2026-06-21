@@ -14,7 +14,7 @@
             @foreach($heroSlides as $i => $slide)
               <div class="swiper-slide">
                 <div class="hero-slide" style="height:calc(var(--vh,1vh)*70);">
-                  <img src="{{ $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}" style="width:100%;height:100%;object-fit:cover;object-position:center;">
+                  <img src="{{ $slide['mobile_image_url'] ?? $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}" style="width:100%;height:100%;object-fit:cover;object-position:center;">
                   <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,24,24,0.85) 0%,rgba(24,24,24,0.2) 60%,transparent);"></div>
                   <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:32px 24px;">
                     <div style="color:#fff;width:100%;text-align:left;">

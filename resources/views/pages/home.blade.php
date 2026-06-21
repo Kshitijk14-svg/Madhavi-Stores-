@@ -265,6 +265,7 @@
               <p style="color:rgba(255,255,255,0.5);margin-top:10px;font-size:13px;font-weight:300;">{!! \App\Models\Setting::format($newsletter['description']) !!}</p>
             </div>
             <form action="#" method="POST" class="newsletter-form">
+              @csrf
               <input type="email" placeholder="Your email address" required
                      style="flex:1;padding:14px 20px;font-size:13px;border:none;outline:none;font-family:inherit;color:var(--primary);">
               <button type="submit" class="btn-primary" style="border-radius:0;border:none;">Subscribe</button>
