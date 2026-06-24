@@ -47,27 +47,42 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name'                  => 'required|string|max:100',
-            'email'                 => 'required|email|unique:users,email',
-            'password'              => 'required|min:8|confirmed',
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email',
+            'password' => 'required|min:8|confirmed',
         ]);
 
-        try {
-            $user = User::create([
+        // Only a fully-registered (verified) account blocks sign-up. An unverified
+        // leftover — e.g. an abandoned attempt or a previous failed OTP send — is
+        // allowed to restart registration instead of being told "email taken".
+        $existing = User::where('email', $request->email)->first();
+        if ($existing && $existing->email_verified_at) {
+            return back()
+                ->withErrors(['email' => 'An account with this email already exists. Please sign in instead.'])
+                ->withInput();
+        }
+
+        // Defer creating the account until the OTP is verified. This prevents
+        // orphan unverified rows from blocking future sign-ups.
+        session([
+            'otp_email'            => $request->email,
+            'otp_purpose'          => 'register',
+            'pending_registration' => [
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
-            ]);
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Concurrent insert beat the unique check — show a clean message.
-            return back()->withErrors(['email' => 'An account with this email already exists.'])->withInput();
+            ],
+        ]);
+
+        if (! $this->sendOtp($request->email, 'register')) {
+            session()->forget(['otp_email', 'otp_purpose', 'pending_registration']);
+            return back()
+                ->withErrors(['email' => 'We could not send the verification email right now. Please try again in a moment.'])
+                ->withInput();
         }
 
-        $this->sendOtp($user->email, 'register');
-        session(['otp_email' => $user->email, 'otp_purpose' => 'register']);
-
         return redirect()->route('verify.show')
-            ->with('success', 'Account created! Please check your email for the verification code.');
+            ->with('success', 'Verification code sent! Check your email to finish signing up.');
     }
 
     // ── SHOW VERIFY ─────────────────────────────────────────
@@ -110,12 +125,37 @@ class AuthController extends Controller
             return redirect()->route('password.reset.show');
         }
 
-        // Register verification flow — log the user in
-        $user = User::where('email', $email)->first();
-        if ($user && !$user->email_verified_at) {
+        // Register verification flow — create (or finalize) the account now that
+        // ownership of the email is proven, then log the user in.
+        $pending = session('pending_registration');
+        $user    = User::where('email', $email)->first();
+
+        if ($pending && ($pending['email'] ?? null) === $email) {
+            if ($user) {
+                // An unverified row existed (legacy/abandoned) — refresh + verify it.
+                $user->update([
+                    'name'              => $pending['name'],
+                    'password'          => $pending['password'],
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ]);
+            } else {
+                $user = User::create([
+                    'name'              => $pending['name'],
+                    'email'             => $pending['email'],
+                    'password'          => $pending['password'],
+                    'email_verified_at' => now(),
+                ]);
+            }
+        } elseif ($user && !$user->email_verified_at) {
             $user->update(['email_verified_at' => now()]);
         }
-        session()->forget(['otp_email', 'otp_purpose']);
+
+        session()->forget(['otp_email', 'otp_purpose', 'pending_registration']);
+
+        if (!$user) {
+            return redirect()->route('register')
+                ->withErrors(['email' => 'Your sign-up session expired. Please register again.']);
+        }
 
         Auth::login($user, true);
         $request->session()->regenerate();
@@ -133,7 +173,9 @@ class AuthController extends Controller
         $purpose = session('otp_purpose', 'register');
         if (!$email) return redirect()->route('login');
 
-        $this->sendOtp($email, $purpose);
+        if (! $this->sendOtp($email, $purpose)) {
+            return back()->withErrors(['otp' => 'Could not send the code right now. Please try again shortly.']);
+        }
         return back()->with('success', 'A new code has been sent to ' . $email);
     }
 
@@ -233,7 +275,8 @@ class AuthController extends Controller
     }
 
     // ── HELPER: SEND OTP ────────────────────────────────────
-    private function sendOtp(string $email, string $purpose): void
+    // Returns true if the code was sent (or surfaced locally), false on failure.
+    private function sendOtp(string $email, string $purpose): bool
     {
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -251,14 +294,18 @@ class AuthController extends Controller
         ]);
 
         try {
-            // Queued (OtpMail implements ShouldQueue) so the SMTP handshake never
-            // blocks the auth request. Requires a running queue worker in prod.
-            Mail::to($email)->queue(new OtpMail($otp, $purpose));
+            // Sent synchronously (sendNow) so it works without a running queue
+            // worker — most shared hosting has none, which silently swallowed OTPs.
+            Mail::to($email)->sendNow(new OtpMail($otp, $purpose));
+            return true;
         } catch (\Throwable $e) {
-            logger()->error("Failed to queue OTP email: " . $e->getMessage());
+            logger()->error('Failed to send OTP email: ' . $e->getMessage());
+            // In local dev, surface the code so testing isn't blocked by SMTP setup.
             if (app()->isLocal()) {
                 session()->flash('local_otp', $otp);
+                return true;
             }
+            return false;
         }
     }
 }

@@ -1,5 +1,5 @@
 {{-- ══ MOBILE FOOTER ══ --}}
-<footer style="background:#181818;color:#fff;font-family:'Montserrat',sans-serif;padding:40px 24px calc(40px + env(safe-area-inset-bottom));">
+<footer style="background:#181818;color:#fff;font-family:'Montserrat',sans-serif;margin-top:48px;padding:40px 24px calc(40px + env(safe-area-inset-bottom));">
 
   <div style="text-align:center;">
     <a href="{{ route('home') }}" style="display:inline-block;margin-bottom:8px;">
