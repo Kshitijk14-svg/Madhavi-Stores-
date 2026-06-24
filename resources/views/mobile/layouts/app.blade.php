@@ -10,8 +10,13 @@
   @endif
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
+  {{-- Favicon --}}
+  <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/Brand_Favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ asset('images/brand/Brand_Favicon.svg') }}">
+
   {{-- Theme Color for Mobile Browsers --}}
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#f9f8f3">
 
   <title>@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')</title>
 
@@ -43,6 +48,10 @@
     @yield('content')
     @yield('scripts')
   </main>
+
+  @include('mobile.components.footer')
+
+  @include('components.whatsapp-float')
 
   <div id="toast-container" class="fixed bottom-24 right-4 left-4 z-[60] flex flex-col gap-2"></div>
 

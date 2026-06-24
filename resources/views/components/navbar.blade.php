@@ -13,7 +13,7 @@
       {{-- Logo (Left) --}}
       <div class="flex-shrink-0 flex items-center">
         <a href="{{ route('home') }}">
-          <img src="{{ asset('images/brand/logo.png') }}" alt="Madhavi Stores" style="height:44px;width:auto;object-fit:contain;"
+          <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:40px;width:auto;object-fit:contain;"
                onerror="this.outerHTML='<span style=\'font-family:Cormorant Garamond,serif;font-size:2rem;font-style:italic;font-weight:300;letter-spacing:0.02em;color:var(--primary);\'>Madhavi</span>'">
         </a>
       </div>
@@ -78,7 +78,7 @@
 <div class="drawer-backdrop" id="mob-back"></div>
 <div class="mob-panel" id="mob-panel">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:20px;border-bottom:1px solid #f0f0f0;">
-    <span style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-style:italic;font-weight:300;">Madhavi</span>
+    <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:28px;width:auto;object-fit:contain;">
     <button id="mob-close" style="background:none;border:none;cursor:pointer;">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>

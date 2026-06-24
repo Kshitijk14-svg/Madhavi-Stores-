@@ -4,7 +4,7 @@
 @section('form')
 <div style="text-align:center;margin-bottom:32px;">
   <div style="width:64px;height:64px;background:#f0ebe3;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
-    <svg width="28" height="28" fill="none" stroke="#b8986e" stroke-width="1.5" viewBox="0 0 24 24">
+    <svg width="28" height="28" fill="none" stroke="#ebb829" stroke-width="1.5" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
     </svg>
   </div>

@@ -18,7 +18,7 @@
         @endif
 
         <!-- Quick Add Button -->
-        <button class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur text-primary text-xs tracking-widest uppercase py-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out hover:bg-primary hover:text-white focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none" aria-label="Quick add {{ $product['name'] }} to cart">
+        <button class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur text-primary text-xs tracking-widest uppercase py-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out hover:bg-secondary hover:text-ink focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none" aria-label="Quick add {{ $product['name'] }} to cart">
             Quick Add
         </button>
     </a>

@@ -19,7 +19,7 @@
                   <div style="position:absolute;inset:0;display:flex;align-items:center;{{ $i % 2 === 1 ? 'justify-content:flex-end;' : '' }}">
                     <div class="wrap" style="width:100%;">
                       <div style="max-width:480px;color:#fff;{{ $i % 2 === 1 ? 'margin-left:auto;text-align:right;' : '' }}">
-                        <p class="eyebrow" style="color:rgba(184,152,110,0.9);margin-bottom:20px;">{!! \App\Models\Setting::format($slide['eyebrow']) !!}</p>
+                        <p class="eyebrow" style="color:rgba(235, 184, 41,0.9);margin-bottom:20px;">{!! \App\Models\Setting::format($slide['eyebrow']) !!}</p>
                         <h1 style="font-family:'Cormorant Garamond',serif;font-size:clamp(3rem,6.5vw,6.5rem);font-weight:300;line-height:0.87;margin-bottom:24px;">
                           {!! \App\Models\Setting::format($slide['title']) !!}
                         </h1>
@@ -163,7 +163,7 @@
                         <input type="hidden" name="size" value="M">
                       @endif
                       <input type="hidden" name="quantity" value="1">
-                      <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase border border-primary text-primary hover:bg-primary hover:text-white transition-all {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'disabled' : '' }}>
+                      <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase bg-secondary text-ink border border-secondary hover:bg-[#d9a91f] transition-all {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'disabled' : '' }}>
                         {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'Out Of Stock' : 'Add To Bag' }}
                       </button>
                     </form>
@@ -237,7 +237,7 @@
                     <input type="hidden" name="size" value="M">
                   @endif
                   <input type="hidden" name="quantity" value="1">
-                  <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase border border-primary text-primary hover:bg-primary hover:text-white transition-all {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'disabled' : '' }}>
+                  <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase bg-secondary text-ink border border-secondary hover:bg-[#d9a91f] transition-all {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'disabled' : '' }}>
                     {{ !($product['has_sizes'] ?? false) && ($product['stock'] ?? 0) <= 0 ? 'Out Of Stock' : 'Add To Bag' }}
                   </button>
                 </form>
@@ -277,6 +277,39 @@
 
   @endif
 @endforeach
+
+{{-- ═══ INSTAGRAM FEED ═══ --}}
+<section style="padding:64px 0;background:var(--background);">
+  <div class="wrap">
+    <div style="text-align:center;margin-bottom:36px;">
+      <p class="eyebrow" style="margin-bottom:10px;">@@madhavistores</p>
+      <h2 class="section-title" style="font-family:'Playfair Display',serif;">Follow Our Journey</h2>
+      <p style="color:var(--muted);font-size:14px;font-weight:300;margin-top:10px;">Styling inspiration, new drops & festive decor — straight from our atelier.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
+      @php
+        $instaPosts = [
+          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=70',
+          'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=400&q=70',
+          'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=400&q=70',
+          'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=70',
+          'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=70',
+          'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=70',
+        ];
+      @endphp
+      @foreach($instaPosts as $img)
+        <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" class="banner-card" style="aspect-ratio:1/1;background:var(--silk);">
+          <img src="{{ $img }}" alt="Madhavi Stores on Instagram" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+          <div class="banner-card-overlay" style="background:rgba(24,24,24,0);transition:background 0.3s ease;display:flex;align-items:center;justify-content:center;"
+               onmouseover="this.style.background='rgba(24,24,24,0.35)'" onmouseout="this.style.background='rgba(24,24,24,0)'"></div>
+        </a>
+      @endforeach
+    </div>
+    <div style="text-align:center;margin-top:36px;">
+      <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" class="btn-primary">Follow @@madhavistores</a>
+    </div>
+  </div>
+</section>
 
 @endsection
 

@@ -13,13 +13,13 @@
   .body { padding:48px 40px; }
   .greeting { font-size:16px; color:#181818; margin-bottom:16px; }
   .desc { font-size:14px; color:#888; line-height:1.7; margin-bottom:36px; }
-  .otp-box { background:#f0ebe3; border:1px solid rgba(184,152,110,0.25); text-align:center; padding:32px; margin-bottom:36px; }
+  .otp-box { background:#f0ebe3; border:1px solid rgba(235, 184, 41,0.25); text-align:center; padding:32px; margin-bottom:36px; }
   .otp-code { font-size:42px; font-weight:700; letter-spacing:0.25em; color:#181818; font-family:'Courier New',monospace; }
-  .otp-expires { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#b8986e; margin-top:12px; }
-  .warning { font-size:12px; color:#aaa; line-height:1.6; padding:20px; background:#fafafa; border-left:2px solid #b8986e; }
+  .otp-expires { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:#ebb829; margin-top:12px; }
+  .warning { font-size:12px; color:#aaa; line-height:1.6; padding:20px; background:#fafafa; border-left:2px solid #ebb829; }
   .footer { background:#181818; padding:24px 40px; text-align:center; }
   .footer p { font-size:11px; color:rgba(255,255,255,0.3); margin:0; }
-  .footer a { color:rgba(184,152,110,0.7); text-decoration:none; }
+  .footer a { color:rgba(235, 184, 41,0.7); text-decoration:none; }
 </style>
 </head>
 <body>

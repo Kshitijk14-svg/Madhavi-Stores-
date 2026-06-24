@@ -36,7 +36,7 @@
       font-size:14px; font-family:inherit; color:#181818; outline:none;
       transition:border-color 0.2s; box-sizing:border-box;
     }
-    .form-input:focus { border-color:#b8986e; }
+    .form-input:focus { border-color:#ebb829; }
     .form-input.error { border-color:#dc2626; }
     .form-error { font-size:11px; color:#dc2626; margin-top:6px; display:block; }
 
@@ -49,10 +49,10 @@
       padding:16px 4px; background:#fff; border:1px solid #e5e5e5;
       font-family:inherit; color:#181818; outline:none; transition:border-color 0.2s;
     }
-    .otp-inputs input:focus { border-color:#b8986e; }
+    .otp-inputs input:focus { border-color:#ebb829; }
 
     .auth-submit { width:100%; padding:16px; background:#181818; color:#fff; border:none; cursor:pointer; font-size:11px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; font-family:inherit; transition:background 0.3s; margin-top:8px; }
-    .auth-submit:hover { background:#b8986e; color:#181818; }
+    .auth-submit:hover { background:#ebb829; color:#181818; }
 
     .auth-divider { display:flex; align-items:center; gap:16px; margin:28px 0; }
     .auth-divider span { font-size:11px; color:#ccc; text-transform:uppercase; letter-spacing:0.2em; }
@@ -60,7 +60,7 @@
 
     .auth-link-row { text-align:center; font-size:13px; color:#888; }
     .auth-link-row a { color:#181818; font-weight:600; text-decoration:none; border-bottom:1px solid rgba(24,24,24,0.2); padding-bottom:1px; transition:border-color 0.2s; }
-    .auth-link-row a:hover { border-color:#b8986e; color:#b8986e; }
+    .auth-link-row a:hover { border-color:#ebb829; color:#ebb829; }
 
     .auth-alert { padding:14px 16px; margin-bottom:24px; font-size:13px; line-height:1.5; }
     .auth-alert.success { background:#f0fdf4; border-left:3px solid #16a34a; color:#15803d; }
@@ -71,12 +71,12 @@
     .pw-strength-bar { height:100%; width:0; transition:width 0.4s, background 0.4s; }
 
     .check-row { display:flex; align-items:center; gap:10px; }
-    .check-row input[type=checkbox] { width:16px; height:16px; accent-color:#b8986e; flex-shrink:0; }
+    .check-row input[type=checkbox] { width:16px; height:16px; accent-color:#ebb829; flex-shrink:0; }
     .check-row label { font-size:13px; color:#888; }
     .check-row label a { color:#181818; font-weight:600; }
 
     .resend-row { text-align:center; font-size:13px; color:#888; margin-top:20px; }
-    .resend-row button { background:none; border:none; cursor:pointer; color:#b8986e; font-weight:600; font-family:inherit; font-size:13px; text-decoration:underline; }
+    .resend-row button { background:none; border:none; cursor:pointer; color:#ebb829; font-weight:600; font-family:inherit; font-size:13px; text-decoration:underline; }
     .resend-row button:disabled { color:#ccc; cursor:not-allowed; text-decoration:none; }
   </style>
 </head>
@@ -90,7 +90,7 @@
          alt="Madhavi Stores">
     <div class="auth-image-overlay"></div>
     <div class="auth-image-text">
-      <p style="font-size:10px;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:rgba(184,152,110,0.8);margin-bottom:16px;">Madhavi Stores</p>
+      <p style="font-size:10px;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:rgba(235, 184, 41,0.8);margin-bottom:16px;">Madhavi Stores</p>
       <h2 style="font-family:'Cormorant Garamond',serif;font-size:3rem;font-weight:300;font-style:italic;line-height:0.9;color:#fff;margin-bottom:20px;">Quiet Luxury.<br>Indian Heritage.</h2>
       <p style="font-size:13px;color:rgba(255,255,255,0.5);font-weight:300;line-height:1.7;">Handcrafted textiles that tell the story<br>of a culture woven through time.</p>
     </div>

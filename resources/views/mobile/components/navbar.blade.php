@@ -2,8 +2,8 @@
 <header style="position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;">
     <div style="flex-shrink:0;">
-      <a href="{{ route('home') }}">
-        <span style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-style:italic;font-weight:300;letter-spacing:0.02em;color:var(--primary);">Madhavi</span>
+      <a href="{{ route('home') }}" style="display:flex;align-items:center;">
+        <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:30px;width:auto;object-fit:contain;">
       </a>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
@@ -30,7 +30,7 @@
 
   {{-- Panel Header --}}
   <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;">
-    <span style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-style:italic;font-weight:300;color:var(--primary);">Madhavi Stores</span>
+    <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:26px;width:auto;object-fit:contain;">
     <button onclick="closeSidebar()" aria-label="Close" style="color:var(--primary);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;">
       <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>

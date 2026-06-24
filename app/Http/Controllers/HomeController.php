@@ -114,4 +114,32 @@ class HomeController extends Controller
 
         return view('pages.about', compact('about', 'cartCount'));
     }
+
+    /**
+     * Render a static policy page (shipping / return / privacy).
+     */
+    private function policyPage(string $view)
+    {
+        $cartCount = 0;
+        if (auth()->check()) {
+            $cartCount = CartItem::where('user_id', auth()->id())->sum('quantity');
+        }
+
+        return view($view, compact('cartCount'));
+    }
+
+    public function shippingPolicy()
+    {
+        return $this->policyPage('pages.shipping-policy');
+    }
+
+    public function returnPolicy()
+    {
+        return $this->policyPage('pages.return-policy');
+    }
+
+    public function privacyPolicy()
+    {
+        return $this->policyPage('pages.privacy-policy');
+    }
 }

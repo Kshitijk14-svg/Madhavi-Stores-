@@ -74,10 +74,10 @@
 .form-input.has-icon { padding-left:42px; }
 
 .auth-inline-link {
-  font-size:11px; color:#b8986e; font-weight:600; text-decoration:none;
+  font-size:11px; color:#ebb829; font-weight:600; text-decoration:none;
   border-bottom:1px solid transparent; transition:border-color 0.2s;
 }
-.auth-inline-link:hover { border-color:#b8986e; }
+.auth-inline-link:hover { border-color:#ebb829; }
 
 .form-error {
   display:flex; align-items:center; gap:5px;

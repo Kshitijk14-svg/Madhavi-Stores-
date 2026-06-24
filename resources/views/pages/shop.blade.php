@@ -188,7 +188,7 @@
                     <input type="hidden" name="size" value="M">
                   @endif
                   <input type="hidden" name="quantity" value="1">
-                  <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase border border-primary text-primary hover:bg-primary hover:!text-white transition-all {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
+                  <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase bg-secondary text-ink border border-secondary hover:bg-[#d9a91f] transition-all {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
                     {{ !$product->has_sizes && $product->stock <= 0 ? 'Out Of Stock' : 'Add To Bag' }}
                   </button>
                 </form>

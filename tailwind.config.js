@@ -17,17 +17,19 @@ export default {
     extend: {
       colors: {
         primary: '#181818',
-        secondary: '#b8986e',
+        secondary: '#ebb829',
+        gold: '#ebb829',
+        ink: '#1f1a0f',
         accent: '#d44d44',
         silk: '#f0ebe3',
         muted: '#888888',
         border: '#e5e5e5',
-        background: '#faf8f5',
+        background: '#f9f8f3',
         surface: '#ffffff',
       },
       fontFamily: {
         display: ['"Cormorant Garamond"', 'serif'],
-        sans: ['Manrope', 'sans-serif'],
+        sans: ['Montserrat', 'sans-serif'],
       },
       letterSpacing: {
         luxury: '0.25em',

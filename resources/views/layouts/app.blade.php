@@ -14,6 +14,11 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   @yield('meta')
 
+  {{-- Favicon --}}
+  <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/Brand_Favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ asset('images/brand/Brand_Favicon.svg') }}">
+
   {{-- Canonical Link --}}
   <link rel="canonical" href="{{ url()->current() }}">
 
@@ -79,6 +84,8 @@
   </main>
 
   @include('components.footer')
+
+  @include('components.whatsapp-float')
 
   <!-- Premium Glassmorphism Toast Container -->
   <div id="toast-container" class="fixed bottom-8 right-8 z-50 flex flex-col gap-3 max-w-sm w-full"></div>
@@ -895,7 +902,7 @@
 
             // Create gold gradient
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(184, 152, 110, 0.25)'); // Luxurious Gold theme
+            gradient.addColorStop(0, 'rgba(235, 184, 41, 0.25)'); // Luxurious Gold theme
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
 
             salesChartInstance = new Chart(ctx, {
@@ -905,16 +912,16 @@
                     datasets: [{
                         label: 'Sales Revenue',
                         data: data.values,
-                        borderColor: '#b8986e', // Gold color
+                        borderColor: '#ebb829', // Gold color
                         borderWidth: 2,
                         backgroundColor: gradient,
                         fill: true,
                         tension: 0.35,
-                        pointBackgroundColor: '#b8986e',
+                        pointBackgroundColor: '#ebb829',
                         pointBorderColor: '#fff',
                         pointHoverRadius: 6,
                         pointHoverBackgroundColor: '#181818',
-                        pointHoverBorderColor: '#b8986e',
+                        pointHoverBorderColor: '#ebb829',
                         pointHoverBorderWidth: 2
                     }]
                 },
@@ -927,7 +934,7 @@
                         },
                         tooltip: {
                             backgroundColor: '#181818',
-                            titleColor: '#b8986e',
+                            titleColor: '#ebb829',
                             bodyColor: '#fff',
                             cornerRadius: 0,
                             padding: 12,

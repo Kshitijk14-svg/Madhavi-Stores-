@@ -65,7 +65,7 @@
               <input type="hidden" name="product_id" value="{{ $product->id }}">
               <input type="hidden" name="size" value="M">
               <input type="hidden" name="quantity" value="1">
-              <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase border border-primary text-primary hover:bg-primary hover:text-white transition-all">
+              <button type="submit" class="w-full text-center py-2 text-[10px] font-bold tracking-wider uppercase bg-secondary text-ink border border-secondary hover:bg-[#d9a91f] transition-all">
                 Move to Shopping Bag
               </button>
             </form>
