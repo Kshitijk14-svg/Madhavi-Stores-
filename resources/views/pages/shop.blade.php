@@ -213,6 +213,29 @@
 </div>
 
 {{-- ══ MOBILE FILTER DRAWER ══ --}}
+{{-- Render the Filter & Sort sheet as a centered pop-up modal rather than a bottom-stuck drawer. --}}
+<style>
+  #filter-panel {
+    top: 50%;
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: 92vw;
+    max-width: 440px;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 20px;
+    transform: translate(-50%, -50%) scale(0.96);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  }
+  #filter-panel.open {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: all;
+  }
+</style>
 <div class="drawer-backdrop" id="filter-back"></div>
 <div class="mob-drawer-bottom" id="filter-panel">
   <div class="flex items-center justify-between p-5 border-b border-gray-100">

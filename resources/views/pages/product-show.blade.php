@@ -4,7 +4,7 @@
 
 @section('meta_description', $product->seo_description ?: (Str::limit(strip_tags($product->description ?: 'Discover our exclusive handcrafted ethnic silhouettes, sarees, and fine textiles.'), 150)))
 @section('meta_keywords', $product->seo_keywords ?: ($product->name . ', ethnic wear, quiet luxury, handcrafted, indian heritage'))
-@section('og_image', $product->image_url ? asset($product->image_url) : asset('images/logo.png'))
+@section('og_image', $product->image_url ? asset($product->image_url) : asset('images/brand/logo.png'))
 @section('og_type', 'product')
 
 @section('content')

@@ -112,9 +112,9 @@
           <a href="{{ route('shop', ['filter' => 'new-arrivals']) }}" class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">View All</a>
         </div>
 
-        <div class="flex overflow-x-auto gap-4 pb-8 snap-x hide-scrollbar" style="padding-left:16px;padding-right:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+        <div class="flex overflow-x-auto gap-4 pb-8 hide-scrollbar" style="padding-left:20px;padding-right:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
           @foreach($newArrivals->take(6) as $product)
-            <div class="snap-start shrink-0" style="width:70vw;">
+            <div class="shrink-0" style="width:70vw;">
               <div class="pcard">
                 <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
                   <a href="{{ route('product.show', $product['slug']) }}" class="block w-full h-full">
@@ -168,9 +168,9 @@
           <a href="{{ route('shop', ['filter' => 'bestsellers']) }}" class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">View All</a>
         </div>
 
-        <div class="flex overflow-x-auto gap-4 pb-8 snap-x hide-scrollbar" style="padding-left:16px;padding-right:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+        <div class="flex overflow-x-auto gap-4 pb-8 hide-scrollbar" style="padding-left:20px;padding-right:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
           @foreach($bestSellers->take(6) as $product)
-            <div class="snap-start shrink-0" style="width:70vw;">
+            <div class="shrink-0" style="width:70vw;">
               <div class="pcard">
                 <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
                   <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">

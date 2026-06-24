@@ -28,13 +28,13 @@
   <meta property="og:description" content="@yield('meta_description', 'Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.')">
   <meta property="og:type" content="@yield('og_type', 'website')">
   <meta property="og:url" content="{{ url()->current() }}">
-  <meta property="og:image" content="@yield('og_image', asset('images/logo.png'))">
+  <meta property="og:image" content="@yield('og_image', asset('images/brand/logo.png'))">
 
   {{-- Twitter Card Tags --}}
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')">
   <meta name="twitter:description" content="@yield('meta_description', 'Madhavi Stores — Premium Indian ethnic wear. Handcrafted luxury.')">
-  <meta name="twitter:image" content="@yield('og_image', asset('images/logo.png'))">
+  <meta name="twitter:image" content="@yield('og_image', asset('images/brand/logo.png'))">
 
   <title>@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')</title>
 

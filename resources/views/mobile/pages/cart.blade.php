@@ -7,7 +7,7 @@
   {{-- Header --}}
   <div class="px-4 py-5 border-b border-gray-100 flex items-center justify-between">
     <h1 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:300;">Shopping Bag</h1>
-    <span class="text-xs text-gray-400">{{ $cartCount }} items</span>
+    <span class="text-xs text-gray-400" id="cart-items-count">{{ $cartCount }} items</span>
   </div>
 
   @if($cartItems->isEmpty())
@@ -36,13 +36,13 @@
         <p class="text-sm font-bold text-secondary mb-3">₹{{ number_format($item->product->price, 0) }}</p>
         <div class="flex items-center gap-3">
           <div class="flex items-center border border-gray-200">
-            <button type="button"
-                    onclick="updateCartItem({{ $item->id }}, {{ max(1, $item->quantity - 1) }})"
-                    class="w-8 h-8 flex items-center justify-center text-primary hover:text-secondary transition-colors text-lg leading-none"
+            <button type="button" id="minus-{{ $item->id }}"
+                    onclick="updateCartItem({{ $item->id }}, 'decrease')"
+                    class="w-8 h-8 flex items-center justify-center text-primary hover:text-secondary transition-colors text-lg leading-none disabled:opacity-30 disabled:cursor-not-allowed"
                     {{ $item->quantity <= 1 ? 'disabled' : '' }}>−</button>
             <span class="w-8 text-center text-xs font-bold" id="qty-{{ $item->id }}">{{ $item->quantity }}</span>
             <button type="button"
-                    onclick="updateCartItem({{ $item->id }}, {{ $item->quantity + 1 }})"
+                    onclick="updateCartItem({{ $item->id }}, 'increase')"
                     class="w-8 h-8 flex items-center justify-center text-primary hover:text-secondary transition-colors text-lg leading-none">+</button>
           </div>
           <button type="button" onclick="removeCartItem({{ $item->id }})"
@@ -73,17 +73,15 @@
   <div class="px-4 py-4 border-t border-gray-100 space-y-2">
     <div class="flex justify-between text-sm">
       <span class="text-gray-500 font-light">Subtotal</span>
-      <span class="font-semibold">₹{{ number_format($subtotal, 0) }}</span>
+      <span class="font-semibold" id="cart-subtotal">₹{{ number_format($subtotal, 0) }}</span>
     </div>
-    @if($discount > 0)
-    <div class="flex justify-between text-sm">
+    <div class="flex justify-between text-sm" id="cart-discount-row" style="{{ $discount > 0 ? '' : 'display:none;' }}">
       <span class="text-green-600 font-light">Discount</span>
-      <span class="text-green-600 font-semibold">−₹{{ number_format($discount, 0) }}</span>
+      <span class="text-green-600 font-semibold" id="cart-discount">−₹{{ number_format($discount, 0) }}</span>
     </div>
-    @endif
     <div class="flex justify-between text-sm font-bold border-t border-gray-100 pt-2 mt-2">
       <span>Total</span>
-      <span class="text-secondary">₹{{ number_format($total, 0) }}</span>
+      <span class="text-secondary" id="cart-total">₹{{ number_format($total, 0) }}</span>
     </div>
   </div>
 
@@ -102,17 +100,50 @@
 <script>
 const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
 
-function updateCartItem(id, qty) {
+// Patches the cart summary (subtotal, discount, total) and the cart badges from a JSON response.
+function applyCartSummary(data) {
+  const sub = document.getElementById('cart-subtotal');
+  if (sub && data.subtotal !== undefined) sub.innerText = data.subtotal;
+  const tot = document.getElementById('cart-total');
+  if (tot && data.total !== undefined) tot.innerText = data.total;
+
+  const discRow = document.getElementById('cart-discount-row');
+  const discVal = document.getElementById('cart-discount');
+  if (discRow && discVal && data.discount !== undefined) {
+    const hasDiscount = data.discount && data.discount !== '₹0';
+    discRow.style.display = hasDiscount ? '' : 'none';
+    discVal.innerText = '−' + data.discount;
+  }
+
+  if (data.cart_count !== undefined) {
+    const cnt = document.getElementById('cart-items-count');
+    if (cnt) cnt.innerText = data.cart_count + ' items';
+    ['mob-cart-count', 'mob-bottom-cart-count'].forEach(bid => {
+      const b = document.getElementById(bid);
+      if (!b) return;
+      b.innerText = data.cart_count;
+      b.classList.toggle('hidden', data.cart_count <= 0);
+    });
+  }
+}
+
+function updateCartItem(id, action) {
   fetch('{{ route("cart.update") }}', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
-    body: JSON.stringify({ cart_item_id: id, quantity: qty })
+    body: JSON.stringify({ cart_item_id: id, action })
   }).then(r => r.json()).then(data => {
-    if (data.success) {
-      window.location.reload();
+    if (!data.success) { showToast(data.message || 'Could not update.', 'error'); return; }
+    if (data.item_quantity === 0) {
+      document.getElementById('cart-item-' + id)?.remove();
     } else {
-      showToast(data.message || 'Could not update.', 'error');
+      const qtyEl = document.getElementById('qty-' + id);
+      if (qtyEl) qtyEl.innerText = data.item_quantity;
+      const minusEl = document.getElementById('minus-' + id);
+      if (minusEl) minusEl.disabled = data.item_quantity <= 1;
     }
+    applyCartSummary(data);
+    if (data.cart_count <= 0) window.location.reload();
   }).catch(() => showToast('Connection error.', 'error'));
 }
 
@@ -121,10 +152,11 @@ function removeCartItem(id) {
     method: 'POST',
     headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' }
   }).then(r => r.json()).then(data => {
-    if (data.success) {
-      document.getElementById('cart-item-' + id)?.remove();
-      showToast('Item removed.', 'success');
-    }
+    if (!data.success) { showToast(data.message || 'Could not remove.', 'error'); return; }
+    document.getElementById('cart-item-' + id)?.remove();
+    showToast('Item removed.', 'success');
+    applyCartSummary(data);
+    if (data.cart_count <= 0) window.location.reload();
   }).catch(() => showToast('Connection error.', 'error'));
 }
 
