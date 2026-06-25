@@ -197,10 +197,12 @@
     @endif
 
     @if($section['id'] === 'instagram_feed')
-      {{-- ═══ INSTAGRAM FEED ═══ --}}
+      {{-- ═══ INSTAGRAM REELS ═══ --}}
       @php
         $igHandle = $instagram['handle'] ?? 'madhavistores';
-        $igPosts = !empty($instaPosts) ? $instaPosts : array_map(fn($u) => ['image' => $u, 'permalink' => null, 'caption' => ''], [
+        $igPosts  = !empty($instaPosts) ? $instaPosts : array_map(fn($u) => [
+          'image' => $u, 'video_url' => null, 'media_type' => 'IMAGE', 'permalink' => null, 'caption' => ''
+        ], [
           'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&q=60',
           'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=300&q=60',
           'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=300&q=60',
@@ -209,19 +211,38 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
         ]);
       @endphp
-      <section style="padding:36px 16px;background:var(--background);">
-        <div style="text-align:center;margin-bottom:20px;">
+      <section style="padding:36px 0;background:var(--background);overflow:hidden;">
+        <div style="text-align:center;margin-bottom:20px;padding:0 16px;">
           <p class="eyebrow" style="margin-bottom:6px;">@@{{ $igHandle }}</p>
-          <h2 style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:300;">Follow Our Journey</h2>
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:300;">Reels &amp; Stories</h2>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-          @foreach($igPosts as $post)
-            <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener" style="display:block;aspect-ratio:1/1;overflow:hidden;background:var(--silk);">
-              <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-            </a>
-          @endforeach
+        <div class="swiper ig-reels-swiper-m" style="padding:0 16px;">
+          <div class="swiper-wrapper">
+            @foreach($igPosts as $post)
+              <div class="swiper-slide" style="width:65vw;">
+                <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
+                   class="ig-reel-card-m"
+                   style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;border-radius:4px;">
+                  @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
+                    <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
+                           muted playsinline loop preload="none"
+                           style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                    <div class="ig-play-icon-m" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 0.2s;">
+                      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <circle cx="22" cy="22" r="22" fill="rgba(0,0,0,0.45)"/>
+                        <path d="M18 14.5l14 7.5-14 7.5V14.5z" fill="white"/>
+                      </svg>
+                    </div>
+                  @else
+                    <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
+                         loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                  @endif
+                </a>
+              </div>
+            @endforeach
+          </div>
         </div>
-        <div style="text-align:center;margin-top:24px;">
+        <div style="text-align:center;margin-top:24px;padding:0 16px;">
           <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-primary" style="font-size:11px;">Follow @@{{ $igHandle }}</a>
         </div>
       </section>
@@ -261,6 +282,29 @@
       effect: 'fade', fadeEffect: { crossFade: true },
       pagination: { el: '.hero-dots', clickable: true }
     });
+  }
+
+  if (document.querySelector('.ig-reels-swiper-m')) {
+    new Swiper('.ig-reels-swiper-m', {
+      slidesPerView: 'auto', spaceBetween: 12, grabCursor: true,
+    });
+
+    // Autoplay videos when they scroll into view on mobile
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          var video = entry.target.querySelector('video');
+          var icon  = entry.target.querySelector('.ig-play-icon-m');
+          if (!video) return;
+          if (entry.isIntersecting) {
+            video.play(); if (icon) icon.style.opacity = '0';
+          } else {
+            video.pause(); video.currentTime = 0; if (icon) icon.style.opacity = '1';
+          }
+        });
+      }, { threshold: 0.6 });
+      document.querySelectorAll('.ig-reel-card-m').forEach(function(card) { observer.observe(card); });
+    }
   }
 </script>
 <style>

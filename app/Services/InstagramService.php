@@ -95,19 +95,24 @@ class InstagramService
 
             return collect($items)
                 ->map(function ($item) {
-                    // Videos/reels expose a still via thumbnail_url; images use media_url.
-                    $image = ($item['media_type'] ?? '') === 'VIDEO'
+                    $mediaType = $item['media_type'] ?? 'IMAGE';
+                    $isVideo   = $mediaType === 'VIDEO';
+
+                    $image    = $isVideo
                         ? ($item['thumbnail_url'] ?? $item['media_url'] ?? null)
                         : ($item['media_url'] ?? null);
+                    $videoUrl = $isVideo ? ($item['media_url'] ?? null) : null;
 
-                    if (! $image) {
+                    if (! $image && ! $videoUrl) {
                         return null;
                     }
 
                     return [
-                        'image' => $image,
-                        'permalink' => $item['permalink'] ?? null,
-                        'caption' => isset($item['caption'])
+                        'image'      => $image,
+                        'video_url'  => $videoUrl,
+                        'media_type' => $mediaType,
+                        'permalink'  => $item['permalink'] ?? null,
+                        'caption'    => isset($item['caption'])
                             ? \Illuminate\Support\Str::limit($item['caption'], 120)
                             : '',
                     ];
