@@ -199,9 +199,9 @@
                     <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mb-2">Instagram Handle (without @)</label>
                     <div class="flex items-center gap-2">
                         <span class="text-xs text-muted">@</span>
-                        <input type="text" name="instagram_handle" value="{{ $instagram['handle'] ?? 'madhavistores' }}"
+                        <input type="text" name="instagram_handle" value="{{ $instagram['handle'] ?? 'madhavi_stores' }}"
                                class="flex-1 text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none"
-                               placeholder="madhavistores">
+                               placeholder="madhavi_stores">
                     </div>
                 </div>
                 <div class="pt-6 flex justify-end">

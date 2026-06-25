@@ -1111,7 +1111,7 @@ class AdminController extends Controller
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
         // Fetch Instagram settings (display handle only; token lives in .env).
-        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavistores']);
+        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavi_stores']);
 
         return view('admin.design.index', compact(
             'heroSlides', 'about', 'signinImage',
@@ -1216,7 +1216,7 @@ class AdminController extends Controller
             ]);
 
             $handle = ltrim(trim((string) $request->input('instagram_handle')), '@');
-            Setting::set('instagram_settings', ['handle' => $handle ?: 'madhavistores']);
+            Setting::set('instagram_settings', ['handle' => $handle ?: 'madhavi_stores']);
 
             if ($request->ajax()) {
                 return response()->json([

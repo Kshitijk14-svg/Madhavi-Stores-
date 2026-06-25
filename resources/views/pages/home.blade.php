@@ -257,7 +257,7 @@
     @if($section['id'] === 'instagram_feed')
       {{-- ═══ 7. INSTAGRAM REELS ═══ --}}
       @php
-        $igHandle = $instagram['handle'] ?? 'madhavistores';
+        $igHandle = $instagram['handle'] ?? 'madhavi_stores';
         $igPosts  = !empty($instaPosts) ? $instaPosts : array_map(fn($u) => [
           'image' => $u, 'video_url' => null, 'media_type' => 'IMAGE', 'permalink' => null, 'caption' => ''
         ], [
@@ -269,55 +269,47 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=70',
         ]);
       @endphp
-      <section style="padding:64px 0;background:var(--background);overflow:hidden;">
+      <section style="padding:56px 0;background:var(--silk);">
         <div class="wrap">
-          <div style="text-align:center;margin-bottom:36px;">
-            <p class="eyebrow" style="margin-bottom:10px;">@@{{ $igHandle }}</p>
-            <h2 class="section-title" style="font-family:'Playfair Display',serif;">Reels &amp; Stories</h2>
-            <p style="color:var(--muted);font-size:14px;font-weight:300;margin-top:10px;">Styling inspiration, new drops &amp; festive decor — straight from our atelier.</p>
-          </div>
-        </div>
-        <div style="position:relative;padding:0 48px;">
-          <div class="swiper ig-reels-swiper">
-            <div class="swiper-wrapper">
-              @foreach($igPosts as $post)
-                <div class="swiper-slide" style="width:210px;">
-                  <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
-                     class="ig-reel-card"
-                     style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;border-radius:4px;">
-                    @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
-                      <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
-                             muted playsinline loop preload="none"
-                             style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                      <div class="ig-play-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 0.2s;">
-                        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                          <circle cx="22" cy="22" r="22" fill="rgba(0,0,0,0.45)"/>
-                          <path d="M18 14.5l14 7.5-14 7.5V14.5z" fill="white"/>
-                        </svg>
-                      </div>
-                    @else
-                      <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
-                           loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
-                    @endif
-                    @if(!empty($post['caption']))
-                      <div class="ig-caption" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.75));padding:28px 12px 14px;color:#fff;font-size:11px;line-height:1.45;opacity:0;transition:opacity 0.3s;">
-                        {{ $post['caption'] }}
-                      </div>
-                    @endif
-                  </a>
-                </div>
-              @endforeach
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
+            <div>
+              <p class="eyebrow" style="margin-bottom:8px;">@@{{ $igHandle }}</p>
+              <h2 class="section-title">Reels &amp; Stories</h2>
             </div>
+            <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-secondary">Follow on Instagram</a>
           </div>
-          <button class="ig-reels-prev" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:36px;background:#fff;border:1px solid #e5e5e5;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
-          </button>
-          <button class="ig-reels-next" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:36px;background:#fff;border:1px solid #e5e5e5;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
-          </button>
-        </div>
-        <div style="text-align:center;margin-top:36px;">
-          <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-primary">Follow @@{{ $igHandle }}</a>
+          <div style="position:relative;">
+            <div class="swiper ig-reels-swiper" style="overflow:hidden;">
+              <div class="swiper-wrapper">
+                @foreach($igPosts as $post)
+                  <div class="swiper-slide">
+                    <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
+                       style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;">
+                      @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
+                        <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
+                               autoplay muted playsinline loop preload="metadata"
+                               style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                      @else
+                        <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
+                             loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                      @endif
+                      @if(!empty($post['caption']))
+                        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:28px 10px 12px;color:#fff;font-size:10px;line-height:1.4;">
+                          {{ $post['caption'] }}
+                        </div>
+                      @endif
+                    </a>
+                  </div>
+                @endforeach
+              </div>
+            </div>
+            <button class="ig-reels-prev" style="position:absolute;left:-18px;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:36px;background:#fff;border:1px solid #e5e5e5;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+            </button>
+            <button class="ig-reels-next" style="position:absolute;right:-18px;top:50%;transform:translateY(-50%);z-index:10;width:36px;height:36px;background:#fff;border:1px solid #e5e5e5;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            </button>
+          </div>
         </div>
       </section>
     @endif
@@ -376,29 +368,20 @@
     // Instagram Reels Swiper
     if (document.querySelector('.ig-reels-swiper')) {
       new Swiper('.ig-reels-swiper', {
-        slidesPerView: 'auto', spaceBetween: 16, grabCursor: true,
+        slidesPerView: 5,
+        spaceBetween: 20,
+        grabCursor: true,
         navigation: { prevEl: '.ig-reels-prev', nextEl: '.ig-reels-next' },
+        breakpoints: {
+          0:    { slidesPerView: 2, spaceBetween: 12 },
+          768:  { slidesPerView: 3, spaceBetween: 16 },
+          1024: { slidesPerView: 5, spaceBetween: 20 },
+        },
       });
-
-      document.querySelectorAll('.ig-reel-card').forEach(function(card) {
-        var video   = card.querySelector('video');
-        var icon    = card.querySelector('.ig-play-icon');
-        var caption = card.querySelector('.ig-caption');
-
-        function showCaption() { if (caption) caption.style.opacity = '1'; }
-        function hideCaption() { if (caption) caption.style.opacity = '0'; }
-
-        if (video) {
-          card.addEventListener('mouseenter', function() {
-            video.play(); if (icon) icon.style.opacity = '0'; showCaption();
-          });
-          card.addEventListener('mouseleave', function() {
-            video.pause(); video.currentTime = 0; if (icon) icon.style.opacity = '1'; hideCaption();
-          });
-        } else {
-          card.addEventListener('mouseenter', showCaption);
-          card.addEventListener('mouseleave', hideCaption);
-        }
+      // Kick off all reel videos (browser autoplay attribute handles most cases;
+      // .play() is a JS fallback for browsers that ignore the attribute)
+      document.querySelectorAll('.ig-reels-swiper video').forEach(function(v) {
+        v.play().catch(function() {});
       });
     }
   }

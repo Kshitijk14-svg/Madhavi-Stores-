@@ -99,7 +99,7 @@ class HomeController extends Controller
         // Instagram feed: live posts from the Graph API (cached). Empty when not
         // configured or on failure — the view falls back to a placeholder grid.
         $instaPosts = app(InstagramService::class)->getPosts();
-        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavistores']);
+        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavi_stores']);
 
         return view('pages.home', compact(
             'newArrivals', 'bestSellers', 'categories', 'heroSlides',
