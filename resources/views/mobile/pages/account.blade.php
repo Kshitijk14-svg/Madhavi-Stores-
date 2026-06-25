@@ -115,7 +115,12 @@
       <button type="submit" class="w-full btn-primary py-3.5 text-xs font-bold tracking-widest uppercase" style="min-height:48px;">Save Changes</button>
     </form>
 
-    <div class="mt-8 pt-6 border-t border-gray-100">
+    <div class="mt-8 pt-6 border-t border-gray-100 space-y-3">
+      @if($user->isAdmin())
+        <a href="{{ route('admin.dashboard') }}"
+           class="block w-full text-center text-xs font-bold tracking-widest uppercase text-white bg-primary py-3.5"
+           style="min-height:48px;display:flex;align-items:center;justify-content:center;">Admin Dashboard</a>
+      @endif
       <a href="{{ route('logout') }}"
          onclick="event.preventDefault();document.getElementById('logout-form').submit();"
          class="block w-full text-center text-xs font-bold tracking-wider uppercase text-red-500 border border-red-100 py-3.5"
