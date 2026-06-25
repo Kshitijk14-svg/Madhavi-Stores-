@@ -211,7 +211,7 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
         ]);
       @endphp
-      <section style="padding:36px 0;background:#fff;overflow:hidden;">
+      <section style="padding:36px 0;background:#fff;">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px;margin-bottom:20px;">
           <div>
             <p class="eyebrow" style="margin-bottom:4px;">@madhavi_stores</p>
@@ -220,31 +220,28 @@
           <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener"
              class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">Follow</a>
         </div>
-        {{-- padding must be on a wrapper div, NOT on .swiper itself (breaks slide width calc) --}}
-        <div style="padding:0 16px;">
-          <div class="swiper ig-reels-swiper-m" style="overflow:hidden;">
-            <div class="swiper-wrapper">
-              @foreach($igPosts as $post)
-                <div class="swiper-slide">
-                  <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
-                     style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;">
-                    @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
-                      <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
-                             autoplay muted playsinline loop preload="metadata"
-                             style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                    @else
-                      <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
-                           loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
-                    @endif
-                    @if(!empty($post['caption']))
-                      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:24px 10px 10px;color:#fff;font-size:10px;line-height:1.4;">
-                        {{ $post['caption'] }}
-                      </div>
-                    @endif
-                  </a>
-                </div>
-              @endforeach
-            </div>
+        <div class="swiper ig-reels-swiper-m" style="padding:0 16px;box-sizing:border-box;">
+          <div class="swiper-wrapper">
+            @foreach($igPosts as $post)
+              <div class="swiper-slide" style="height:auto;">
+                <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
+                   style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;">
+                  @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
+                    <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
+                           autoplay muted playsinline loop preload="metadata"
+                           style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                  @else
+                    <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
+                         loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                  @endif
+                  @if(!empty($post['caption']))
+                    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:24px 10px 10px;color:#fff;font-size:10px;line-height:1.4;">
+                      {{ $post['caption'] }}
+                    </div>
+                  @endif
+                </a>
+              </div>
+            @endforeach
           </div>
         </div>
       </section>
@@ -274,24 +271,36 @@
 
 @section('scripts')
 <script>
-  if(document.querySelector('.hero-swiper')) {
-    new Swiper('.hero-swiper', {
-      loop: true, autoplay: { delay: 4500, disableOnInteraction: false },
-      effect: 'fade', fadeEffect: { crossFade: true },
-      pagination: { el: '.hero-dots', clickable: true }
-    });
+(function () {
+  function initMobile() {
+    if (document.querySelector('.hero-swiper')) {
+      new Swiper('.hero-swiper', {
+        loop: true, autoplay: { delay: 4500, disableOnInteraction: false },
+        effect: 'fade', fadeEffect: { crossFade: true },
+        pagination: { el: '.hero-dots', clickable: true }
+      });
+    }
+
+    if (document.querySelector('.ig-reels-swiper-m')) {
+      new Swiper('.ig-reels-swiper-m', {
+        slidesPerView: 2,
+        spaceBetween: 12,
+        grabCursor: true,
+        observer: true,
+        observeParents: true,
+      });
+      document.querySelectorAll('.ig-reels-swiper-m video').forEach(function (v) {
+        v.play().catch(function () {});
+      });
+    }
   }
 
-  if (document.querySelector('.ig-reels-swiper-m')) {
-    new Swiper('.ig-reels-swiper-m', {
-      slidesPerView: 2.2,
-      spaceBetween: 12,
-      grabCursor: true,
-    });
-    document.querySelectorAll('.ig-reels-swiper-m video').forEach(function(v) {
-      v.play().catch(function() {});
-    });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobile);
+  } else {
+    initMobile();
   }
+})();
 </script>
 <style>
   .hide-scrollbar::-webkit-scrollbar { display: none; }
