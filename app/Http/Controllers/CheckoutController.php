@@ -44,40 +44,22 @@ class CheckoutController extends Controller
             'address'        => 'required|string',
             'city'           => 'required|string|max:100',
             'postal_code'    => 'required|string|max:20',
-            'payment_method' => 'required|string|in:COD,Card,UPI',
         ]);
 
         $user     = Auth::user();
         $summary  = $this->cart->getSummary($user);
         $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
 
+        // The actual method (Card/UPI/NetBanking/Wallet) is chosen inside the
+        // Razorpay modal; we record a single generic method server-side rather
+        // than trusting a client-supplied value.
+        $paymentMethod = 'Razorpay';
+
         if ($summary['cartItems']->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Your shopping bag is empty.'], 400);
         }
 
-        // ── Cash on Delivery: create the order immediately ──
-        if ($request->payment_method === 'COD') {
-            try {
-                $order = $this->cart->createOrder($user, $customer, 'COD');
-            } catch (CheckoutException $e) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-            } catch (\Throwable $e) {
-                logger()->error('COD order creation failed: ' . $e->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'We could not place your order right now. Please try again in a moment.',
-                ], 500);
-            }
-
-            session()->flash('success', 'Thank you! Your order ' . $order->order_number . ' was successfully placed.');
-            return response()->json([
-                'success'  => true,
-                'redirect' => route('account'),
-                'message'  => 'Thank you! Your order ' . $order->order_number . ' was successfully placed.',
-            ]);
-        }
-
-        // ── Razorpay (Card or UPI): create a gateway order, charge happens client-side ──
+        // ── Razorpay: create a gateway order, the charge happens client-side ──
         $keyId     = config('razorpay.key_id');
         $keySecret = config('razorpay.key_secret');
         $total     = $summary['total'];
@@ -93,7 +75,7 @@ class CheckoutController extends Controller
             // Local-only mock so the flow can be exercised without live keys.
             return response()->json([
                 'success'           => true,
-                'payment_method'    => $request->payment_method,
+                'payment_method'    => $paymentMethod,
                 'razorpay_order_id' => 'order_fake_' . Str::random(14),
                 'razorpay_key'      => 'rzp_test_dummykey123',
                 'amount'            => intval(round($total * 100)),
@@ -118,14 +100,14 @@ class CheckoutController extends Controller
                 // if the customer closes the tab after paying.
                 'notes'           => array_merge($customer, [
                     'user_id'        => (string) $user->id,
-                    'payment_method' => $request->payment_method,
+                    'payment_method' => $paymentMethod,
                     'coupon_code'    => $summary['couponCode'] ?? '',
                 ]),
             ]);
 
             return response()->json([
                 'success'           => true,
-                'payment_method'    => $request->payment_method,
+                'payment_method'    => $paymentMethod,
                 'razorpay_order_id' => $razorpayOrder['id'],
                 'razorpay_key'      => $keyId,
                 'amount'            => intval(round($total * 100)),
@@ -155,7 +137,6 @@ class CheckoutController extends Controller
             'address'             => 'required|string',
             'city'                => 'required|string|max:100',
             'postal_code'         => 'required|string|max:20',
-            'payment_method'      => 'required|string|in:Card,UPI',
             'razorpay_order_id'   => 'required|string',
             'razorpay_payment_id' => 'required|string',
             'razorpay_signature'  => 'required|string',
@@ -190,7 +171,7 @@ class CheckoutController extends Controller
         $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
 
         try {
-            $order = $this->cart->createOrder($user, $customer, $request->payment_method, [
+            $order = $this->cart->createOrder($user, $customer, 'Razorpay', [
                 'razorpay_order_id'   => $request->razorpay_order_id,
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature'  => $request->razorpay_signature,
@@ -288,7 +269,7 @@ class CheckoutController extends Controller
             $this->cart->createOrder(
                 $user,
                 $customer,
-                $notes['payment_method'] ?? 'Card',
+                $notes['payment_method'] ?? 'Razorpay',
                 [
                     'razorpay_order_id'   => $payment['order_id'] ?? null,
                     'razorpay_payment_id' => $paymentId,

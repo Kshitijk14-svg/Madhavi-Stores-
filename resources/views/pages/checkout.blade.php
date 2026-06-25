@@ -38,30 +38,19 @@
                         </div>
                     </section>
 
-                    <!-- Payment Method -->
+                    <!-- Payment -->
                     <section>
-                        <h2 class="text-xs tracking-widest uppercase font-bold text-primary mb-8 flex items-center">
+                        <h2 class="text-xs tracking-widest uppercase font-bold text-primary mb-4 flex items-center">
                             <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px] mr-3">2</span>
-                            Payment Method
+                            Payment
                         </h2>
-                        <div class="space-y-4">
-                            <label class="flex items-center p-4 border border-primary/20 bg-background cursor-pointer hover:border-secondary transition-colors group">
-                                <input type="radio" name="payment_method" value="Card" checked class="accent-secondary">
-                                <span class="ml-4 text-sm font-medium">Credit / Debit Card (Razorpay)</span>
-                            </label>
-                            <label class="flex items-center p-4 border border-primary/10 cursor-pointer hover:border-secondary transition-colors group">
-                                <input type="radio" name="payment_method" value="UPI" class="accent-secondary">
-                                <span class="ml-4 text-sm font-medium">UPI / Net Banking (Razorpay)</span>
-                            </label>
-                            <label class="flex items-center p-4 border border-primary/10 cursor-pointer hover:border-secondary transition-colors group">
-                                <input type="radio" name="payment_method" value="COD" class="accent-secondary">
-                                <span class="ml-4 text-sm font-medium">Cash on Delivery</span>
-                            </label>
-                        </div>
+                        <p class="text-xs text-muted leading-relaxed pl-9">
+                            You'll choose how to pay — Card, UPI, Net Banking or Wallet — in the secure Razorpay window after you place your order.
+                        </p>
                     </section>
 
                     <button type="submit" id="submit-btn" class="w-full py-5 bg-primary text-white text-xs tracking-widest uppercase font-bold hover:bg-secondary transition-all duration-300">
-                        Complete Order
+                        Pay Securely
                     </button>
                 </form>
             </div>
@@ -172,12 +161,10 @@
                     },
                     body: JSON.stringify(data)
                 })
-                .then(response => {
-                    if (!response.ok && response.status !== 422) {
-                        throw new Error('Network response issue');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json().catch(() => ({
+                    success: false,
+                    message: 'Server returned an unreadable response (status ' + response.status + ').'
+                })))
                 .then(res => {
                     if (res.errors) {
                         const errMsgs = Object.values(res.errors).flat().join(' ');
@@ -192,21 +179,10 @@
                         return;
                     }
 
-                    if (res.payment_method === 'COD') {
-                        showToast(res.message || "Order placed successfully!", "success");
-                        setTimeout(() => {
-                            if (typeof navigateToPage === 'function') {
-                                navigateToPage(res.redirect);
-                            } else {
-                                window.location.href = res.redirect;
-                            }
-                        }, 1000);
+                    if (res.is_mock) {
+                        showMockModal(res, data);
                     } else {
-                        if (res.is_mock) {
-                            showMockModal(res, data);
-                        } else {
-                            launchRazorpay(res, data);
-                        }
+                        launchRazorpay(res, data);
                     }
                 })
                 .catch(err => {

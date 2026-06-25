@@ -73,18 +73,11 @@
       </div>
     </div>
 
-    {{-- Payment Method --}}
-    <div>
-      <label class="text-[10px] font-bold tracking-wider uppercase text-gray-500 block mb-2">Payment Method *</label>
-      <div class="space-y-2">
-        @foreach(['COD' => 'Cash on Delivery', 'Card' => 'Credit / Debit Card', 'UPI' => 'UPI'] as $val => $label)
-        <label class="flex items-center gap-3 border border-gray-200 px-4 py-3.5 cursor-pointer" style="min-height:52px;">
-          <input type="radio" name="payment_method" value="{{ $val }}" class="accent-primary"
-                 {{ $val === 'COD' ? 'checked' : '' }}>
-          <span class="text-sm font-medium text-primary">{{ $label }}</span>
-        </label>
-        @endforeach
-      </div>
+    {{-- Payment --}}
+    <div class="border border-gray-200 px-4 py-3.5 bg-gray-50">
+      <p class="text-[11px] text-gray-500 leading-relaxed">
+        You'll choose how to pay — Card, UPI, Net Banking or Wallet — in the secure Razorpay window after you place your order.
+      </p>
     </div>
 
     <div id="checkout-error" class="text-sm text-red-500 hidden"></div>
@@ -132,7 +125,7 @@ function placeOrder() {
       return;
     }
 
-    if (res.is_mock || res.payment_method === 'COD') {
+    if (res.is_mock) {
       if (res.redirect) window.location.href = res.redirect;
       return;
     }

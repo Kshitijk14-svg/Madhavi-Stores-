@@ -3,24 +3,24 @@
 @section('title', 'Atelier Admin Panel — Madhavi Stores')
 
 @section('content')
-<div class="bg-silk py-12">
+<div class="bg-silk py-6 md:py-12">
     <div class="wrap">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6 mb-8 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-5 md:pb-6 mb-6 md:mb-8 gap-4">
             <div>
                 <span class="eyebrow">Atelier Management</span>
-                <h1 class="font-display text-4xl mt-1">Admin Dashboard</h1>
+                <h1 class="font-display text-2xl md:text-4xl mt-1">Admin Dashboard</h1>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="{{ route('account') }}" class="btn-secondary !py-2.5 !px-5 text-[10px]">My Profile</a>
-                <form action="{{ route('logout') }}" method="POST" class="inline">
+            <div class="flex items-center gap-3 md:gap-4 w-full md:w-auto">
+                <a href="{{ route('account') }}" class="btn-secondary !py-2.5 !px-5 text-[10px] flex-1 md:flex-none text-center">My Profile</a>
+                <form action="{{ route('logout') }}" method="POST" class="inline flex-1 md:flex-none">
                     @csrf
-                    <button type="submit" class="btn-primary !py-2.5 !px-5 text-[10px]">Logout</button>
+                    <button type="submit" class="btn-primary !py-2.5 !px-5 text-[10px] w-full md:w-auto">Logout</button>
                 </form>
             </div>
         </div>
 
-        {{-- Luxury Dashboard Sub-navigation --}}
-        <div class="flex gap-8 border-b border-gray-200/50 pb-4 mb-8 overflow-x-auto whitespace-nowrap">
+        {{-- Luxury Dashboard Sub-navigation (horizontally scrollable on mobile) --}}
+        <div class="flex gap-5 md:gap-8 border-b border-gray-200/50 pb-4 mb-6 md:mb-8 overflow-x-auto whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0">
             <a href="{{ route('admin.dashboard') }}" 
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                Overview
@@ -75,7 +75,7 @@
         @endif
 
         {{-- Content Area --}}
-        <div class="admin-content bg-white p-6 md:p-10 border border-gray-100 shadow-sm">
+        <div class="admin-content bg-white p-4 md:p-10 border border-gray-100 shadow-sm">
             @yield('admin_content')
         </div>
     </div>

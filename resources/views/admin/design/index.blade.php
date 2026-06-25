@@ -214,7 +214,7 @@
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {{-- Image column --}}
                             <div class="space-y-3">
-                                <label class="text-[9px] font-bold text-muted uppercase tracking-wider block">Slide Showcase Image</label>
+                                <label class="text-[9px] font-bold text-muted uppercase tracking-wider block">Slide Showcase Image (Desktop · 1920×800)</label>
                                 @if($slide['image_url'])
                                     <img src="{{ $slide['image_url'] }}" 
                                          alt="Slide {{ $index }}" 
@@ -229,7 +229,7 @@
                                 <input type="file"
                                        name="slides[{{ $index }}][image_file]"
                                        class="w-full text-[10px] text-primary cursor-pointer">
-                                <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mt-4">Mobile Image (optional)</label>
+                                <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mt-4">Mobile Image (optional · 1080×1620)</label>
                                 @if(!empty($slide['mobile_image_url']))
                                     <img src="{{ $slide['mobile_image_url'] }}"
                                          alt="Mobile Slide {{ $index }}"
@@ -534,14 +534,23 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="space-y-3">
-                    <label class="text-[9px] font-bold text-muted uppercase tracking-wider block">Slide Showcase Image</label>
-                    <input type="text" 
-                           name="slides[\${slideIndexCounter}][image_url]" 
+                    <label class="text-[9px] font-bold text-muted uppercase tracking-wider block">Slide Showcase Image (Desktop · 1920×800)</label>
+                    <input type="text"
+                           name="slides[\${slideIndexCounter}][image_url]"
                            placeholder="Fallback Image URL..."
                            class="w-full text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none">
                     <span class="text-[9px] text-muted block text-center">or upload local file:</span>
-                    <input type="file" 
-                           name="slides[\${slideIndexCounter}][image_file]" 
+                    <input type="file"
+                           name="slides[\${slideIndexCounter}][image_file]"
+                           class="w-full text-[10px] text-primary cursor-pointer">
+                    <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mt-4">Mobile Image (optional · 1080×1620)</label>
+                    <input type="text"
+                           name="slides[\${slideIndexCounter}][mobile_image_url]"
+                           placeholder="Mobile image URL (falls back to desktop)..."
+                           class="w-full text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none">
+                    <span class="text-[9px] text-muted block text-center">or upload local file:</span>
+                    <input type="file"
+                           name="slides[\${slideIndexCounter}][mobile_image_file]"
                            class="w-full text-[10px] text-primary cursor-pointer">
                 </div>
 
