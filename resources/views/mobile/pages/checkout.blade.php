@@ -25,7 +25,7 @@
             @if($item->size)<p class="text-[10px] text-gray-400">Size: {{ $item->size }}</p>@endif
             <p class="text-[10px] text-gray-400">Qty: {{ $item->quantity }}</p>
           </div>
-          <p class="text-xs font-bold text-secondary shrink-0">₹{{ number_format($item->product->price * $item->quantity, 0) }}</p>
+          <p class="text-xs font-bold text-secondary shrink-0">₹{{ number_format($item->product->final_price * $item->quantity, 0) }}</p>
         </div>
       @endforeach
       @if($discount > 0)

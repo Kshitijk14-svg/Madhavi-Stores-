@@ -79,7 +79,7 @@
                             <div class="flex-grow flex flex-col justify-center">
                                 <p class="text-sm font-medium">{{ $item->product->name }}</p>
                                 <p class="text-xs text-muted">Size: {{ $item->size ?? 'Standard' }} &times; {{ $item->quantity }}</p>
-                                <p class="text-sm mt-1">₹{{ number_format($item->product->price * $item->quantity) }}</p>
+                                <p class="text-sm mt-1">₹{{ number_format($item->product->final_price * $item->quantity) }}</p>
                             </div>
                         </div>
                         @endforeach
