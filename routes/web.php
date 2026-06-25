@@ -115,7 +115,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/coupons/{id}/toggle', [AdminController::class, 'toggleCoupon'])->name('coupons.toggle');
     Route::post('/coupons/{id}/delete', [AdminController::class, 'deleteCoupon'])->name('coupons.delete');
 
-    // Single-Page Dynamic Design Manager
-    Route::get('/design', [AdminController::class, 'designManager'])->name('design.index');
-    Route::post('/design/update', [AdminController::class, 'updateDesignSettings'])->name('design.update');
+    // Single-Page Dynamic Design Manager (desktop only — no mobile experience)
+    Route::get('/design', [AdminController::class, 'designManager'])->name('design.index')->middleware('desktop.only');
+    Route::post('/design/update', [AdminController::class, 'updateDesignSettings'])->name('design.update')->middleware('desktop.only');
 });
