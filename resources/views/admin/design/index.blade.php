@@ -185,6 +185,32 @@
                 </button>
             </div>
         </form>
+
+        {{-- ── Instagram Feed ──────────────────────────────────────── --}}
+        <div class="mt-10 pt-8 border-t border-gray-100">
+            <div class="mb-4">
+                <h3 class="text-sm font-bold text-primary uppercase">Instagram Feed</h3>
+                <p class="text-[10px] text-muted">Posts are pulled live from Instagram (token configured in <code>.env</code>). Set the @handle shown on the homepage below. Toggle the section's visibility in the layout list above.</p>
+            </div>
+            <form action="{{ route('admin.design.update') }}" method="POST">
+                @csrf
+                <input type="hidden" name="type" value="instagram">
+                <div class="max-w-sm">
+                    <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mb-2">Instagram Handle (without @)</label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-muted">@</span>
+                        <input type="text" name="instagram_handle" value="{{ $instagram['handle'] ?? 'madhavistores' }}"
+                               class="flex-1 text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none"
+                               placeholder="madhavistores">
+                    </div>
+                </div>
+                <div class="pt-6 flex justify-end">
+                    <button type="submit" class="btn-primary !py-3 !px-8 uppercase tracking-widest text-[10px] font-semibold">
+                        Save Instagram Handle
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     {{-- ── TAB 1: HERO CAROUSEL ──────────────────────────────────── --}}

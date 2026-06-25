@@ -254,6 +254,43 @@
 
 
 
+    @if($section['id'] === 'instagram_feed')
+      {{-- ═══ 7. INSTAGRAM FEED ═══ --}}
+      @php
+        $igHandle = $instagram['handle'] ?? 'madhavistores';
+        // Live posts from the Graph API; fall back to placeholders when empty.
+        $igPosts = !empty($instaPosts) ? $instaPosts : array_map(fn($u) => ['image' => $u, 'permalink' => null, 'caption' => ''], [
+          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=70',
+          'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=400&q=70',
+          'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=400&q=70',
+          'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=70',
+          'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=70',
+          'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=70',
+        ]);
+      @endphp
+      <section style="padding:64px 0;background:var(--background);">
+        <div class="wrap">
+          <div style="text-align:center;margin-bottom:36px;">
+            <p class="eyebrow" style="margin-bottom:10px;">@@{{ $igHandle }}</p>
+            <h2 class="section-title" style="font-family:'Playfair Display',serif;">Follow Our Journey</h2>
+            <p style="color:var(--muted);font-size:14px;font-weight:300;margin-top:10px;">Styling inspiration, new drops & festive decor — straight from our atelier.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
+            @foreach($igPosts as $post)
+              <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener" class="banner-card" style="aspect-ratio:1/1;background:var(--silk);">
+                <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+                <div class="banner-card-overlay" style="background:rgba(24,24,24,0);transition:background 0.3s ease;display:flex;align-items:center;justify-content:center;"
+                     onmouseover="this.style.background='rgba(24,24,24,0.35)'" onmouseout="this.style.background='rgba(24,24,24,0)'"></div>
+              </a>
+            @endforeach
+          </div>
+          <div style="text-align:center;margin-top:36px;">
+            <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-primary">Follow @@{{ $igHandle }}</a>
+          </div>
+        </div>
+      </section>
+    @endif
+
     @if($section['id'] === 'newsletter')
       {{-- ═══ 8. NEWSLETTER ═══ --}}
       <section style="padding:64px 0;background:var(--primary);">
@@ -277,39 +314,6 @@
 
   @endif
 @endforeach
-
-{{-- ═══ INSTAGRAM FEED ═══ --}}
-<section style="padding:64px 0;background:var(--background);">
-  <div class="wrap">
-    <div style="text-align:center;margin-bottom:36px;">
-      <p class="eyebrow" style="margin-bottom:10px;">@@madhavistores</p>
-      <h2 class="section-title" style="font-family:'Playfair Display',serif;">Follow Our Journey</h2>
-      <p style="color:var(--muted);font-size:14px;font-weight:300;margin-top:10px;">Styling inspiration, new drops & festive decor — straight from our atelier.</p>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;">
-      @php
-        $instaPosts = [
-          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&q=70',
-          'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=400&q=70',
-          'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=400&q=70',
-          'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=400&q=70',
-          'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=70',
-          'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=70',
-        ];
-      @endphp
-      @foreach($instaPosts as $img)
-        <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" class="banner-card" style="aspect-ratio:1/1;background:var(--silk);">
-          <img src="{{ $img }}" alt="Madhavi Stores on Instagram" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-          <div class="banner-card-overlay" style="background:rgba(24,24,24,0);transition:background 0.3s ease;display:flex;align-items:center;justify-content:center;"
-               onmouseover="this.style.background='rgba(24,24,24,0.35)'" onmouseout="this.style.background='rgba(24,24,24,0)'"></div>
-        </a>
-      @endforeach
-    </div>
-    <div style="text-align:center;margin-top:36px;">
-      <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" class="btn-primary">Follow @@madhavistores</a>
-    </div>
-  </div>
-</section>
 
 @endsection
 

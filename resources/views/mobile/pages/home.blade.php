@@ -196,6 +196,37 @@
       </section>
     @endif
 
+    @if($section['id'] === 'instagram_feed')
+      {{-- ═══ INSTAGRAM FEED ═══ --}}
+      @php
+        $igHandle = $instagram['handle'] ?? 'madhavistores';
+        $igPosts = !empty($instaPosts) ? $instaPosts : array_map(fn($u) => ['image' => $u, 'permalink' => null, 'caption' => ''], [
+          'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&q=60',
+          'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=300&q=60',
+          'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=300&q=60',
+          'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=300&q=60',
+          'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=300&q=60',
+          'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
+        ]);
+      @endphp
+      <section style="padding:36px 16px;background:var(--background);">
+        <div style="text-align:center;margin-bottom:20px;">
+          <p class="eyebrow" style="margin-bottom:6px;">@@{{ $igHandle }}</p>
+          <h2 style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:300;">Follow Our Journey</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+          @foreach($igPosts as $post)
+            <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener" style="display:block;aspect-ratio:1/1;overflow:hidden;background:var(--silk);">
+              <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            </a>
+          @endforeach
+        </div>
+        <div style="text-align:center;margin-top:24px;">
+          <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-primary" style="font-size:11px;">Follow @@{{ $igHandle }}</a>
+        </div>
+      </section>
+    @endif
+
     @if($section['id'] === 'newsletter' && !empty($newsletter))
       {{-- ═══ 7. NEWSLETTER ═══ --}}
       <section style="background:#181818;padding:48px 24px;text-align:center;margin-top:8px;">
@@ -215,34 +246,6 @@
 
   @endif
 @endforeach
-
-{{-- ═══ INSTAGRAM FEED ═══ --}}
-<section style="padding:36px 16px;background:var(--background);">
-  <div style="text-align:center;margin-bottom:20px;">
-    <p class="eyebrow" style="margin-bottom:6px;">@@madhavistores</p>
-    <h2 style="font-family:'Playfair Display',serif;font-size:1.75rem;font-weight:300;">Follow Our Journey</h2>
-  </div>
-  @php
-    $instaPosts = [
-      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&q=60',
-      'https://images.unsplash.com/photo-1613915617430-8ab0fd7c6baf?w=300&q=60',
-      'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?w=300&q=60',
-      'https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=300&q=60',
-      'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=300&q=60',
-      'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
-    ];
-  @endphp
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-    @foreach($instaPosts as $img)
-      <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" style="display:block;aspect-ratio:1/1;overflow:hidden;background:var(--silk);">
-        <img src="{{ $img }}" alt="Madhavi Stores on Instagram" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
-      </a>
-    @endforeach
-  </div>
-  <div style="text-align:center;margin-top:24px;">
-    <a href="https://instagram.com/madhavistores" target="_blank" rel="noopener" class="btn-primary" style="font-size:11px;">Follow @@madhavistores</a>
-  </div>
-</section>
 
 <div style="padding:32px 16px;text-align:center;background:var(--background);">
   <a href="{{ route('shop') }}" class="btn-dark w-full py-4 text-xs">View Full Collection</a>

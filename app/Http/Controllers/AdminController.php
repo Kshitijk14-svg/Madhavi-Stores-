@@ -1060,12 +1060,13 @@ class AdminController extends Controller
             ['id' => 'new_arrivals', 'name' => 'New Arrivals Slider', 'visible' => true],
             ['id' => 'promo_banner', 'name' => 'Promo Banner', 'visible' => true],
             ['id' => 'bestsellers', 'name' => 'Bestsellers Grid', 'visible' => true],
+            ['id' => 'instagram_feed', 'name' => 'Instagram Feed', 'visible' => true],
             ['id' => 'newsletter', 'name' => 'Newsletter Atelier', 'visible' => true],
         ];
         $homepageSections = Setting::get('homepage_sections', $defaultSections);
-        // Exclude lookbook and instagram feed sections
+        // Exclude the (unbuilt) lookbook section.
         $homepageSections = array_values(array_filter($homepageSections, function($sec) {
-            return !in_array($sec['id'], ['lookbook', 'instagram_feed']);
+            return !in_array($sec['id'], ['lookbook']);
         }));
 
         // Fetch Dual Banners settings
@@ -1109,9 +1110,12 @@ class AdminController extends Controller
         ];
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
+        // Fetch Instagram settings (display handle only; token lives in .env).
+        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavistores']);
+
         return view('admin.design.index', compact(
-            'heroSlides', 'about', 'signinImage', 
-            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter'
+            'heroSlides', 'about', 'signinImage',
+            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter', 'instagram'
         ));
     }
 
@@ -1203,6 +1207,25 @@ class AdminController extends Controller
             }
 
             return redirect()->route('admin.design.index')->with('success', 'Homepage layout and banner configurations saved successfully.');
+        }
+
+        // ── Instagram Feed (display handle only) ──────────────────
+        if ($type === 'instagram') {
+            $request->validate([
+                'instagram_handle' => ['nullable', 'string', 'max:60', 'regex:/^[A-Za-z0-9_.]*$/'],
+            ]);
+
+            $handle = ltrim(trim((string) $request->input('instagram_handle')), '@');
+            Setting::set('instagram_settings', ['handle' => $handle ?: 'madhavistores']);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Instagram handle updated.'
+                ]);
+            }
+
+            return redirect()->route('admin.design.index')->with('success', 'Instagram handle updated.');
         }
 
         // ── Signin Image ──────────────────────────────────────────

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\CartItem;
+use App\Services\InstagramService;
 
 class HomeController extends Controller
 {
@@ -45,12 +46,13 @@ class HomeController extends Controller
             ['id' => 'new_arrivals', 'name' => 'New Arrivals Slider', 'visible' => true],
             ['id' => 'promo_banner', 'name' => 'Promo Banner', 'visible' => true],
             ['id' => 'bestsellers', 'name' => 'Bestsellers Grid', 'visible' => true],
+            ['id' => 'instagram_feed', 'name' => 'Instagram Feed', 'visible' => true],
             ['id' => 'newsletter', 'name' => 'Newsletter Atelier', 'visible' => true],
         ];
         $homepageSections = Setting::get('homepage_sections', $defaultSections);
-        // Exclude lookbook and instagram feed sections
+        // Exclude the (unbuilt) lookbook section.
         $homepageSections = array_values(array_filter($homepageSections, function($sec) {
-            return !in_array($sec['id'], ['lookbook', 'instagram_feed']);
+            return !in_array($sec['id'], ['lookbook']);
         }));
 
         // Load Dual Banners settings
@@ -94,10 +96,16 @@ class HomeController extends Controller
         ];
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
+        // Instagram feed: live posts from the Graph API (cached). Empty when not
+        // configured or on failure — the view falls back to a placeholder grid.
+        $instaPosts = app(InstagramService::class)->getPosts();
+        $instagram = Setting::get('instagram_settings', ['handle' => 'madhavistores']);
+
         return view('pages.home', compact(
-            'newArrivals', 'bestSellers', 'categories', 'heroSlides', 
-            'cartCount', 
-            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter'
+            'newArrivals', 'bestSellers', 'categories', 'heroSlides',
+            'cartCount',
+            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter',
+            'instaPosts', 'instagram'
         ));
     }
 

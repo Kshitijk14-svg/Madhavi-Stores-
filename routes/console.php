@@ -17,6 +17,8 @@ Artisan::command('otp:cleanup', function () {
 
 Schedule::command('otp:cleanup')->everyThirtyMinutes();
 Schedule::command('session:gc')->daily();
+// Keep the long-lived Instagram token alive (Meta tokens expire ~60 days).
+Schedule::command('instagram:refresh-token')->weekly();
 // On shared hosting: process queued emails (OTP, invoice) once per minute via the scheduler cron
 Schedule::command('queue:work --once --tries=3 --max-time=50')->everyMinute()->withoutOverlapping();
 
