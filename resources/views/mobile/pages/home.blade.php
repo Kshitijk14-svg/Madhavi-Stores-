@@ -211,37 +211,40 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
         ]);
       @endphp
-      <section style="padding:36px 0;background:var(--silk);overflow:hidden;">
+      <section style="padding:36px 0;background:#fff;overflow:hidden;">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px;margin-bottom:20px;">
           <div>
-            <p class="eyebrow" style="margin-bottom:4px;">@@{{ $igHandle }}</p>
+            <p class="eyebrow" style="margin-bottom:4px;">@madhavi_stores</p>
             <h2 style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;">Reels &amp; Stories</h2>
           </div>
           <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener"
              class="text-[10px] font-bold tracking-widest uppercase border-b border-primary pb-0.5">Follow</a>
         </div>
-        <div class="swiper ig-reels-swiper-m" style="padding:0 16px;">
-          <div class="swiper-wrapper">
-            @foreach($igPosts as $post)
-              <div class="swiper-slide">
-                <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
-                   style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;">
-                  @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
-                    <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
-                           autoplay muted playsinline loop preload="metadata"
-                           style="width:100%;height:100%;object-fit:cover;display:block;"></video>
-                  @else
-                    <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
-                         loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
-                  @endif
-                  @if(!empty($post['caption']))
-                    <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:24px 10px 10px;color:#fff;font-size:10px;line-height:1.4;">
-                      {{ $post['caption'] }}
-                    </div>
-                  @endif
-                </a>
-              </div>
-            @endforeach
+        {{-- padding must be on a wrapper div, NOT on .swiper itself (breaks slide width calc) --}}
+        <div style="padding:0 16px;">
+          <div class="swiper ig-reels-swiper-m" style="overflow:hidden;">
+            <div class="swiper-wrapper">
+              @foreach($igPosts as $post)
+                <div class="swiper-slide">
+                  <a href="{{ $post['permalink'] ?? 'https://instagram.com/'.$igHandle }}" target="_blank" rel="noopener"
+                     style="display:block;position:relative;aspect-ratio:9/16;overflow:hidden;background:#111;">
+                    @if(($post['media_type'] ?? 'IMAGE') === 'VIDEO' && !empty($post['video_url']))
+                      <video src="{{ $post['video_url'] }}" poster="{{ $post['image'] }}"
+                             autoplay muted playsinline loop preload="metadata"
+                             style="width:100%;height:100%;object-fit:cover;display:block;"></video>
+                    @else
+                      <img src="{{ $post['image'] }}" alt="{{ $post['caption'] ?: 'Madhavi Stores on Instagram' }}"
+                           loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+                    @endif
+                    @if(!empty($post['caption']))
+                      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:24px 10px 10px;color:#fff;font-size:10px;line-height:1.4;">
+                        {{ $post['caption'] }}
+                      </div>
+                    @endif
+                  </a>
+                </div>
+              @endforeach
+            </div>
           </div>
         </div>
       </section>

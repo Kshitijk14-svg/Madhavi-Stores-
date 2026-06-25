@@ -273,7 +273,7 @@
         <div class="wrap">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
             <div>
-              <p class="eyebrow" style="margin-bottom:8px;">@@{{ $igHandle }}</p>
+              <p class="eyebrow" style="margin-bottom:8px;">@madhavi_stores</p>
               <h2 class="section-title">Reels &amp; Stories</h2>
             </div>
             <a href="https://instagram.com/{{ $igHandle }}" target="_blank" rel="noopener" class="btn-secondary">Follow on Instagram</a>
