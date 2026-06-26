@@ -13,6 +13,10 @@
     We sent a 6-digit code to<br>
     <strong style="color:#181818;">{{ session('otp_email', 'your email') }}</strong>
   </p>
+  <p style="margin-top:14px;font-size:12px;color:#999;line-height:1.6;">
+    The email may take a minute or two to arrive.<br>
+    Don't see it? Please check your <strong style="color:#888;">Spam</strong> or <strong style="color:#888;">Promotions</strong> folder.
+  </p>
 </div>
 
 <form action="{{ route('verify.post') }}" method="POST" id="otp-form">
