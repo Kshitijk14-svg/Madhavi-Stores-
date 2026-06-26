@@ -820,12 +820,12 @@ class AdminController extends Controller
 
         try {
             \Illuminate\Support\Facades\Mail::to($order->user->email)
-                ->queue(new \App\Mail\InvoiceMail($order));
-            
-            return response()->json(['success' => true, 'message' => 'Invoice queued for sending successfully.']);
+                ->send(new \App\Mail\InvoiceMail($order));
+
+            return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $order->user->email]);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to queue invoice email: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to queue invoice email.']);
+            \Illuminate\Support\Facades\Log::error('Failed to send invoice email: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to send invoice: ' . $e->getMessage()]);
         }
     }
 
