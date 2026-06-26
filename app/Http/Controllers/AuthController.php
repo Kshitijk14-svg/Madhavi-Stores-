@@ -28,6 +28,14 @@ class AuthController extends Controller
 
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
             $request->session()->regenerate();
+
+            if (! Auth::user()->email_verified_at) {
+                Auth::logout();
+                return back()
+                    ->withErrors(['email' => 'Please verify your email address before signing in.'])
+                    ->withInput();
+            }
+
             if (Auth::user()->isAdmin()) {
                 return redirect('/admin');
             }
@@ -52,13 +60,9 @@ class AuthController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        // Only a fully-registered (verified) account blocks sign-up. An unverified
-        // leftover — e.g. an abandoned attempt or a previous failed OTP send — is
-        // allowed to restart registration instead of being told "email taken".
-        $existing = User::where('email', $request->email)->first();
-        if ($existing && $existing->email_verified_at) {
+        if (User::where('email', $request->email)->exists()) {
             return back()
-                ->withErrors(['email' => 'An account with this email already exists. Please sign in instead.'])
+                ->withErrors(['email' => 'This email address is already taken. Please sign in instead.'])
                 ->withInput();
         }
 
@@ -125,37 +129,34 @@ class AuthController extends Controller
             return redirect()->route('password.reset.show');
         }
 
-        // Register verification flow — create (or finalize) the account now that
-        // ownership of the email is proven, then log the user in.
+        // Register verification flow — create the account now that email ownership
+        // is proven. Requires a valid pending_registration in session.
         $pending = session('pending_registration');
-        $user    = User::where('email', $email)->first();
 
-        if ($pending && ($pending['email'] ?? null) === $email) {
-            if ($user) {
-                // An unverified row existed (legacy/abandoned) — refresh + verify it.
-                $user->update([
-                    'name'              => $pending['name'],
-                    'password'          => $pending['password'],
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ]);
-            } else {
-                $user = User::create([
-                    'name'              => $pending['name'],
-                    'email'             => $pending['email'],
-                    'password'          => $pending['password'],
-                    'email_verified_at' => now(),
-                ]);
-            }
-        } elseif ($user && !$user->email_verified_at) {
-            $user->update(['email_verified_at' => now()]);
-        }
-
-        session()->forget(['otp_email', 'otp_purpose', 'pending_registration']);
-
-        if (!$user) {
+        if (! $pending || ($pending['email'] ?? null) !== $email) {
+            session()->forget(['otp_email', 'otp_purpose', 'pending_registration']);
             return redirect()->route('register')
                 ->withErrors(['email' => 'Your sign-up session expired. Please register again.']);
         }
+
+        $user = User::where('email', $email)->first();
+
+        if ($user) {
+            $user->update([
+                'name'              => $pending['name'],
+                'password'          => $pending['password'],
+                'email_verified_at' => now(),
+            ]);
+        } else {
+            $user = User::create([
+                'name'              => $pending['name'],
+                'email'             => $pending['email'],
+                'password'          => $pending['password'],
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        session()->forget(['otp_email', 'otp_purpose', 'pending_registration']);
 
         Auth::login($user, true);
         $request->session()->regenerate();
@@ -192,7 +193,11 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
         if ($user) {
-            $this->sendOtp($user->email, 'reset');
+            if (! $this->sendOtp($user->email, 'reset')) {
+                return back()
+                    ->withErrors(['email' => 'We could not send the reset code right now. Please try again in a moment.'])
+                    ->withInput();
+            }
             session(['otp_email' => $user->email, 'otp_purpose' => 'reset']);
         }
 
