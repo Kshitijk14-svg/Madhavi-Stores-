@@ -278,14 +278,13 @@ class AuthController extends Controller
             ->findOrFail($id);
 
         try {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.invoice', compact('order'))
-                ->setPaper('a4', 'portrait');
-
+            $bytes    = \App\Http\Controllers\AdminController::buildInvoicePdfBytes($order);
             $filename = 'Receipt-' . $order->order_number . '.pdf';
-
-            return $request->boolean('download')
-                ? $pdf->download($filename)
-                : $pdf->stream($filename);
+            $disposition = $request->boolean('download') ? 'attachment' : 'inline';
+            return response($bytes, 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Customer receipt failed: ' . $e->getMessage(), ['order_id' => $id]);
             return redirect()->route('account')->with('error', 'Could not generate the receipt. Please try again.');

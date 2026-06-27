@@ -9,7 +9,6 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class InvoiceMail extends Mailable
 {
@@ -56,12 +55,10 @@ class InvoiceMail extends Mailable
         $order = clone $this->order;
         $order->loadMissing(['items.product', 'user']);
 
-        // Generate PDF directly in memory
-        $pdf = Pdf::loadView('admin.invoice', compact('order'))
-                  ->setPaper('a4', 'portrait');
+        $bytes = \App\Http\Controllers\AdminController::buildInvoicePdfBytes($order);
 
         return [
-            Attachment::fromData(fn () => $pdf->output(), 'Invoice-' . $this->order->order_number . '.pdf')
+            Attachment::fromData(fn () => $bytes, 'Invoice-' . $this->order->order_number . '.pdf')
                 ->withMime('application/pdf'),
         ];
     }

@@ -800,15 +800,35 @@ class AdminController extends Controller
         $order = Order::with(['items.product', 'user'])->findOrFail($id);
 
         try {
-            $pdf = Pdf::loadView('admin.invoice', compact('order'))
-                      ->setPaper('a4', 'portrait');
-
-            return $pdf->download('Invoice-' . $order->order_number . '.pdf');
+            $bytes    = self::buildInvoicePdfBytes($order);
+            $filename = 'Invoice-' . $order->order_number . '.pdf';
+            return response($bytes, 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Invoice PDF generation failed: ' . $e->getMessage(), ['order_id' => $id]);
             return redirect()->route('admin.orders.index')
                 ->with('error', 'Could not generate the invoice PDF for order ' . $order->order_number . '. Please try again.');
         }
+    }
+
+    /**
+     * Render the invoice Blade view to a PDF byte string using Dompdf directly,
+     * bypassing the Laravel-DomPDF facade wrapper which requires public_path()
+     * to resolve — a path that doesn't exist on cPanel shared hosting.
+     */
+    public static function buildInvoicePdfBytes(Order $order): string
+    {
+        $html    = view('admin.invoice', compact('order'))->render();
+        $options = new \Dompdf\Options();
+        $options->set('chroot', base_path());
+        $options->set('isRemoteEnabled', false);
+        $dompdf  = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        return $dompdf->output();
     }
 
     /**
