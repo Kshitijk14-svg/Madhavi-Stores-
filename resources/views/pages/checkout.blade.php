@@ -287,6 +287,14 @@
                     .then(res => {
                         if (res.success) {
                             showToast(res.message || "Order placed successfully!", "success");
+                            // Reset cart count badges immediately — the cart is cleared server-side
+                            // but PJAX won't update the navbar (outside #main), so we reset manually.
+                            ['navbar-cart-count', 'mob-bottom-cart-count'].forEach(id => {
+                                const el = document.getElementById(id);
+                                if (el) { el.textContent = '0'; el.classList.add('hidden'); }
+                            });
+                            const mobBadge = document.getElementById('mob-cart-count');
+                            if (mobBadge) mobBadge.textContent = '0';
                             setTimeout(() => {
                                 if (typeof navigateToPage === 'function') {
                                     navigateToPage(res.redirect);

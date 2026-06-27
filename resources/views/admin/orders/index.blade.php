@@ -306,34 +306,43 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.invoice-email-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = form.querySelector('button');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = 'Sending...';
-                btn.disabled = true;
+    // Bind invoice email forms directly (not inside DOMContentLoaded — this script
+    // is re-executed by PJAX after content swap, so the forms are already in the DOM).
+    document.querySelectorAll('.invoice-email-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = form.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
 
-                fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(res => res.json())
-                .then(data => {
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+            if (csrfMeta) headers['X-CSRF-TOKEN'] = csrfMeta.getAttribute('content');
+
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: headers
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (typeof showToast === 'function') {
+                    showToast(data.message, data.success ? 'success' : 'error');
+                } else {
                     alert(data.message);
-                })
-                .catch(err => {
+                }
+            })
+            .catch(() => {
+                if (typeof showToast === 'function') {
+                    showToast('Error sending invoice. Please check mail configuration.', 'error');
+                } else {
                     alert('Error sending invoice.');
-                })
-                .finally(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                });
+                }
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             });
         });
     });

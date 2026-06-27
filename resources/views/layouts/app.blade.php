@@ -530,7 +530,7 @@
                 e.preventDefault();
                 const submitBtn = form.querySelector('button[type="submit"], button.pcard-wish');
                 if (submitBtn) submitBtn.disabled = true;
-                
+
                 fetch(form.action, {
                     method: 'POST',
                     headers: {
@@ -552,14 +552,27 @@
                 .then(data => {
                     if (data && data.success) {
                         showToast(data.message, 'success');
-                        
+
+                        const onWishlistPage = window.location.pathname === '/wishlist' || window.location.pathname.startsWith('/wishlist');
+
+                        if (!data.added && onWishlistPage) {
+                            // Item removed while viewing the wishlist — reload the list to
+                            // remove the card from view without a full page navigation.
+                            if (typeof navigateToPage === 'function') {
+                                navigateToPage(window.location.href, false);
+                            } else {
+                                window.location.reload();
+                            }
+                            return;
+                        }
+
                         if (submitBtn) {
                             const isAdded = data.added;
-                            
+
                             // Handle product show page button
                             if(submitBtn.innerText.includes('Wishlist')) {
                                 submitBtn.innerHTML = isAdded ? `Remove from Wishlist` : `✦ Add to Wishlist`;
-                            } 
+                            }
                             // Handle card wishlist button
                             else {
                                 const svg = submitBtn.querySelector('svg');

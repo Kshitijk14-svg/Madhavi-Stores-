@@ -37,22 +37,78 @@
         {{-- ORDERS TAB --}}
         <div id="content-orders" class="account-content">
           <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">Order History</h2>
-          @if(empty($orders))
+          @if($orders->isEmpty())
             <p style="color: var(--muted);">You haven't placed any orders yet.</p>
             <a href="{{ route('shop') }}" class="btn-primary" style="display: inline-block; margin-top: 16px;">Explore Collections</a>
           @else
-            {{-- Order list logic would go here --}}
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              @foreach($orders as $order)
+              <div style="border:1px solid var(--border);padding:20px;background:var(--white);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                  <div>
+                    <p style="font-weight:700;font-family:monospace;color:var(--primary);font-size:13px;">{{ $order->order_number }}</p>
+                    <p style="font-size:11px;color:var(--muted);margin-top:4px;">{{ $order->created_at->format('d M Y') }}</p>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;
+                      @if($order->order_status === 'Delivered') background:#f0fdf4;color:#15803d;
+                      @elseif($order->order_status === 'Cancelled') background:#fff1f2;color:#e11d48;
+                      @else background:#fffbeb;color:#b45309; @endif">
+                      {{ $order->order_status }}
+                    </span>
+                    <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:4px 10px;border:1px solid var(--border);color:var(--muted);">{{ $order->payment_status }}</span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;">
+                  @foreach($order->items->take(4) as $item)
+                    @if($item->product)
+                    <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
+                         style="width:48px;height:48px;object-fit:cover;flex-shrink:0;background:#f5f5f5;">
+                    @endif
+                  @endforeach
+                  @if($order->items->count() > 4)
+                    <div style="width:48px;height:48px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:700;flex-shrink:0;">+{{ $order->items->count() - 4 }}</div>
+                  @endif
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;">
+                  <p style="font-weight:700;color:var(--secondary);">₹{{ number_format($order->total, 0) }}</p>
+                  <p style="font-size:11px;color:var(--muted);">{{ $order->items->sum('quantity') }} {{ $order->items->sum('quantity') === 1 ? 'item' : 'items' }}</p>
+                </div>
+              </div>
+              @endforeach
+            </div>
+            @if($orders->hasPages())
+            <div style="margin-top:16px;">{{ $orders->links() }}</div>
+            @endif
           @endif
         </div>
 
         {{-- WISHLIST TAB --}}
         <div id="content-wishlist" class="account-content" style="display: none;">
           <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">My Wishlist</h2>
-          @if(empty($wishlist))
+          @if($wishlist->isEmpty())
             <p style="color: var(--muted);">Your wishlist is empty. Save your favorite pieces here.</p>
-            <a href="{{ route('lookbook') }}" class="btn-primary" style="display: inline-block; margin-top: 16px;">View Lookbook</a>
+            <a href="{{ route('shop') }}" class="btn-primary" style="display: inline-block; margin-top: 16px;">Explore Collections</a>
           @else
-            {{-- Wishlist grid logic would go here --}}
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+              @foreach($wishlist as $item)
+                @if(!$item->product) @continue @endif
+                <div style="border:1px solid var(--border);">
+                  <a href="{{ route('product.show', $item->product->slug) }}" style="display:block;">
+                    <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
+                         style="width:100%;aspect-ratio:3/4;object-fit:cover;">
+                  </a>
+                  <div style="padding:10px;">
+                    <a href="{{ route('product.show', $item->product->slug) }}" style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;color:var(--primary);">{{ $item->product->name }}</a>
+                    <p style="font-size:12px;color:var(--secondary);font-weight:700;margin-bottom:8px;">₹{{ number_format($item->product->price, 0) }}</p>
+                    <form action="{{ route('wishlist.toggle', $item->product->id) }}" method="POST">
+                      @csrf
+                      <button type="submit" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border:1px solid var(--border);padding:8px;width:100%;background:transparent;cursor:pointer;color:var(--muted);">Remove</button>
+                    </form>
+                  </div>
+                </div>
+              @endforeach
+            </div>
           @endif
         </div>
 

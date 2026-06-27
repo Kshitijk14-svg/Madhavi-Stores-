@@ -20,32 +20,43 @@
         </div>
 
         {{-- Luxury Dashboard Sub-navigation (horizontally scrollable on mobile) --}}
+        @php
+            $newOrdersCount = \App\Models\Order::when(
+                session('admin_orders_viewed_at'),
+                fn($q) => $q->where('created_at', '>', session('admin_orders_viewed_at')),
+                fn($q) => $q->where('order_status', 'Pending')
+            )->count();
+        @endphp
         <div class="flex gap-5 md:gap-8 border-b border-gray-200/50 pb-4 mb-6 md:mb-8 overflow-x-auto whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0">
-            <a href="{{ route('admin.dashboard') }}" 
+            <a href="{{ route('admin.dashboard') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                Overview
             </a>
-            <a href="{{ route('admin.products.index') }}" 
+            <a href="{{ route('admin.products.index') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
                Products
             </a>
-            <a href="{{ route('admin.categories.index') }}" 
+            <a href="{{ route('admin.categories.index') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
                Collections
             </a>
-            <a href="{{ route('admin.orders.index') }}" 
-               class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+            <a href="{{ route('admin.orders.index') }}"
+               class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
+               style="display:inline-flex;align-items:center;gap:6px;">
                Orders
+               @if($newOrdersCount > 0 && !request()->routeIs('admin.orders.*'))
+                   <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold bg-rose-500 text-white rounded-full">{{ $newOrdersCount > 99 ? '99+' : $newOrdersCount }}</span>
+               @endif
             </a>
-            <a href="{{ route('admin.users.index') }}" 
+            <a href="{{ route('admin.users.index') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                Active Carts & Wishlists
             </a>
-            <a href="{{ route('admin.coupons.index') }}" 
+            <a href="{{ route('admin.coupons.index') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
                Coupons
             </a>
-            <a href="{{ route('admin.design.index') }}" 
+            <a href="{{ route('admin.design.index') }}"
                class="nav-link font-semibold text-xs tracking-wider uppercase {{ request()->routeIs('admin.design.*') ? 'active' : '' }}">
                Design Manager
             </a>

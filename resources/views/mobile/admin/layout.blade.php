@@ -54,6 +54,11 @@
     </div>
 
     @php
+      $newOrdersCount = \App\Models\Order::when(
+          session('admin_orders_viewed_at'),
+          fn($q) => $q->where('created_at', '>', session('admin_orders_viewed_at')),
+          fn($q) => $q->where('order_status', 'Pending')
+      )->count();
       $navItems = [
         ['route' => 'admin.dashboard',        'pattern' => 'admin.dashboard',   'label' => 'Overview'],
         ['route' => 'admin.products.index',   'pattern' => 'admin.products.*',  'label' => 'Products'],
@@ -67,8 +72,11 @@
     <nav class="flex-1 overflow-y-auto py-3">
       @foreach($navItems as $item)
         <a href="{{ route($item['route']) }}"
-           class="madmin-nav-link block px-5 py-3.5 text-xs font-bold tracking-wider uppercase text-primary border-l-2 {{ request()->routeIs($item['pattern']) ? 'active border-secondary' : 'border-transparent' }}">
-          {{ $item['label'] }}
+           class="madmin-nav-link flex items-center justify-between px-5 py-3.5 text-xs font-bold tracking-wider uppercase text-primary border-l-2 {{ request()->routeIs($item['pattern']) ? 'active border-secondary' : 'border-transparent' }}">
+          <span>{{ $item['label'] }}</span>
+          @if($item['route'] === 'admin.orders.index' && $newOrdersCount > 0 && !request()->routeIs('admin.orders.*'))
+            <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold bg-rose-500 text-white rounded-full">{{ $newOrdersCount > 99 ? '99+' : $newOrdersCount }}</span>
+          @endif
         </a>
       @endforeach
     </nav>

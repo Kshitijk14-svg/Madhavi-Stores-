@@ -753,6 +753,10 @@ class AdminController extends Controller
         }
 
         $orders = $query->paginate(15)->withQueryString();
+
+        // Mark orders as "viewed" so the new-orders badge resets after visiting this page
+        session(['admin_orders_viewed_at' => now()]);
+
         return view('admin.orders.index', compact('orders'));
     }
 
@@ -814,18 +818,20 @@ class AdminController extends Controller
     {
         $order = Order::with(['items.product', 'user'])->findOrFail($id);
 
-        if (!$order->user || !$order->user->email) {
-            return response()->json(['success' => false, 'message' => 'Customer email not found.']);
+        $recipientEmail = $order->email ?: ($order->user?->email ?? null);
+
+        if (!$recipientEmail) {
+            return response()->json(['success' => false, 'message' => 'Customer email not found on this order.']);
         }
 
         try {
-            \Illuminate\Support\Facades\Mail::to($order->user->email)
+            \Illuminate\Support\Facades\Mail::to($recipientEmail)
                 ->send(new \App\Mail\InvoiceMail($order));
 
-            return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $order->user->email]);
+            return response()->json(['success' => true, 'message' => 'Invoice sent to ' . $recipientEmail]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Failed to send invoice email: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to send invoice: ' . $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to send invoice. Please check mail configuration. Error: ' . $e->getMessage()]);
         }
     }
 
