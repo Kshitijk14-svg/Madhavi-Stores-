@@ -23,50 +23,148 @@
 
   {{-- Orders Tab --}}
   <div id="tab-orders" class="tab-content px-4 py-4">
+
+    {{-- Sort controls --}}
+    <div class="flex items-center gap-2 mb-4 flex-wrap">
+      <button onclick="applyOrderParam('order_sort','latest')"
+              class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 border transition-colors"
+              style="{{ request('order_sort','latest')==='latest' ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : 'background:#fff;color:var(--muted);border-color:#e5e5e5;' }}">
+        Latest
+      </button>
+      <button onclick="applyOrderParam('order_sort','oldest')"
+              class="text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 border transition-colors"
+              style="{{ request('order_sort')==='oldest' ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : 'background:#fff;color:var(--muted);border-color:#e5e5e5;' }}">
+        Oldest
+      </button>
+      <input type="month" value="{{ request('order_month','') }}"
+             onchange="applyOrderParam('order_month', this.value)"
+             class="text-[10px] border px-2 py-1.5 outline-none bg-white text-primary"
+             style="{{ request('order_month') ? 'border-color:var(--secondary);' : 'border-color:#e5e5e5;' }}">
+      @if(request('order_month'))
+      <button onclick="applyOrderParam('order_month','')" class="text-[10px] text-gray-400 underline">Clear</button>
+      @endif
+    </div>
+
     @if($orders->isEmpty())
-      <div class="py-12 text-center">
-        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" class="mx-auto text-gray-200 mb-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
-        <p class="text-sm text-gray-500">No orders yet.</p>
+      <div class="py-10 text-center">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24" class="mx-auto text-gray-200 mb-3"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+        <p class="text-sm text-gray-400">{{ request('order_month') ? 'No orders for this period.' : 'No orders yet.' }}</p>
+        @if(!request('order_month'))
         <a href="{{ route('shop') }}" class="btn-primary mt-4 inline-block text-sm" style="padding:12px 28px;">Start Shopping</a>
+        @endif
       </div>
     @else
-      <div class="space-y-3">
+      {{-- Accordion strips --}}
+      <div class="border border-gray-100 overflow-hidden">
         @foreach($orders as $order)
-        <div class="border border-gray-100 p-4" style="border-radius:2px;">
-          <div class="flex items-start justify-between mb-3">
-            <div>
-              <p class="text-xs font-bold text-primary">{{ $order->order_number }}</p>
+        <div>
+          {{-- Strip header --}}
+          <button type="button"
+                  onclick="toggleOrderStrip({{ $order->id }})"
+                  class="w-full flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 text-left">
+            {{-- Thumbs --}}
+            <div class="flex gap-1 shrink-0">
+              @foreach($order->items->take(2) as $thumb)
+                @if($thumb->product)
+                <img src="{{ $thumb->product->image_url }}" alt=""
+                     class="w-9 h-9 object-cover bg-gray-50 shrink-0">
+                @endif
+              @endforeach
+              @if($order->items->count() > 2)
+              <div class="w-9 h-9 bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-400">+{{ $order->items->count()-2 }}</div>
+              @endif
+            </div>
+            {{-- Meta --}}
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-primary font-mono">{{ $order->order_number }}</p>
               <p class="text-[10px] text-gray-400 mt-0.5">{{ $order->created_at->format('d M Y') }}</p>
             </div>
-            <div class="text-right">
-              <span class="inline-block text-[9px] font-bold tracking-wider uppercase px-2 py-1
-                @if($order->order_status === 'Delivered') bg-green-50 text-green-700
-                @elseif($order->order_status === 'Cancelled') bg-red-50 text-red-600
+            {{-- Total + status + chevron --}}
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-xs font-bold" style="color:var(--secondary);">₹{{ number_format($order->total,0) }}</span>
+              <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5
+                @if($order->order_status==='Delivered') bg-green-50 text-green-700
+                @elseif($order->order_status==='Cancelled') bg-red-50 text-red-600
+                @elseif($order->order_status==='Shipped') bg-blue-50 text-blue-700
                 @else bg-amber-50 text-amber-700 @endif">
                 {{ $order->order_status }}
               </span>
+              <svg id="chevron-{{ $order->id }}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform 0.25s;color:#aaa;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+              </svg>
             </div>
-          </div>
-          <div class="flex gap-2 mb-3 overflow-x-auto hide-scrollbar pb-1">
-            @foreach($order->items->take(4) as $item)
-              @if($item->product)
-              <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
-                   class="w-12 h-12 object-cover shrink-0 bg-gray-50">
-              @endif
-            @endforeach
-            @if($order->items->count() > 4)
-              <div class="w-12 h-12 bg-gray-100 shrink-0 flex items-center justify-center text-[10px] text-gray-400 font-bold">
-                +{{ $order->items->count() - 4 }}
+          </button>
+
+          {{-- Expandable panel --}}
+          <div id="order-body-{{ $order->id }}" style="max-height:0;overflow:hidden;transition:max-height 0.35s ease;">
+            <div class="bg-gray-50 border-b border-gray-100 px-4 py-4">
+
+              {{-- Items --}}
+              <p class="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">Items Ordered</p>
+              <div class="space-y-2 mb-4">
+                @foreach($order->items as $item)
+                <div class="flex items-center gap-3 bg-white border border-gray-100 p-2.5">
+                  @if($item->product)
+                    <a href="{{ route('product.show', $item->product->slug) }}" class="shrink-0">
+                      <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
+                           class="w-12 h-12 object-cover bg-gray-50">
+                    </a>
+                  @else
+                    <div class="w-12 h-12 bg-gray-100 shrink-0"></div>
+                  @endif
+                  <div class="flex-1 min-w-0">
+                    @if($item->product)
+                      <a href="{{ route('product.show', $item->product->slug) }}"
+                         class="text-xs font-semibold text-primary block truncate">{{ $item->product_name }}</a>
+                    @else
+                      <p class="text-xs font-semibold text-primary truncate">{{ $item->product_name }}</p>
+                    @endif
+                    <p class="text-[10px] text-gray-400 mt-0.5">
+                      @if($item->size)Size: <strong class="text-primary">{{ $item->size }}</strong> · @endif
+                      Qty: <strong class="text-primary">{{ $item->quantity }}</strong>
+                    </p>
+                  </div>
+                  <p class="text-xs font-bold text-primary shrink-0">₹{{ number_format($item->price * $item->quantity, 0) }}</p>
+                </div>
+                @endforeach
               </div>
-            @endif
-          </div>
-          <div class="flex items-center justify-between">
-            <p class="text-xs font-bold text-secondary">₹{{ number_format($order->total, 0) }}</p>
-            <span class="text-[10px] font-bold tracking-wider uppercase text-gray-400 px-2 py-1 border border-gray-100">{{ $order->payment_status }}</span>
+
+              {{-- Totals --}}
+              <div class="bg-white border border-gray-100 p-3 mb-4 space-y-1.5">
+                <div class="flex justify-between text-[11px] text-gray-400">
+                  <span>Subtotal</span><span>₹{{ number_format($order->subtotal,0) }}</span>
+                </div>
+                @if($order->discount > 0)
+                <div class="flex justify-between text-[11px] text-red-500">
+                  <span>Discount{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</span>
+                  <span>−₹{{ number_format($order->discount,0) }}</span>
+                </div>
+                @endif
+                <div class="flex justify-between text-xs font-bold text-primary pt-1.5 border-t border-gray-100">
+                  <span>Total</span><span style="color:var(--secondary);">₹{{ number_format($order->total,0) }}</span>
+                </div>
+              </div>
+
+              {{-- Receipt buttons --}}
+              <div class="flex gap-2">
+                <a href="{{ route('account.order.receipt', $order->id) }}" target="_blank"
+                   class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-bold uppercase tracking-wide border border-gray-200 bg-white text-primary">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  View
+                </a>
+                <a href="{{ route('account.order.receipt', $order->id) }}?download=1" target="_blank"
+                   class="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-bold uppercase tracking-wide text-white" style="background:var(--primary);">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                  Download PDF
+                </a>
+              </div>
+
+            </div>
           </div>
         </div>
         @endforeach
       </div>
+
       @if($orders->hasPages())
       <div class="mt-4">{{ $orders->links() }}</div>
       @endif
@@ -146,6 +244,23 @@
   }
   document.addEventListener('DOMContentLoaded', () => switchTab('orders'));
   document.addEventListener('pjax:success', () => switchTab('orders'));
+
+  function toggleOrderStrip(orderId) {
+    const body    = document.getElementById('order-body-' + orderId);
+    const chevron = document.getElementById('chevron-'     + orderId);
+    if (!body) return;
+    const isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+    body.style.maxHeight    = isOpen ? '0' : body.scrollHeight + 'px';
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  }
+
+  function applyOrderParam(key, value) {
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set(key, value);
+    else        url.searchParams.delete(key);
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+  }
 </script>
 @endsection
 @endsection

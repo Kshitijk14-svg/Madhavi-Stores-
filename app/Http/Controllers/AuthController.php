@@ -239,14 +239,26 @@ class AuthController extends Controller
     }
 
     // ── ACCOUNT PAGE ────────────────────────────────────────
-    public function account()
+    public function account(\Illuminate\Http\Request $request)
     {
         $user = Auth::user();
 
-        $orders = \App\Models\Order::where('user_id', $user->id)
-                                   ->with('items.product')
-                                   ->latest()
-                                   ->paginate(10)->withQueryString();
+        $ordersQuery = \App\Models\Order::where('user_id', $user->id)->with('items.product');
+
+        if ($request->get('order_sort') === 'oldest') {
+            $ordersQuery->oldest();
+        } else {
+            $ordersQuery->latest();
+        }
+
+        if ($request->filled('order_month')) {
+            $parts = explode('-', $request->order_month);
+            if (count($parts) === 2 && is_numeric($parts[0]) && is_numeric($parts[1])) {
+                $ordersQuery->whereYear('created_at', $parts[0])->whereMonth('created_at', $parts[1]);
+            }
+        }
+
+        $orders = $ordersQuery->paginate(15)->withQueryString();
 
         $wishlist = \App\Models\WishlistItem::where('user_id', $user->id)
                                            ->with('product')
@@ -256,6 +268,28 @@ class AuthController extends Controller
         $cartCount = \App\Models\CartItem::where('user_id', $user->id)->sum('quantity');
 
         return view('pages.account', compact('user', 'orders', 'wishlist', 'cartCount'));
+    }
+
+    // ── ORDER RECEIPT (customer PDF download/view) ──────────
+    public function orderReceipt(\Illuminate\Http\Request $request, $id)
+    {
+        $order = \App\Models\Order::with(['items.product', 'user'])
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        try {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.invoice', compact('order'))
+                ->setPaper('a4', 'portrait');
+
+            $filename = 'Receipt-' . $order->order_number . '.pdf';
+
+            return $request->boolean('download')
+                ? $pdf->download($filename)
+                : $pdf->stream($filename);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Customer receipt failed: ' . $e->getMessage(), ['order_id' => $id]);
+            return redirect()->route('account')->with('error', 'Could not generate the receipt. Please try again.');
+        }
     }
 
     // ── UPDATE PROFILE ──────────────────────────────────────

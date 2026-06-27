@@ -54,6 +54,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AuthController::class, 'account'])->name('account');
     Route::post('/account', [AuthController::class, 'updateProfile'])->name('account.update');
+    Route::get('/account/orders/{id}/receipt', [AuthController::class, 'orderReceipt'])->name('account.order.receipt');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Cart Operations
