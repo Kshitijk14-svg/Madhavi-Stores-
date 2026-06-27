@@ -11,7 +11,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // On cPanel shared hosting the web root is public_html/ but Laravel's
+        // public_path() resolves to madhavi-app/public/ which doesn't exist.
+        // DomPDF calls realpath(public_path()) and throws "Cannot resolve public path"
+        // when that directory is absent. Point to public_html when needed.
+        if (!realpath(public_path())) {
+            $publicHtml = realpath(base_path('../public_html'));
+            if ($publicHtml) {
+                $this->app->usePublicPath($publicHtml);
+            }
+        }
     }
 
     /**
