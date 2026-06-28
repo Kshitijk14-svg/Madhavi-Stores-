@@ -286,16 +286,16 @@ class AdminController extends Controller
             'category_id'    => 'required|exists:categories,id',
             'stock'          => 'nullable|integer|min:0',
             'has_sizes'      => 'nullable|boolean',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'image_url'      => 'nullable|url',
-            'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
             'discount_type'  => 'nullable|in:percent,fixed',
             'discount_value' => 'nullable|numeric|min:0',
             'is_new_arrival' => 'nullable|boolean',
             'new_arrival_expires_at' => 'nullable|date',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'seo_title'      => 'nullable|string|max:255',
             'seo_description'=> 'nullable|string',
             'seo_keywords'   => 'nullable|string|max:255',
@@ -397,7 +397,7 @@ class AdminController extends Controller
             'price'          => 'required|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'category_id'    => 'required|exists:categories,id',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'image_url'      => 'nullable|url',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
@@ -405,7 +405,7 @@ class AdminController extends Controller
             'discount_value' => 'nullable|numeric|min:0',
             'is_new_arrival' => 'nullable|boolean',
             'new_arrival_expires_at' => 'nullable|date',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'existing_gallery' => 'nullable|array',
             'seo_title'      => 'nullable|string|max:255',
             'seo_description'=> 'nullable|string',
@@ -597,9 +597,9 @@ class AdminController extends Controller
     {
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name',
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'image_url' => 'nullable|url',
-            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -639,9 +639,9 @@ class AdminController extends Controller
 
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name,' . $id,
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
             'image_url' => 'nullable|url',
-            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -763,16 +763,32 @@ class AdminController extends Controller
     public function updateOrderStatus(Request $request, $id)
     {
         $order = Order::findOrFail($id);
-        
+
         $request->validate([
             'order_status'   => 'required|in:Pending,Processing,Shipped,Delivered,Cancelled',
             'payment_status' => 'required|in:Pending,Paid,Refunded',
         ]);
 
+        $previousOrderStatus = $order->order_status;
+
         $order->update([
             'order_status'   => $request->order_status,
             'payment_status' => $request->payment_status,
         ]);
+
+        // Send confirmation email to customer whenever order status changes
+        if ($previousOrderStatus !== $order->order_status) {
+            $recipientEmail = $order->email ?: ($order->user?->email ?? null);
+            if ($recipientEmail) {
+                try {
+                    $order->loadMissing(['items.product', 'user']);
+                    \Illuminate\Support\Facades\Mail::to($recipientEmail)
+                        ->send(new \App\Mail\OrderStatusMail($order, $previousOrderStatus));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to send order status email: ' . $e->getMessage());
+                }
+            }
+        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -1154,7 +1170,7 @@ class AdminController extends Controller
         // relative paths like "images/banners/x.webp" and normal http(s) URLs.
         // Uploaded files must be real images (convertToWebp re-encodes them too).
         $safeUrl = ['nullable', 'string', 'max:2048', 'not_regex:/^\s*(?:javascript|data|vbscript):/i'];
-        $image   = ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:2048'];
+        $image   = ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif'];
 
         $request->validate([
             'banner1_link'  => $safeUrl, 'banner2_link'  => $safeUrl, 'banner3_link'  => $safeUrl,
@@ -1378,11 +1394,6 @@ class AdminController extends Controller
         }
 
         if (!$imageInfo) {
-            return null;
-        }
-
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            logger()->warning('convertToWebp: file too large (' . $file->getSize() . ' bytes)');
             return null;
         }
 

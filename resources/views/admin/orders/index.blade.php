@@ -119,7 +119,7 @@
                             
                             {{-- Payment Status Tag --}}
                             <td class="py-4 px-4 text-center">
-                                <span class="inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider
+                                <span id="payment-status-badge-{{ $order->id }}" class="inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider
                                     {{ $order->payment_status === 'Paid' ? 'bg-emerald-50 text-emerald-700' : '' }}
                                     {{ $order->payment_status === 'Pending' ? 'bg-amber-50 text-amber-700' : '' }}
                                     {{ $order->payment_status === 'Refunded' ? 'bg-rose-50 text-rose-700' : '' }}
@@ -130,7 +130,7 @@
 
                             {{-- Order Status Tag --}}
                             <td class="py-4 px-4 text-center">
-                                <span class="inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider
+                                <span id="order-status-badge-{{ $order->id }}" class="inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider
                                     {{ $order->order_status === 'Pending' ? 'bg-amber-50 text-amber-700' : '' }}
                                     {{ $order->order_status === 'Processing' ? 'bg-purple-50 text-purple-700' : '' }}
                                     {{ $order->order_status === 'Shipped' ? 'bg-indigo-50 text-indigo-700' : '' }}
@@ -263,12 +263,6 @@
                                                class="w-full flex items-center justify-center gap-2 py-2 text-[10px] text-primary bg-silk border border-gray-200 hover:bg-gray-50 transition-colors uppercase font-semibold tracking-wider">
                                                 ⬇ Download Invoice PDF
                                             </a>
-                                            <form action="{{ route('admin.orders.send_invoice', $order->id) }}" method="POST" class="mt-2 invoice-email-form">
-                                                @csrf
-                                                <button type="submit" class="w-full py-2 text-[10px] text-secondary bg-white border border-secondary hover:bg-secondary hover:text-white transition-colors uppercase font-semibold tracking-wider">
-                                                    ✉ Email Invoice to Customer
-                                                </button>
-                                            </form>
                                         </div>
 
                                         {{-- Delete Order --}}
@@ -306,19 +300,42 @@
         }
     }
 
-    // Bind invoice email forms directly (not inside DOMContentLoaded — this script
-    // is re-executed by PJAX after content swap, so the forms are already in the DOM).
-    document.querySelectorAll('.invoice-email-form').forEach(form => {
+    function orderStatusClass(status) {
+        const map = {
+            'Pending':    'bg-amber-50 text-amber-700',
+            'Processing': 'bg-purple-50 text-purple-700',
+            'Shipped':    'bg-indigo-50 text-indigo-700',
+            'Delivered':  'bg-emerald-50 text-emerald-700',
+            'Cancelled':  'bg-rose-50 text-rose-700',
+        };
+        return map[status] || '';
+    }
+
+    function paymentStatusClass(status) {
+        const map = {
+            'Paid':     'bg-emerald-50 text-emerald-700',
+            'Pending':  'bg-amber-50 text-amber-700',
+            'Refunded': 'bg-rose-50 text-rose-700',
+        };
+        return map[status] || '';
+    }
+
+    // Handle Save Changes via AJAX so the modal stays open and badges update live.
+    document.querySelectorAll('.order-update-form').forEach(form => {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const btn = form.querySelector('button');
+            const btn = form.querySelector('button[type="submit"]');
             const originalText = btn.innerHTML;
-            btn.innerHTML = 'Sending...';
+            btn.innerHTML = 'Saving...';
             btn.disabled = true;
 
             const csrfMeta = document.querySelector('meta[name="csrf-token"]');
             const headers = { 'X-Requested-With': 'XMLHttpRequest' };
             if (csrfMeta) headers['X-CSRF-TOKEN'] = csrfMeta.getAttribute('content');
+
+            // Extract order ID from the action URL (/admin/orders/{id}/status)
+            const match = form.action.match(/\/orders\/(\d+)\/status/);
+            const orderId = match ? match[1] : null;
 
             fetch(form.action, {
                 method: 'POST',
@@ -327,6 +344,18 @@
             })
             .then(res => res.json())
             .then(data => {
+                if (data.success && orderId) {
+                    const orderBadge   = document.getElementById('order-status-badge-' + orderId);
+                    const paymentBadge = document.getElementById('payment-status-badge-' + orderId);
+                    if (orderBadge) {
+                        orderBadge.textContent = data.order_status;
+                        orderBadge.className   = 'inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ' + orderStatusClass(data.order_status);
+                    }
+                    if (paymentBadge) {
+                        paymentBadge.textContent = data.payment_status;
+                        paymentBadge.className   = 'inline-block px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ' + paymentStatusClass(data.payment_status);
+                    }
+                }
                 if (typeof showToast === 'function') {
                     showToast(data.message, data.success ? 'success' : 'error');
                 } else {
@@ -335,9 +364,9 @@
             })
             .catch(() => {
                 if (typeof showToast === 'function') {
-                    showToast('Error sending invoice. Please check mail configuration.', 'error');
+                    showToast('Error saving changes. Please try again.', 'error');
                 } else {
-                    alert('Error sending invoice.');
+                    alert('Error saving changes.');
                 }
             })
             .finally(() => {
