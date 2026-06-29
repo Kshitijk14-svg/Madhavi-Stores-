@@ -118,7 +118,7 @@
               <div class="pcard">
                 <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
                   <a href="{{ route('product.show', $product['slug']) }}" class="block w-full h-full">
-                    <img src="{{ $product['thumb_url'] }}" alt="{{ $product['name'] }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                    <img src="{{ $product['thumb_url'] }}" @if($product['card_srcset']) srcset="{{ $product['card_srcset'] }}" sizes="70vw" @endif alt="{{ $product['name'] }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                   </a>
                   @if($product['badge'] ?? false)
                     <span class="pcard-badge text-[9px]">{{ $product['badge'] }}</span>
@@ -174,7 +174,7 @@
               <div class="pcard">
                 <div class="pcard-img" style="aspect-ratio:3/4;position:relative;">
                   <a href="{{ route('product.show', $product->slug) }}" class="block w-full h-full">
-                    <img src="{{ $product->thumb_url }}" alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                    <img src="{{ $product->thumb_url }}" @if($product->card_srcset) srcset="{{ $product->card_srcset }}" sizes="70vw" @endif alt="{{ $product->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                   </a>
                   @if($product->badge)
                     <span class="pcard-badge text-[9px]">{{ $product->badge }}</span>

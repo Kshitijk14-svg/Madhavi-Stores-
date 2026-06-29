@@ -34,7 +34,7 @@
         @php $product = $item->product; @endphp
         <div class="pcard relative group">
           <div class="pcard-img">
-            <img src="{{ $product->thumb_url }}" alt="{{ $product->name }}" loading="lazy" decoding="async"
+            <img src="{{ $product->thumb_url }}" @if($product->card_srcset) srcset="{{ $product->card_srcset }}" sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw" @endif alt="{{ $product->name }}" loading="lazy" decoding="async"
                  onerror="this.src='https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=70'">
             
             {{-- Remove from Wishlist button --}}

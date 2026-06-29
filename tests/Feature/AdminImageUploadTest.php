@@ -85,6 +85,13 @@ class AdminImageUploadTest extends TestCase
         // The accessor used by product cards serves the thumbnail.
         $this->assertSame($thumbRel, $product->thumb_url);
 
+        // The card srcset offers both the thumbnail and the full image with width descriptors.
+        $srcset = $product->card_srcset;
+        $this->assertNotNull($srcset);
+        $this->assertStringContainsString($thumbRel . ' ', $srcset);
+        $this->assertStringContainsString($product->image_url . ' ', $srcset);
+        $this->assertStringContainsString('w', $srcset);
+
         @unlink(public_path(ltrim($product->image_url, '/')));
         @unlink($thumbPath);
     }

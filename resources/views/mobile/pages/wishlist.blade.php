@@ -26,8 +26,8 @@
       <div class="border border-gray-100 overflow-hidden" style="border-radius:2px;">
         <a href="{{ route('product.show', $item->product->slug) }}" class="block">
           <div class="aspect-[3/4] overflow-hidden bg-gray-50">
-            <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
-                 class="w-full h-full object-cover">
+            <img src="{{ $item->product->thumb_url }}" @if($item->product->card_srcset) srcset="{{ $item->product->card_srcset }}" sizes="50vw" @endif alt="{{ $item->product->name }}"
+                 class="w-full h-full object-cover" loading="lazy" decoding="async">
           </div>
         </a>
         <div class="p-2">

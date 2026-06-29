@@ -3,10 +3,12 @@
 <div class="product-card group relative flex flex-col">
     <!-- Image Area -->
     <a href="{{ route('product.show', $product['slug']) }}" class="block aspect-[3/4] overflow-hidden relative bg-gray-100 mb-4 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:outline-none">
-        <img 
+        <img
             src="{{ $product['thumb_url'] }}"
-            alt="{{ $product['name'] }}" 
+            @if($product['card_srcset']) srcset="{{ $product['card_srcset'] }}" sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw" @endif
+            alt="{{ $product['name'] }}"
             loading="lazy"
+            decoding="async"
             class="w-full h-full object-cover object-center transition-transform duration-600 ease-in-out group-hover:scale-[1.04]"
         >
         

@@ -68,6 +68,38 @@ class Product extends Model
         return $this->image_url;
     }
 
+    /**
+     * Responsive srcset for product cards: the small thumbnail plus the full optimized
+     * image, each with its real pixel width so the browser picks the right one for the
+     * card's rendered size and DPR. Null when there is no local thumbnail (external URL).
+     */
+    public function getCardSrcsetAttribute(): ?string
+    {
+        $thumb = self::thumbUrlFor($this->image_url);
+        if (!$thumb) {
+            return null;
+        }
+
+        $thumbFull = public_path(ltrim($thumb, '/'));
+        $mainFull  = public_path(ltrim($this->image_url, '/'));
+        if (!is_file($thumbFull) || !is_file($mainFull)) {
+            return null;
+        }
+
+        $tw = @getimagesize($thumbFull)[0] ?? null;
+        $mw = @getimagesize($mainFull)[0] ?? null;
+        if (!$tw || !$mw) {
+            return null;
+        }
+
+        $parts = [$thumb . ' ' . $tw . 'w'];
+        if ($mw > $tw) {
+            $parts[] = $this->image_url . ' ' . $mw . 'w';
+        }
+
+        return implode(', ', $parts);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
