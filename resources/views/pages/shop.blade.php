@@ -49,7 +49,7 @@
                 <input type="checkbox" name="new_arrivals" value="1" class="accent-secondary w-4 h-4 cursor-pointer" 
                        {{ request('new_arrivals') == '1' || request('filter') === 'new-arrivals' || request('filter') === 'new_arrivals' ? 'checked' : '' }}>
                 <span class="text-sm text-muted group-hover:text-primary transition-colors flex-1">New Arrivals</span>
-                <span class="text-[10px] text-muted/50">{{ \App\Models\Product::where('is_new_arrival', true)->exists() ? \App\Models\Product::where('is_new_arrival', true)->count() : \App\Models\Product::count() }}</span>
+                <span class="text-[10px] text-muted/50">{{ $filterCounts['new_arrivals'] }}</span>
               </label>
             </li>
             <li>
@@ -57,7 +57,7 @@
                 <input type="checkbox" name="bestsellers" value="1" class="accent-secondary w-4 h-4 cursor-pointer" 
                        {{ request('bestsellers') == '1' || request('filter') === 'bestsellers' || request('filter') === 'bestseller' ? 'checked' : '' }}>
                 <span class="text-sm text-muted group-hover:text-primary transition-colors flex-1">Bestsellers</span>
-                <span class="text-[10px] text-muted/50">{{ \App\Models\Product::where('is_bestseller', true)->exists() ? \App\Models\Product::where('is_bestseller', true)->count() : \App\Models\Product::count() }}</span>
+                <span class="text-[10px] text-muted/50">{{ $filterCounts['bestsellers'] }}</span>
               </label>
             </li>
             <li class="border-b border-gray-100 my-2"></li>

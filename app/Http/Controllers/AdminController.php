@@ -286,16 +286,16 @@ class AdminController extends Controller
             'category_id'    => 'required|exists:categories,id',
             'stock'          => 'nullable|integer|min:0',
             'has_sizes'      => 'nullable|boolean',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'image_url'      => 'nullable|url',
-            'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
             'discount_type'  => 'nullable|in:percent,fixed',
             'discount_value' => 'nullable|numeric|min:0',
             'is_new_arrival' => 'nullable|boolean',
             'new_arrival_expires_at' => 'nullable|date',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'seo_title'      => 'nullable|string|max:255',
             'seo_description'=> 'nullable|string',
             'seo_keywords'   => 'nullable|string|max:255',
@@ -378,6 +378,8 @@ class AdminController extends Controller
             }
         }
 
+        $this->flushCatalogCache();
+
         return redirect()->route('admin.products.index')->with('success', 'Product added successfully.');
     }
 
@@ -397,7 +399,7 @@ class AdminController extends Controller
             'price'          => 'required|numeric|min:0',
             'original_price' => 'nullable|numeric|min:0',
             'category_id'    => 'required|exists:categories,id',
-            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'image_url'      => 'nullable|url',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
@@ -405,7 +407,7 @@ class AdminController extends Controller
             'discount_value' => 'nullable|numeric|min:0',
             'is_new_arrival' => 'nullable|boolean',
             'new_arrival_expires_at' => 'nullable|date',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'existing_gallery' => 'nullable|array',
             'seo_title'      => 'nullable|string|max:255',
             'seo_description'=> 'nullable|string',
@@ -509,6 +511,8 @@ class AdminController extends Controller
             $product->sizes()->delete();
         }
 
+        $this->flushCatalogCache();
+
         return redirect()->route('admin.products.index')->with('success', 'Product updated successfully.');
     }
 
@@ -526,6 +530,7 @@ class AdminController extends Controller
         }
 
         $product->delete();
+        $this->flushCatalogCache();
         return redirect()->route('admin.products.index')->with('success', 'Product deleted successfully.');
     }
 
@@ -597,9 +602,9 @@ class AdminController extends Controller
     {
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name',
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'image_url' => 'nullable|url',
-            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -639,9 +644,9 @@ class AdminController extends Controller
 
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name,' . $id,
-            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'image_url' => 'nullable|url',
-            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif',
+            'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $slug     = Str::slug($request->name);
@@ -1170,7 +1175,7 @@ class AdminController extends Controller
         // relative paths like "images/banners/x.webp" and normal http(s) URLs.
         // Uploaded files must be real images (convertToWebp re-encodes them too).
         $safeUrl = ['nullable', 'string', 'max:2048', 'not_regex:/^\s*(?:javascript|data|vbscript):/i'];
-        $image   = ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif'];
+        $image   = ['nullable', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'];
 
         $request->validate([
             'banner1_link'  => $safeUrl, 'banner2_link'  => $safeUrl, 'banner3_link'  => $safeUrl,
@@ -1384,8 +1389,14 @@ class AdminController extends Controller
         return redirect()->route('admin.design.index')->with('error', 'Invalid setting update type.');
     }
 
-    private function convertToWebp($file, $destinationFolder): ?string
+    private function convertToWebp($file, $destinationFolder, int $maxDimension = 1600): ?string
     {
+        // Guard: reject oversized files before decoding (DoS / decompression-bomb defence).
+        if ($file->getSize() > 8 * 1024 * 1024) {
+            logger()->warning('convertToWebp: file too large (' . $file->getSize() . ' bytes)');
+            return null;
+        }
+
         try {
             $imageInfo = getimagesize($file->getRealPath());
         } catch (\Throwable $e) {
@@ -1394,6 +1405,14 @@ class AdminController extends Controller
         }
 
         if (!$imageInfo) {
+            return null;
+        }
+
+        [$width, $height] = $imageInfo;
+
+        // Guard: reject pixel bombs that would exhaust memory during the GD decode.
+        if (($width * $height) > 40_000_000) {
+            logger()->warning("convertToWebp: image dimensions too large ({$width}x{$height})");
             return null;
         }
 
@@ -1442,7 +1461,8 @@ class AdminController extends Controller
         }
         $fullPath = $destinationPath . '/' . $filename;
 
-        $success = imagewebp($image, $fullPath, 80);
+        // Downscale (if needed) and encode to WebP. Shared with images:optimize.
+        $success = self::downscaleGdToWebp($image, $width, $height, $fullPath, $maxDimension, 80);
         imagedestroy($image);
 
         if (!$success) {
@@ -1451,6 +1471,33 @@ class AdminController extends Controller
         }
 
         return '/' . $destinationFolder . '/' . $filename;
+    }
+
+    /**
+     * Downscale a GD image to fit within $maxDimension (longest edge, aspect preserved)
+     * and write it as WebP to $fullPath. Transparency is preserved. The caller retains
+     * ownership of $image (this method only destroys any intermediate it creates).
+     */
+    public static function downscaleGdToWebp($image, int $srcW, int $srcH, string $fullPath, int $maxDimension = 1600, int $quality = 80): bool
+    {
+        $longest = max($srcW, $srcH);
+
+        if ($maxDimension > 0 && $longest > $maxDimension) {
+            $scale = $maxDimension / $longest;
+            $newW  = max(1, (int) round($srcW * $scale));
+            $newH  = max(1, (int) round($srcH * $scale));
+
+            $resized = imagecreatetruecolor($newW, $newH);
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $srcW, $srcH);
+
+            $ok = imagewebp($resized, $fullPath, $quality);
+            imagedestroy($resized);
+            return $ok;
+        }
+
+        return imagewebp($image, $fullPath, $quality);
     }
 
     private function deleteLocalFile(?string $url): void
@@ -1462,5 +1509,14 @@ class AdminController extends Controller
         if (file_exists($path)) {
             unlink($path);
         }
+    }
+
+    /** Bust catalog-derived caches whenever products change. */
+    private function flushCatalogCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('all_categories');
+        \Illuminate\Support\Facades\Cache::forget('all_categories_no_count');
+        \Illuminate\Support\Facades\Cache::forget('all_tags');
+        \Illuminate\Support\Facades\Cache::forget('shop_filter_counts');
     }
 }

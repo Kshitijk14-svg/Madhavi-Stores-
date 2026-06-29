@@ -14,7 +14,7 @@
             @foreach($heroSlides as $i => $slide)
               <div class="swiper-slide">
                 <div class="hero-slide">
-                  <img src="{{ $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}">
+                  <img src="{{ $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}" decoding="async" {{ $i === 0 ? 'fetchpriority=high' : 'loading=lazy' }}>
                   <div style="position:absolute;inset:0;background:linear-gradient(to {{ $i % 2 === 1 ? 'left' : 'right' }},rgba(24,24,24,0.75),rgba(24,24,24,0.35),transparent);"></div>
                   <div style="position:absolute;inset:0;display:flex;align-items:center;{{ $i % 2 === 1 ? 'justify-content:flex-end;' : '' }}">
                     <div class="wrap" style="width:100%;">
@@ -80,7 +80,7 @@
           <div class="dual-banner">
 
             <a href="{{ $dualBanners['banner1']['link'] ?? route('shop') }}" class="banner-card" style="aspect-ratio:4/3;">
-              <img src="{{ $dualBanners['banner1']['image_url'] }}" alt="{{ $dualBanners['banner1']['title'] }}" style="height:480px;">
+              <img src="{{ $dualBanners['banner1']['image_url'] }}" alt="{{ $dualBanners['banner1']['title'] }}" loading="lazy" decoding="async" style="height:480px;">
               <div class="banner-card-overlay" style="background:linear-gradient(to top,rgba(24,24,24,0.7),rgba(24,24,24,0.1),transparent);"></div>
               <div class="banner-card-content">
                 <p class="eyebrow" style="margin-bottom:8px;">{!! \App\Models\Setting::format($dualBanners['banner1']['eyebrow']) !!}</p>
@@ -91,7 +91,7 @@
 
             <div class="dual-right">
               <a href="{{ $dualBanners['banner2']['link'] ?? route('shop') }}" class="banner-card">
-                <img src="{{ $dualBanners['banner2']['image_url'] }}" alt="{{ $dualBanners['banner2']['title'] }}" style="height:224px;object-position:top;">
+                <img src="{{ $dualBanners['banner2']['image_url'] }}" alt="{{ $dualBanners['banner2']['title'] }}" loading="lazy" decoding="async" style="height:224px;object-position:top;">
                 <div class="banner-card-overlay" style="background:linear-gradient(to right,rgba(24,24,24,0.65),transparent);"></div>
                 <div style="position:absolute;inset:0;display:flex;align-items:center;padding:32px;color:#fff;">
                   <div>
@@ -101,7 +101,7 @@
                 </div>
               </a>
               <a href="{{ $dualBanners['banner3']['link'] ?? route('shop') }}" class="banner-card">
-                <img src="{{ $dualBanners['banner3']['image_url'] }}" alt="{{ $dualBanners['banner3']['title'] }}" style="height:224px;">
+                <img src="{{ $dualBanners['banner3']['image_url'] }}" alt="{{ $dualBanners['banner3']['title'] }}" loading="lazy" decoding="async" style="height:224px;">
                 <div class="banner-card-overlay" style="background:linear-gradient(to right,rgba(24,24,24,0.65),transparent);"></div>
                 <div style="position:absolute;inset:0;display:flex;align-items:center;padding:32px;color:#fff;">
                   <div>
@@ -181,7 +181,7 @@
     @if($section['id'] === 'promo_banner')
       {{-- ═══ 5. PROMO BANNER ═══ --}}
       <div class="promo-banner">
-        <img src="{{ $promoBanner['image_url'] }}" alt="Sale">
+        <img src="{{ $promoBanner['image_url'] }}" alt="Sale" loading="lazy" decoding="async">
         <div class="promo-overlay">
           <div class="promo-inner">
             <p class="eyebrow" style="margin-bottom:20px;">{!! \App\Models\Setting::format($promoBanner['eyebrow']) !!}</p>

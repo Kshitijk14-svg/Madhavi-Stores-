@@ -126,7 +126,19 @@ class ProductController extends Controller
             return Product::whereNotNull('tags')->pluck('tags')->flatten()->unique()->filter()->values()->toArray();
         });
 
-        return view('pages.shop', compact('products', 'categories', 'allTags'));
+        // Sidebar filter counts — cached so they don't run live aggregate queries on
+        // every shop render (busted on catalog change via AdminController::flushCatalogCache).
+        $filterCounts = \Illuminate\Support\Facades\Cache::remember('shop_filter_counts', 86400, function() {
+            $total = Product::count();
+            $new   = Product::where('is_new_arrival', true)->count();
+            $best  = Product::where('is_bestseller', true)->count();
+            return [
+                'new_arrivals' => $new > 0 ? $new : $total,
+                'bestsellers'  => $best > 0 ? $best : $total,
+            ];
+        });
+
+        return view('pages.shop', compact('products', 'categories', 'allTags', 'filterCounts'));
     }
 
     public function show($slug)

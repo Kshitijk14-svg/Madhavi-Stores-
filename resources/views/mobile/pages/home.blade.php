@@ -14,7 +14,7 @@
             @foreach($heroSlides as $i => $slide)
               <div class="swiper-slide">
                 <div class="hero-slide" style="height:calc(var(--vh,1vh)*70);">
-                  <img src="{{ $slide['mobile_image_url'] ?? $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}" style="width:100%;height:100%;object-fit:cover;object-position:center;">
+                  <img src="{{ $slide['mobile_image_url'] ?? $slide['image_url'] }}" alt="{{ strip_tags($slide['title']) }}" decoding="async" {{ $i === 0 ? 'fetchpriority=high' : 'loading=lazy' }} style="width:100%;height:100%;object-fit:cover;object-position:center;">
                   <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,24,24,0.85) 0%,rgba(24,24,24,0.2) 60%,transparent);"></div>
                   <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:32px 24px;">
                     <div style="color:#fff;width:100%;text-align:left;">
@@ -70,7 +70,7 @@
       <section style="padding:24px 16px;">
         <div class="flex flex-col gap-4">
           <a href="{{ $dualBanners['banner1']['link'] ?? route('shop') }}" class="relative block overflow-hidden" style="aspect-ratio:3/4;">
-            <img src="{{ $dualBanners['banner1']['image_url'] }}" alt="{{ $dualBanners['banner1']['title'] }}" class="w-full h-full object-cover">
+            <img src="{{ $dualBanners['banner1']['image_url'] }}" alt="{{ $dualBanners['banner1']['title'] }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
             <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,24,24,0.8),transparent);"></div>
             <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;color:#fff;">
               <p class="eyebrow" style="margin-bottom:6px;">{!! \App\Models\Setting::format($dualBanners['banner1']['eyebrow']) !!}</p>
@@ -81,7 +81,7 @@
 
           <div class="grid grid-cols-2 gap-4">
             <a href="{{ $dualBanners['banner2']['link'] ?? route('shop') }}" class="relative block overflow-hidden" style="aspect-ratio:1/1;">
-              <img src="{{ $dualBanners['banner2']['image_url'] }}" alt="{{ $dualBanners['banner2']['title'] }}" class="w-full h-full object-cover">
+              <img src="{{ $dualBanners['banner2']['image_url'] }}" alt="{{ $dualBanners['banner2']['title'] }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
               <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,24,24,0.75),transparent);"></div>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;color:#fff;">
                 <p class="text-[8px] tracking-widest uppercase font-bold text-secondary mb-1">{!! \App\Models\Setting::format($dualBanners['banner2']['eyebrow']) !!}</p>
@@ -89,7 +89,7 @@
               </div>
             </a>
             <a href="{{ $dualBanners['banner3']['link'] ?? route('shop') }}" class="relative block overflow-hidden" style="aspect-ratio:1/1;">
-              <img src="{{ $dualBanners['banner3']['image_url'] }}" alt="{{ $dualBanners['banner3']['title'] }}" class="w-full h-full object-cover">
+              <img src="{{ $dualBanners['banner3']['image_url'] }}" alt="{{ $dualBanners['banner3']['title'] }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
               <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,24,24,0.75),transparent);"></div>
               <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;color:#fff;">
                 <p class="text-[8px] tracking-widest uppercase font-bold text-secondary mb-1">{!! \App\Models\Setting::format($dualBanners['banner3']['eyebrow']) !!}</p>
@@ -143,7 +143,7 @@
     @if($section['id'] === 'promo_banner' && !empty($promoBanner['image_url']))
       {{-- ═══ 5. PROMO BANNER ═══ --}}
       <section style="margin:8px 16px;position:relative;overflow:hidden;aspect-ratio:16/9;">
-        <img src="{{ $promoBanner['image_url'] }}" alt="{{ $promoBanner['title'] ?? '' }}" class="w-full h-full object-cover">
+        <img src="{{ $promoBanner['image_url'] }}" alt="{{ $promoBanner['title'] ?? '' }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
         <div style="position:absolute;inset:0;background:rgba(24,24,24,0.5);"></div>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#fff;">
           @if(!empty($promoBanner['eyebrow']))
