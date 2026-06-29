@@ -65,7 +65,7 @@ class AdminImageUploadTest extends TestCase
                 'name'        => $name,
                 'price'       => 999,
                 'category_id' => $category->id,
-                'image'       => UploadedFile::fake()->image('cover.jpg', 2000, 2000),
+                'image'       => UploadedFile::fake()->image('cover.jpg', 2000, 2500),
             ])
             ->assertRedirect(route('admin.products.index'));
 
@@ -80,7 +80,7 @@ class AdminImageUploadTest extends TestCase
         $this->assertFileExists($thumbPath, 'A card thumbnail should be generated.');
 
         [$w, $h] = getimagesize($thumbPath);
-        $this->assertLessThanOrEqual(500, max($w, $h));
+        $this->assertLessThanOrEqual(1000, max($w, $h));
 
         // The accessor used by product cards serves the thumbnail.
         $this->assertSame($thumbRel, $product->thumb_url);

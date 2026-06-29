@@ -1520,7 +1520,7 @@ class AdminController extends Controller
      * local WebP so product cards load a ~500px image instead of the full-size cover.
      * No-op for external URLs or non-webp paths.
      */
-    private function generateThumbnail(?string $mainRelPath, int $thumbMax = 500): void
+    private function generateThumbnail(?string $mainRelPath, int $thumbMax = 1000): void
     {
         $thumbRel = \App\Models\Product::thumbUrlFor($mainRelPath);
         if (!$thumbRel) {
@@ -1543,7 +1543,7 @@ class AdminController extends Controller
             return;
         }
 
-        self::downscaleGdToWebp($image, $w, $h, public_path(ltrim($thumbRel, '/')), $thumbMax, 80);
+        self::downscaleGdToWebp($image, $w, $h, public_path(ltrim($thumbRel, '/')), $thumbMax, 85);
         imagedestroy($image);
     }
 

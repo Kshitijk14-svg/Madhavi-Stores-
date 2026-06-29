@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class GenerateProductThumbnails extends Command
 {
-    protected $signature = 'images:thumbnails {--dry-run : List products needing a thumbnail without creating one} {--max=500 : Thumbnail longest-edge in pixels} {--force : Regenerate even if a thumbnail already exists}';
+    protected $signature = 'images:thumbnails {--dry-run : List products needing a thumbnail without creating one} {--max=1000 : Thumbnail longest-edge in pixels} {--force : Regenerate even if a thumbnail already exists}';
 
     protected $description = 'Generate card-sized thumbnails ({base}_thumb.webp) for existing product cover images so product cards load instantly.';
 
@@ -79,7 +79,7 @@ class GenerateProductThumbnails extends Command
             return false;
         }
 
-        $ok = AdminController::downscaleGdToWebp($image, $w, $h, $fullThumb, $max, 80);
+        $ok = AdminController::downscaleGdToWebp($image, $w, $h, $fullThumb, $max, 85);
         imagedestroy($image);
 
         return $ok;
