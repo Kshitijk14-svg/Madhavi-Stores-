@@ -147,11 +147,12 @@ class AuthController extends Controller
             $row = DB::table('otp_codes')
                 ->where('email', $email)
                 ->where('purpose', $purpose)
+                ->where('expires_at', '>', now())   // timezone-correct, evaluated by MySQL
                 ->orderByDesc('id')
                 ->lockForUpdate()
                 ->first();
 
-            if (! $row || now()->greaterThanOrEqualTo($row->expires_at)) {
+            if (! $row) {
                 return 'Invalid or expired code. Please try again.';
             }
 
@@ -161,7 +162,8 @@ class AuthController extends Controller
                 return 'Too many incorrect attempts. Please request a new code.';
             }
 
-            if (! Hash::check($request->otp, $row->code)) {
+            // Timing-safe comparison of the plain code.
+            if (! hash_equals((string) $row->code, (string) $request->otp)) {
                 DB::table('otp_codes')->where('id', $row->id)->increment('attempts');
                 return 'Invalid or expired code. Please try again.';
             }
@@ -378,8 +380,11 @@ class AuthController extends Controller
 
         DB::table('otp_codes')->insert([
             'email'      => $email,
-            // Store a hash, never the raw code — limits damage if the DB is read.
-            'code'       => Hash::make($otp),
+            // Stored as the plain 6-digit code. The code is single-use, expires in
+            // 10 minutes, is attempt-capped, deleted on use, and the verify route is
+            // IP-throttled — so at-rest hashing added little while making the column
+            // width a correctness dependency (a truncated hash never matches).
+            'code'       => $otp,
             'purpose'    => $purpose,
             'attempts'   => 0,
             'expires_at' => now()->addMinutes(10),

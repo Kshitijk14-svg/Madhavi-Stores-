@@ -27,7 +27,7 @@ class OtpFlowTest extends TestCase
         return $captured;
     }
 
-    public function test_registration_defers_account_creation_and_stores_hashed_code(): void
+    public function test_registration_defers_account_creation_and_stores_code(): void
     {
         Mail::fake();
 
@@ -41,12 +41,11 @@ class OtpFlowTest extends TestCase
         // Account is NOT created until the OTP is verified.
         $this->assertNull(User::where('email', 'alice@example.com')->first());
 
-        // Exactly one code row, and it is hashed (never the raw 6 digits).
+        // Exactly one code row for this email, matching the code that was emailed.
         $row = DB::table('otp_codes')->where('email', 'alice@example.com')->first();
         $this->assertNotNull($row);
         $this->assertEquals('register', $row->purpose);
-        $this->assertNotEquals($this->lastSentOtp(), $row->code);
-        $this->assertTrue(Hash::check($this->lastSentOtp(), $row->code));
+        $this->assertEquals($this->lastSentOtp(), $row->code);
     }
 
     public function test_correct_otp_creates_and_logs_in_user(): void
