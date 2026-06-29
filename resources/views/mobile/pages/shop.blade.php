@@ -70,8 +70,8 @@
     <div class="border border-gray-100 overflow-hidden" style="border-radius:2px;">
       <a href="{{ route('product.show', $product->slug) }}" class="block">
         <div class="aspect-[3/4] overflow-hidden bg-gray-50 relative">
-          <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
-               class="w-full h-full object-cover" loading="lazy">
+          <img src="{{ $product->thumb_url }}" alt="{{ $product->name }}"
+               class="w-full h-full object-cover" loading="lazy" decoding="async">
           @if($product->badge)
             <span class="absolute top-2 left-2 bg-secondary text-primary text-[9px] font-bold px-1.5 py-0.5 tracking-wider uppercase">{{ $product->badge }}</span>
           @endif

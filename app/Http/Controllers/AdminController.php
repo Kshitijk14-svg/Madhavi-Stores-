@@ -314,6 +314,7 @@ class AdminController extends Controller
         $imageUrl = $request->image_url;
         if ($request->hasFile('image')) {
             $imageUrl = $this->convertToWebp($request->file('image'), 'images/products') ?: $imageUrl;
+            $this->generateThumbnail($imageUrl);
         }
 
         $gallery = array_fill(0, 7, null);
@@ -433,7 +434,9 @@ class AdminController extends Controller
             $newImageUrl = $this->convertToWebp($request->file('image'), 'images/products');
             if ($newImageUrl) {
                 $this->deleteLocalFile($oldImageUrl);
+                $this->deleteLocalFile(\App\Models\Product::thumbUrlFor($oldImageUrl));
                 $imageUrl = $newImageUrl;
+                $this->generateThumbnail($imageUrl);
             }
         }
 
@@ -522,6 +525,7 @@ class AdminController extends Controller
 
         // Delete associated image files from disk
         $this->deleteLocalFile($product->image_url);
+        $this->deleteLocalFile(\App\Models\Product::thumbUrlFor($product->image_url));
         $this->deleteLocalFile($product->size_chart_image);
         if (is_array($product->gallery_images)) {
             foreach ($product->gallery_images as $galleryImg) {
@@ -1509,6 +1513,38 @@ class AdminController extends Controller
         if (file_exists($path)) {
             unlink($path);
         }
+    }
+
+    /**
+     * Generate a small card-sized thumbnail ({base}_thumb.webp) from an already-stored
+     * local WebP so product cards load a ~500px image instead of the full-size cover.
+     * No-op for external URLs or non-webp paths.
+     */
+    private function generateThumbnail(?string $mainRelPath, int $thumbMax = 500): void
+    {
+        $thumbRel = \App\Models\Product::thumbUrlFor($mainRelPath);
+        if (!$thumbRel) {
+            return;
+        }
+
+        $fullMain = public_path(ltrim($mainRelPath, '/'));
+        if (!file_exists($fullMain)) {
+            return;
+        }
+
+        $info = @getimagesize($fullMain);
+        if (!$info) {
+            return;
+        }
+
+        [$w, $h] = $info;
+        $image = @imagecreatefromwebp($fullMain);
+        if (!$image) {
+            return;
+        }
+
+        self::downscaleGdToWebp($image, $w, $h, public_path(ltrim($thumbRel, '/')), $thumbMax, 80);
+        imagedestroy($image);
     }
 
     /** Bust catalog-derived caches whenever products change. */

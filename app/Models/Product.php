@@ -46,6 +46,28 @@ class Product extends Model
         return round(max(0, $price), 2);
     }
 
+    /** Derive the thumbnail path for a locally-stored WebP image, or null otherwise. */
+    public static function thumbUrlFor(?string $url): ?string
+    {
+        if ($url && str_starts_with($url, '/images/') && str_ends_with($url, '.webp')) {
+            return substr($url, 0, -strlen('.webp')) . '_thumb.webp';
+        }
+        return null;
+    }
+
+    /**
+     * Card-sized image for product grids: the small thumbnail when it exists on disk,
+     * otherwise the original image_url (covers external URLs and pre-thumbnail products).
+     */
+    public function getThumbUrlAttribute(): ?string
+    {
+        $thumb = self::thumbUrlFor($this->image_url);
+        if ($thumb && file_exists(public_path(ltrim($thumb, '/')))) {
+            return $thumb;
+        }
+        return $this->image_url;
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);

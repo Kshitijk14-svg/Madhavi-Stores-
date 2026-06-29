@@ -132,7 +132,7 @@
             <div class="pcard">
               <div class="pcard-img">
                 <a href="{{ route('product.show', $product['slug']) }}" style="display:block;width:100%;height:100%;">
-                  <img src="{{ $product['image_url'] }}" alt="{{ $product['name'] }}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=70'">
+                  <img src="{{ $product['thumb_url'] }}" alt="{{ $product['name'] }}" loading="lazy" decoding="async" onerror="this.src='https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=70'">
                 </a>
                 @if($product['badge'] ?? false)
                   <span class="pcard-badge">{{ $product['badge'] }}</span>
@@ -207,7 +207,7 @@
             <div class="pcard">
               <div class="pcard-img">
                 <a href="{{ route('product.show', $product['slug']) }}" style="display:block;width:100%;height:100%;">
-                  <img src="{{ $product['image_url'] }}" alt="{{ $product['name'] }}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=70'">
+                  <img src="{{ $product['thumb_url'] }}" alt="{{ $product['name'] }}" loading="lazy" decoding="async" onerror="this.src='https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=70'">
                 </a>
                 @if($product['badge'] ?? false)
                   <span class="pcard-badge">{{ $product['badge'] }}</span>

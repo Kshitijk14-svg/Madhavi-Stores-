@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -51,5 +52,40 @@ class AdminImageUploadTest extends TestCase
             ->assertSessionHasErrors('image');
 
         $this->assertDatabaseMissing('categories', ['name' => $name]);
+    }
+
+    public function test_product_cover_generates_a_card_thumbnail(): void
+    {
+        $admin    = User::factory()->admin()->create();
+        $category = Category::factory()->create();
+        $name     = 'Thumb Test ' . uniqid();
+
+        $this->actingAs($admin)
+            ->post(route('admin.products.store'), [
+                'name'        => $name,
+                'price'       => 999,
+                'category_id' => $category->id,
+                'image'       => UploadedFile::fake()->image('cover.jpg', 2000, 2000),
+            ])
+            ->assertRedirect(route('admin.products.index'));
+
+        $product = Product::where('name', $name)->first();
+        $this->assertNotNull($product);
+        $this->assertNotNull($product->image_url);
+
+        $thumbRel = Product::thumbUrlFor($product->image_url);
+        $this->assertNotNull($thumbRel);
+
+        $thumbPath = public_path(ltrim($thumbRel, '/'));
+        $this->assertFileExists($thumbPath, 'A card thumbnail should be generated.');
+
+        [$w, $h] = getimagesize($thumbPath);
+        $this->assertLessThanOrEqual(500, max($w, $h));
+
+        // The accessor used by product cards serves the thumbnail.
+        $this->assertSame($thumbRel, $product->thumb_url);
+
+        @unlink(public_path(ltrim($product->image_url, '/')));
+        @unlink($thumbPath);
     }
 }
