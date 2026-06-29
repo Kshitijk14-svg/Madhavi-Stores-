@@ -114,6 +114,24 @@ Legend: 🔒 = security check · 💳 = payment/money · 📱 = mobile-specific.
 - [ ] 🔒 All forms still work (CSRF tokens present); the Razorpay webhook is the only CSRF-exempt POST.
 - [ ] 🔒 Site is HTTPS-only; the session cookie is `Secure` + `HttpOnly` (check dev tools → Application → Cookies).
 
+## 10. Authentication & OTP 🔑
+- [ ] 🔑 Register a new account → a 6-digit code arrives by email; the account is NOT created until the code is verified.
+- [ ] 🔑 Enter a wrong code 6 times in a row → the code is invalidated and you must request a new one.
+- [ ] 🔑 You cannot sign in until the email is verified ("Please verify your email address before signing in.").
+- [ ] 🔑 Forgot password → reset code arrives → set a new password → sign in with it.
+- [ ] 🔑 Forgot password for an email that does NOT exist shows the *same* generic message (no user enumeration).
+- [ ] 🔑 Fail login 6 times for one email → "Too many login attempts. Please try again in N seconds." (per-account lockout).
+- [ ] 🔑 OTP codes are stored hashed in the `otp_codes` table (never the raw 6 digits).
+
+## 11. Production readiness gate 🚀 (do before go-live)
+- [ ] 🚀 **`MAIL_USERNAME` / `MAIL_PASSWORD` / `MAIL_FROM_ADDRESS` are set** in the live `.env` (Gmail App Password or SMTP).
+      If blank, OTP send fails in production and **registration is blocked**. Verify with `php artisan mail:test you@example.com`.
+- [ ] 🚀 `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, `SESSION_DRIVER=database` in the live `.env`.
+- [ ] 🚀 `APP_KEY` rotated for production; old/dev credentials revoked.
+- [ ] 🚀 Razorpay **live** keys + `RAZORPAY_WEBHOOK_SECRET` configured.
+- [ ] 🚀 `php artisan migrate --force` run on the production DB (includes the `otp_codes` hardening migration).
+- [ ] 🚀 The scheduler cron is running so `otp:cleanup` (every 30 min) prunes expired codes.
+
 ---
 
 ### Notes for the tester

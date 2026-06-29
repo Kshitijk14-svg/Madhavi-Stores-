@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\OtpMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -24,6 +25,14 @@ class AuthSecurityTest extends TestCase
             'role'                  => 'superadmin',
             'is_admin'              => 1,
         ]);
+
+        // Account creation is deferred until the emailed OTP is verified.
+        $otp = null;
+        Mail::assertSent(OtpMail::class, function (OtpMail $mail) use (&$otp) {
+            $otp = $mail->otp;
+            return true;
+        });
+        $this->post('/verify-email', ['otp' => $otp]);
 
         $user = User::where('email', 'mallory@example.com')->first();
         $this->assertNotNull($user);

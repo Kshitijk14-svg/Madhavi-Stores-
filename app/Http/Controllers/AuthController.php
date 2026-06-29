@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Mail\OtpMail;
 
@@ -26,7 +29,12 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Per-account lockout (email+IP) on top of the per-IP route throttle —
+        // blocks credential-stuffing against one account regardless of source.
+        $this->ensureIsNotRateLimited($request);
+
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
+            RateLimiter::clear($this->throttleKey($request));
             $request->session()->regenerate();
 
             if (! Auth::user()->email_verified_at) {
@@ -42,7 +50,31 @@ class AuthController extends Controller
             return redirect()->intended(route('account'))->with('success', 'Welcome back to Madhavi Stores.');
         }
 
+        RateLimiter::hit($this->throttleKey($request));
+
         return back()->withErrors(['email' => 'These credentials do not match our records.'])->withInput();
+    }
+
+    // ── HELPER: LOGIN RATE LIMITING ─────────────────────────
+    // Throttle key is scoped to the submitted email + client IP.
+    private function throttleKey(Request $request): string
+    {
+        return Str::transliterate(Str::lower((string) $request->input('email')) . '|' . $request->ip());
+    }
+
+    // Throws a ValidationException with the remaining lockout time once the
+    // account hits too many failed attempts (5 per the default decay window).
+    private function ensureIsNotRateLimited(Request $request): void
+    {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+            return;
+        }
+
+        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+
+        throw ValidationException::withMessages([
+            'email' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
+        ]);
     }
 
     // ── SHOW REGISTER ───────────────────────────────────────
@@ -108,19 +140,40 @@ class AuthController extends Controller
         $purpose = session('otp_purpose', 'register');
         if (!$email) return redirect()->route('login');
 
-        // Atomically consume the OTP — prevents TOCTOU race condition
-        $deleted = DB::table('otp_codes')
-            ->where('email', $email)
-            ->where('purpose', $purpose)
-            ->where('code', $request->otp)
-            ->where('expires_at', '>', now())
-            ->delete();
+        // Verify the OTP under a row lock — prevents TOCTOU races and caps
+        // brute-force guesses. Codes are stored hashed, so we fetch the latest
+        // row and compare with Hash::check rather than matching in SQL.
+        $error = DB::transaction(function () use ($email, $purpose, $request) {
+            $row = DB::table('otp_codes')
+                ->where('email', $email)
+                ->where('purpose', $purpose)
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
 
-        if (!$deleted) {
-            return back()->withErrors(['otp' => 'Invalid or expired code. Please try again.']);
+            if (! $row || now()->greaterThanOrEqualTo($row->expires_at)) {
+                return 'Invalid or expired code. Please try again.';
+            }
+
+            if ($row->attempts >= 5) {
+                // Too many wrong guesses — burn the code so it can't be brute-forced.
+                DB::table('otp_codes')->where('email', $email)->delete();
+                return 'Too many incorrect attempts. Please request a new code.';
+            }
+
+            if (! Hash::check($request->otp, $row->code)) {
+                DB::table('otp_codes')->where('id', $row->id)->increment('attempts');
+                return 'Invalid or expired code. Please try again.';
+            }
+
+            // Success — consume every code for this email.
+            DB::table('otp_codes')->where('email', $email)->delete();
+            return null;
+        });
+
+        if ($error !== null) {
+            return back()->withErrors(['otp' => $error]);
         }
-
-        DB::table('otp_codes')->where('email', $email)->delete();
 
         if ($purpose === 'reset') {
             // OTP verified for password reset — go to set new password page
@@ -325,8 +378,10 @@ class AuthController extends Controller
 
         DB::table('otp_codes')->insert([
             'email'      => $email,
-            'code'       => $otp,
+            // Store a hash, never the raw code — limits damage if the DB is read.
+            'code'       => Hash::make($otp),
             'purpose'    => $purpose,
+            'attempts'   => 0,
             'expires_at' => now()->addMinutes(10),
             'created_at' => now(),
         ]);
