@@ -127,9 +127,9 @@
                 <div style="flex:1;min-width:0;">
                   @if($item->product)
                     <a href="{{ route('product.show', $item->product->slug) }}"
-                       style="font-size:12px;font-weight:600;color:var(--primary);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->product_name }}</a>
+                       style="font-size:12px;font-weight:600;color:var(--primary);display:block;word-break:break-word;">{{ $item->product_name }}</a>
                   @else
-                    <p style="font-size:12px;font-weight:600;color:var(--primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->product_name }}</p>
+                    <p style="font-size:12px;font-weight:600;color:var(--primary);word-break:break-word;">{{ $item->product_name }}</p>
                   @endif
                   <p style="font-size:10px;color:#9ca3af;margin-top:2px;">
                     @if($item->size)Size: <strong style="color:var(--primary);">{{ $item->size }}</strong> · @endif
