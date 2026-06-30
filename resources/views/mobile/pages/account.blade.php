@@ -67,11 +67,13 @@
               @foreach($order->items->take(2) as $thumb)
                 @if($thumb->product)
                 <img src="{{ $thumb->product->image_url }}" alt=""
-                     class="w-9 h-9 object-cover bg-gray-50 shrink-0">
+                     class="w-9 h-9 object-cover bg-gray-50 shrink-0"
+                     style="width:36px;height:36px;object-fit:cover;flex-shrink:0;">
                 @endif
               @endforeach
               @if($order->items->count() > 2)
-              <div class="w-9 h-9 bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-400">+{{ $order->items->count()-2 }}</div>
+              <div class="w-9 h-9 bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-400"
+                   style="width:36px;height:36px;flex-shrink:0;">+{{ $order->items->count()-2 }}</div>
               @endif
             </div>
             {{-- Meta --}}
