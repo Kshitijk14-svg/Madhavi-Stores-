@@ -16,10 +16,9 @@
 
   <style>
     /* Mobile admin shell — independent of the storefront layout. */
-    #admin-drawer { transition: transform .25s ease; }
-    #admin-drawer.closed { transform: translateX(-100%); }
-    #admin-drawer-backdrop { transition: opacity .25s ease; }
-    .madmin-nav-link.active { background: var(--primary); color: #fff; }
+    #admin-drawer { transition: transform 0.32s cubic-bezier(0.4,0,0.2,1); }
+    #admin-drawer.closed { transform: translateX(100%); }
+    #admin-drawer-backdrop { transition: opacity 0.3s ease; }
     body.drawer-open { overflow: hidden; }
     /* Animate hamburger into X when drawer is open */
     #admin-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
@@ -47,56 +46,65 @@
     </form>
   </header>
 
-  {{-- ── Drawer + Backdrop ──────────────────────────────── --}}
-  <div id="admin-drawer-backdrop" onclick="closeAdminDrawer()"
-       class="fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-none"></div>
+  @php
+    $newOrdersCount = \App\Models\Order::when(
+        session('admin_orders_viewed_at'),
+        fn($q) => $q->where('created_at', '>', session('admin_orders_viewed_at')),
+        fn($q) => $q->where('order_status', 'Pending')
+    )->count();
+    $adminNavItems = [
+      ['route' => 'admin.dashboard',        'pattern' => 'admin.dashboard',   'label' => 'Overview'],
+      ['route' => 'admin.products.index',   'pattern' => 'admin.products.*',  'label' => 'Products'],
+      ['route' => 'admin.categories.index', 'pattern' => 'admin.categories.*','label' => 'Collections'],
+      ['route' => 'admin.orders.index',     'pattern' => 'admin.orders.*',    'label' => 'Orders'],
+      ['route' => 'admin.users.index',      'pattern' => 'admin.users.*',     'label' => 'Carts & Wishlists'],
+      ['route' => 'admin.coupons.index',    'pattern' => 'admin.coupons.*',   'label' => 'Coupons'],
+    ];
+  @endphp
 
-  <aside id="admin-drawer" class="closed fixed top-0 left-0 z-50 h-full w-72 max-w-[80%] bg-white border-r border-gray-200 flex flex-col"
-         style="padding-top:env(safe-area-inset-top);">
-    <div class="flex items-center justify-between px-5 border-b border-gray-100" style="height:56px;">
-      <span class="font-display text-xl text-primary">Atelier</span>
-      <button type="button" onclick="closeAdminDrawer()" aria-label="Close menu"
-              class="w-9 h-9 -mr-1 flex items-center justify-center text-muted text-lg">✕</button>
+  {{-- ── Backdrop (blurred, same as storefront) ────────── --}}
+  <div id="admin-drawer-backdrop" onclick="closeAdminDrawer()"
+       style="position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 0.3s ease;"></div>
+
+  {{-- ── Drawer Panel (slides from right, storefront style) --}}
+  <aside id="admin-drawer" class="closed"
+         style="position:fixed;top:0;right:0;bottom:0;z-index:9999;width:85vw;max-width:360px;background:#fff;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,0.18);">
+
+    {{-- Header: logo + close --}}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;">
+      <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:26px;width:auto;object-fit:contain;">
+      <button type="button" onclick="closeAdminDrawer()" aria-label="Close"
+              style="color:var(--primary);background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;">
+        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    @php
-      $newOrdersCount = \App\Models\Order::when(
-          session('admin_orders_viewed_at'),
-          fn($q) => $q->where('created_at', '>', session('admin_orders_viewed_at')),
-          fn($q) => $q->where('order_status', 'Pending')
-      )->count();
-      $navItems = [
-        ['route' => 'admin.dashboard',        'pattern' => 'admin.dashboard',   'label' => 'Overview'],
-        ['route' => 'admin.products.index',   'pattern' => 'admin.products.*',  'label' => 'Products'],
-        ['route' => 'admin.categories.index', 'pattern' => 'admin.categories.*','label' => 'Collections'],
-        ['route' => 'admin.orders.index',     'pattern' => 'admin.orders.*',    'label' => 'Orders'],
-        ['route' => 'admin.users.index',      'pattern' => 'admin.users.*',     'label' => 'Active Carts & Wishlists'],
-        ['route' => 'admin.coupons.index',    'pattern' => 'admin.coupons.*',   'label' => 'Coupons'],
-      ];
-    @endphp
+    {{-- Gold decorative rule --}}
+    <div style="height:1px;background:var(--secondary);margin:0 24px 4px;opacity:0.6;"></div>
 
-    <nav class="flex-1 overflow-y-auto py-3">
-      @foreach($navItems as $item)
+    {{-- Nav links in Cormorant Garamond italic --}}
+    <nav style="flex:1;overflow-y:auto;padding:20px 28px;">
+      @foreach($adminNavItems as $item)
         <a href="{{ route($item['route']) }}"
-           class="madmin-nav-link flex items-center justify-between px-5 py-3.5 text-xs font-bold tracking-wider uppercase text-primary border-l-2 {{ request()->routeIs($item['pattern']) ? 'active border-secondary' : 'border-transparent' }}">
-          <span>{{ $item['label'] }}</span>
+           style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-style:italic;font-weight:300;display:flex;align-items:center;gap:10px;padding:10px 0;color:{{ request()->routeIs($item['pattern']) ? 'var(--secondary)' : 'var(--primary)' }};text-decoration:none;">
+          {{ $item['label'] }}
           @if($item['route'] === 'admin.orders.index' && $newOrdersCount > 0 && !request()->routeIs('admin.orders.*'))
-            <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[9px] font-bold bg-rose-500 text-white rounded-full">{{ $newOrdersCount > 99 ? '99+' : $newOrdersCount }}</span>
+            <span style="font-family:system-ui,sans-serif;font-size:10px;font-style:normal;font-weight:700;background:#ef4444;color:#fff;min-width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0 3px;flex-shrink:0;">{{ $newOrdersCount > 99 ? '99+' : $newOrdersCount }}</span>
           @endif
         </a>
       @endforeach
     </nav>
 
-    <div class="border-t border-gray-100 p-4 space-y-2">
-      <a href="{{ route('account') }}"
-         class="block w-full text-center text-[10px] font-bold tracking-widest uppercase text-primary border border-gray-200 py-3">
-        My Profile
-      </a>
+    {{-- Footer: admin name + sign out --}}
+    <div style="padding:24px 28px;border-top:1px solid #f0f0f0;">
+      <p style="font-size:11px;color:#aaa;margin-bottom:12px;letter-spacing:0.04em;">
+        Admin: <strong style="color:var(--primary);">{{ Auth::user()->name }}</strong>
+      </p>
       <form action="{{ route('logout') }}" method="POST">
         @csrf
         <button type="submit"
-                class="block w-full text-center text-[10px] font-bold tracking-widest uppercase text-white bg-primary py-3">
-          Logout
+                style="width:100%;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:12px;border:1px solid var(--primary);color:var(--primary);background:transparent;cursor:pointer;">
+          Sign Out
         </button>
       </form>
     </div>
@@ -128,15 +136,17 @@
   <script>
     function openAdminDrawer() {
       document.getElementById('admin-drawer').classList.remove('closed');
-      const b = document.getElementById('admin-drawer-backdrop');
-      b.classList.remove('opacity-0', 'pointer-events-none');
+      var b = document.getElementById('admin-drawer-backdrop');
+      b.style.opacity = '1';
+      b.style.pointerEvents = 'auto';
       document.body.classList.add('drawer-open');
       document.getElementById('admin-hamburger').classList.add('open');
     }
     function closeAdminDrawer() {
       document.getElementById('admin-drawer').classList.add('closed');
-      const b = document.getElementById('admin-drawer-backdrop');
-      b.classList.add('opacity-0', 'pointer-events-none');
+      var b = document.getElementById('admin-drawer-backdrop');
+      b.style.opacity = '0';
+      b.style.pointerEvents = 'none';
       document.body.classList.remove('drawer-open');
       document.getElementById('admin-hamburger').classList.remove('open');
     }
