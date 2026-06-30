@@ -28,16 +28,18 @@
     function setViewport() {
       document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
       const main = document.getElementById('main');
-      const productBar = document.getElementById('mob-product-bar');
       let bottomPadding = 0;
-      if (productBar && window.getComputedStyle(productBar).display !== 'none' && window.getComputedStyle(productBar).position === 'fixed') {
-        bottomPadding = productBar.offsetHeight;
-      }
-      // Pad the whole scroll area (footer included) so the fixed product bar
-      // never overlaps the footer; #main itself stays unpadded.
+      // Measure any fixed bottom bar present on this page (product bar or checkout bar)
+      // and add its height as body padding so the footer is never hidden behind it.
+      ['mob-product-bar', 'mob-checkout-bar'].forEach(function(id) {
+        const bar = document.getElementById(id);
+        if (bar && window.getComputedStyle(bar).display !== 'none' && window.getComputedStyle(bar).position === 'fixed') {
+          bottomPadding = Math.max(bottomPadding, bar.offsetHeight);
+        }
+      });
       if (main) main.style.paddingBottom = '';
       document.body.style.paddingBottom = bottomPadding + 'px';
-      // Float the WhatsApp button above the product bar (0 when no bar present).
+      // Float the WhatsApp button above whichever fixed bar is tallest.
       document.documentElement.style.setProperty('--fab-offset', bottomPadding + 'px');
     }
     window.addEventListener('resize', setViewport);
@@ -115,6 +117,7 @@
     let currentPjaxUrl = window.location.href;
     const pjaxScrollPositions = {};
     const pjaxPageCache = {};
+    const pjaxTitles = {};
     history.replaceState({ url: currentPjaxUrl }, document.title, currentPjaxUrl);
 
     // Keep the active page's scroll position fresh — popstate fires *after* the
@@ -169,8 +172,9 @@
         loadingBar.style.opacity = '1';
         loadingBar.style.width = '30%';
 
-        // Remember the page we are leaving (scroll + markup) for instant back nav.
+        // Remember the page we are leaving (scroll + markup + title) for instant back nav.
         pjaxScrollPositions[currentPjaxUrl] = window.scrollY;
+        pjaxTitles[currentPjaxUrl] = document.title;
         const leavingMain = document.getElementById('main');
         if (leavingMain) pjaxPageCache[currentPjaxUrl] = leavingMain.innerHTML;
 
@@ -184,6 +188,7 @@
                         loadingBar.style.width = '100%';
                         if (!applyPjaxContent(html)) { window.location.href = url; return; }
                         pjaxPageCache[url] = document.getElementById('main').innerHTML;
+                        pjaxTitles[url] = document.title;
 
                         if (pushState) history.pushState({ url: url }, document.title, url);
                         currentPjaxUrl = url;
@@ -221,7 +226,19 @@
         };
 
         if (cached) {
-            if (!applyPjaxContent(cached)) { window.location.href = url; return; }
+            // The cache holds innerHTML (not a full HTML page), so we apply it
+            // directly rather than going through applyPjaxContent (which parses a
+            // full document and would fail to find #main in a fragment).
+            const currentMain = document.getElementById('main');
+            if (!currentMain) { window.location.href = url; return; }
+            currentMain.innerHTML = cached;
+            if (pjaxTitles[url]) document.title = pjaxTitles[url];
+            currentMain.querySelectorAll('script').forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
             finish();
         } else {
             fetch(url)
@@ -229,6 +246,7 @@
                 .then(html => {
                     if (!applyPjaxContent(html)) { window.location.href = url; return; }
                     pjaxPageCache[url] = document.getElementById('main').innerHTML;
+                    pjaxTitles[url] = document.title;
                     finish();
                 })
                 .catch(() => { window.location.href = url; });

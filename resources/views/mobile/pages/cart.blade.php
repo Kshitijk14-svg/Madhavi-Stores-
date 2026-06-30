@@ -90,7 +90,7 @@
 
 {{-- Sticky Checkout Button --}}
 @if(!$cartItems->isEmpty())
-<div class="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
+<div id="mob-checkout-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-40" style="padding-bottom:env(safe-area-inset-bottom);">
   <a href="{{ route('checkout') }}" class="btn-primary block w-full text-center py-4 text-xs font-bold tracking-widest uppercase no-pjax"
      style="min-height:52px;display:flex;align-items:center;justify-content:center;">Proceed to Checkout</a>
 </div>

@@ -10,9 +10,8 @@
       <a href="{{ route('shop') }}#search" aria-label="Search" style="color:var(--primary);display:flex;align-items:center;">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
       </a>
-      <button id="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu" style="color:var(--primary);display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;cursor:pointer;padding:0;">
-        <svg id="mob-hamburger-icon" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
-        <svg id="mob-close-icon" style="display:none;" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      <button id="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu" class="mob-toggle" style="padding:4px;">
+        <span></span><span></span><span></span>
       </button>
     </div>
   </div>
@@ -110,6 +109,12 @@
 
 </div>
 
+<style>
+/* Animate hamburger spans into an X when the sidebar is open */
+.mob-toggle.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.mob-toggle.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.mob-toggle.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+</style>
 <script>
 var _sidebarOpen = false;
 
@@ -121,8 +126,7 @@ function openSidebar() {
   b.style.pointerEvents = 'auto';
   p.style.transform = 'translateX(0)';
   document.body.style.overflow = 'hidden';
-  document.getElementById('mob-hamburger-icon').style.display = 'none';
-  document.getElementById('mob-close-icon').style.display = 'block';
+  document.getElementById('mob-menu-btn').classList.add('open');
 }
 
 function closeSidebar() {
@@ -133,8 +137,7 @@ function closeSidebar() {
   b.style.pointerEvents = 'none';
   p.style.transform = 'translateX(100%)';
   document.body.style.overflow = '';
-  document.getElementById('mob-hamburger-icon').style.display = 'block';
-  document.getElementById('mob-close-icon').style.display = 'none';
+  document.getElementById('mob-menu-btn').classList.remove('open');
 }
 
 function toggleSidebar() {
