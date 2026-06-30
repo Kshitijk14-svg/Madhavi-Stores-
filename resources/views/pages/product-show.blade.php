@@ -9,6 +9,17 @@
 
 @section('content')
 
+<style>
+  .gallery-counter{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;font-size:13px;letter-spacing:0.18em;color:var(--muted);font-variant-numeric:tabular-nums;}
+  .gallery-counter-window{display:inline-flex;height:1.5em;overflow:hidden;align-items:center;}
+  .gallery-counter-current,.gallery-counter-total{display:inline-block;color:var(--primary);font-weight:600;}
+  .gallery-counter-sep{opacity:0.5;}
+  .gallery-counter-current.enter-up{animation:galleryCounterUp .42s cubic-bezier(.4,0,.2,1);}
+  .gallery-counter-current.enter-down{animation:galleryCounterDown .42s cubic-bezier(.4,0,.2,1);}
+  @keyframes galleryCounterUp{0%{transform:translateY(110%);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+  @keyframes galleryCounterDown{0%{transform:translateY(-110%);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+</style>
+
 <section class="py-12 lg:py-20" style="background:var(--white);">
     <div class="wrap">
         <nav style="display:flex;align-items:center;gap:8px;margin-bottom:40px;">
@@ -22,6 +33,10 @@
         <div class="grid-12 md:grid-cols-2 lg:grid-cols-12" style="gap:48px;">
             
             <!-- Product Gallery Carousel -->
+            @php
+                $pdpGallery = array_values(array_filter(array_merge([$product->image_url], (array)($product->gallery_images ?? []))));
+                $pdpGalleryCount = count($pdpGallery);
+            @endphp
             <div class="md:col-span-1 lg:col-span-7">
                 <div class="swiper product-gallery-swiper" style="position:relative;overflow:hidden;aspect-ratio:3/4;background:var(--silk);">
                     <div class="swiper-wrapper">
@@ -51,6 +66,15 @@
                     <!-- Pagination -->
                     <div class="swiper-pagination product-dots" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:8px;"></div>
                 </div>
+
+                <!-- Image counter caption (below the gallery) -->
+                @if($pdpGalleryCount > 1)
+                <div class="gallery-counter" aria-hidden="true">
+                    <span class="gallery-counter-window"><span id="gallery-counter-current" class="gallery-counter-current">1</span></span>
+                    <span class="gallery-counter-sep">/</span>
+                    <span class="gallery-counter-total">{{ $pdpGalleryCount }}</span>
+                </div>
+                @endif
             </div>
 
             <!-- Product Info -->
@@ -354,9 +378,23 @@
 @section('scripts')
 <script>
 (function() {
+  // Slide the gallery image-number caption when the active slide changes.
+  let _galleryCounterPrev = 1;
+  function updateGalleryCounter(n) {
+      const el = document.getElementById('gallery-counter-current');
+      if (!el) return;
+      const cls = n >= _galleryCounterPrev ? 'enter-up' : 'enter-down';
+      _galleryCounterPrev = n;
+      el.textContent = n;
+      el.classList.remove('enter-up', 'enter-down');
+      void el.offsetWidth; // restart the animation
+      el.classList.add(cls);
+  }
+
   function initProductShow() {
     // Initialize Swiper for product gallery
     if(typeof Swiper !== 'undefined' && document.querySelector('.product-gallery-swiper')) {
+        _galleryCounterPrev = 1;
         new Swiper('.product-gallery-swiper', {
             loop: true,
             effect: 'fade',
@@ -368,6 +406,9 @@
             pagination: {
                 el: '.product-dots',
                 clickable: true,
+            },
+            on: {
+                slideChange: function () { updateGalleryCounter(this.realIndex + 1); },
             },
         });
     }

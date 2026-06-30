@@ -4,6 +4,16 @@
 @section('content')
 <div class="pb-32">
 
+  <style>
+    .gallery-counter{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:13px;letter-spacing:0.18em;font-variant-numeric:tabular-nums;}
+    .gallery-counter-window{display:inline-flex;height:1.5em;overflow:hidden;align-items:center;}
+    .gallery-counter-current{display:inline-block;}
+    .gallery-counter-current.enter-up{animation:galleryCounterUp .42s cubic-bezier(.4,0,.2,1);}
+    .gallery-counter-current.enter-down{animation:galleryCounterDown .42s cubic-bezier(.4,0,.2,1);}
+    @keyframes galleryCounterUp{0%{transform:translateY(110%);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+    @keyframes galleryCounterDown{0%{transform:translateY(-110%);opacity:0;}100%{transform:translateY(0);opacity:1;}}
+  </style>
+
   {{-- Image Gallery (Swiper) --}}
   <div class="swiper product-gallery-swiper bg-gray-50" style="aspect-ratio:3/4;max-height:75vw;overflow:hidden;">
     <div class="swiper-wrapper">
@@ -20,6 +30,15 @@
     <div class="swiper-pagination" style="bottom:10px;"></div>
     @endif
   </div>
+
+  {{-- Image counter caption (below the gallery) --}}
+  @if(count($galleryImages) > 1)
+  <div class="gallery-counter text-gray-400" aria-hidden="true">
+    <span class="gallery-counter-window"><span id="gallery-counter-current" class="gallery-counter-current text-primary font-semibold">1</span></span>
+    <span class="opacity-50">/</span>
+    <span class="text-primary font-semibold">{{ count($galleryImages) }}</span>
+  </div>
+  @endif
 
   {{-- Product Info --}}
   <div class="px-4 pt-5 pb-3">
@@ -171,20 +190,36 @@
 
 @section('scripts')
 <script>
-  const pgSwiper = new Swiper('.product-gallery-swiper', {
-    loop: {{ count($galleryImages) > 1 ? 'true' : 'false' }},
-    pagination: { el: '.product-gallery-swiper .swiper-pagination', clickable: true },
-    touchRatio: 1,
-  });
+  // Slide the gallery image-number caption when the active slide changes.
+  let _galleryCounterPrev = 1;
+  function updateGalleryCounter(n) {
+    const el = document.getElementById('gallery-counter-current');
+    if (!el) return;
+    const cls = n >= _galleryCounterPrev ? 'enter-up' : 'enter-down';
+    _galleryCounterPrev = n;
+    el.textContent = n;
+    el.classList.remove('enter-up', 'enter-down');
+    void el.offsetWidth; // restart the animation
+    el.classList.add(cls);
+  }
 
-  document.addEventListener('pjax:success', function() {
-    if (document.querySelector('.product-gallery-swiper')) {
-      new Swiper('.product-gallery-swiper', {
-        loop: true,
-        pagination: { el: '.product-gallery-swiper .swiper-pagination', clickable: true },
-      });
-    }
-  });
+  function initPgSwiper() {
+    const root = document.querySelector('.product-gallery-swiper');
+    if (!root) return;
+    _galleryCounterPrev = 1;
+    const multi = root.querySelectorAll('.swiper-slide').length > 1;
+    new Swiper('.product-gallery-swiper', {
+      loop: multi,
+      pagination: { el: '.product-gallery-swiper .swiper-pagination', clickable: true },
+      touchRatio: 1,
+      on: {
+        slideChange: function () { updateGalleryCounter(this.realIndex + 1); },
+      },
+    });
+  }
+
+  initPgSwiper();
+  document.addEventListener('pjax:success', initPgSwiper);
 </script>
 @endsection
 @endsection
