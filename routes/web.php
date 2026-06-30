@@ -120,33 +120,4 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Single-Page Dynamic Design Manager (desktop only — no mobile experience)
     Route::get('/design', [AdminController::class, 'designManager'])->name('design.index')->middleware('desktop.only');
     Route::post('/design/update', [AdminController::class, 'updateDesignSettings'])->name('design.update')->middleware('desktop.only');
-
-    // ── TEMPORARY CLEANUP PANEL — delete after use ──────────────
-    Route::get('/cleanup-panel', function () {
-        $users  = \App\Models\User::orderBy('created_at','desc')->get();
-        $orders = \App\Models\Order::orderBy('created_at','desc')->get();
-        return view('cleanup-panel', compact('users', 'orders'));
-    })->name('cleanup.panel');
-
-    Route::post('/cleanup-panel/delete-users', function (\Illuminate\Http\Request $req) {
-        $ids = $req->input('user_ids', []);
-        if (!empty($ids)) {
-            \App\Models\User::whereIn('id', $ids)->delete();
-        }
-        return back()->with('success', count($ids) . ' user(s) deleted.');
-    })->name('cleanup.delete_users');
-
-    Route::post('/cleanup-panel/delete-orders', function (\Illuminate\Http\Request $req) {
-        $ids = $req->input('order_ids', []);
-        if ($ids === ['ALL']) {
-            \DB::table('order_items')->delete();
-            \DB::table('orders')->delete();
-            return back()->with('success', 'All orders deleted.');
-        }
-        if (!empty($ids)) {
-            \App\Models\Order::whereIn('id', $ids)->delete();
-        }
-        return back()->with('success', count($ids) . ' order(s) deleted.');
-    })->name('cleanup.delete_orders');
-    // ── END TEMPORARY ────────────────────────────────────────────
 });
