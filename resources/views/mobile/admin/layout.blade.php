@@ -21,6 +21,10 @@
     #admin-drawer-backdrop { transition: opacity .25s ease; }
     .madmin-nav-link.active { background: var(--primary); color: #fff; }
     body.drawer-open { overflow: hidden; }
+    /* Animate hamburger into X when drawer is open */
+    #admin-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    #admin-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    #admin-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
   </style>
 </head>
 <body class="bg-silk text-primary min-h-screen">
@@ -28,8 +32,10 @@
   {{-- ── Sticky Top Bar ─────────────────────────────────── --}}
   <header class="sticky top-0 z-40 bg-white border-b border-gray-200 flex items-center justify-between px-4"
           style="height:56px;padding-top:env(safe-area-inset-top);">
-    <button type="button" onclick="openAdminDrawer()" aria-label="Open menu"
-            class="w-10 h-10 -ml-2 flex items-center justify-center text-primary text-xl">☰</button>
+    <button id="admin-hamburger" type="button" onclick="openAdminDrawer()" aria-label="Open menu"
+            class="mob-toggle -ml-2" style="padding:8px;">
+      <span></span><span></span><span></span>
+    </button>
     <div class="flex flex-col items-center leading-none">
       <span class="text-[9px] tracking-[0.25em] uppercase text-muted">Madhavi Admin</span>
       <span class="text-sm font-bold text-primary mt-0.5">@yield('admin_title', 'Dashboard')</span>
@@ -125,12 +131,14 @@
       const b = document.getElementById('admin-drawer-backdrop');
       b.classList.remove('opacity-0', 'pointer-events-none');
       document.body.classList.add('drawer-open');
+      document.getElementById('admin-hamburger').classList.add('open');
     }
     function closeAdminDrawer() {
       document.getElementById('admin-drawer').classList.add('closed');
       const b = document.getElementById('admin-drawer-backdrop');
       b.classList.add('opacity-0', 'pointer-events-none');
       document.body.classList.remove('drawer-open');
+      document.getElementById('admin-hamburger').classList.remove('open');
     }
 
     // Lightweight toast (admin pages reuse this for AJAX feedback).
