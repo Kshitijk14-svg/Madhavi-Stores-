@@ -19,7 +19,7 @@
     #admin-drawer { transition: transform 0.32s cubic-bezier(0.4,0,0.2,1); }
     #admin-drawer.closed { transform: translateX(100%); }
     #admin-drawer-backdrop { transition: opacity 0.3s ease; }
-    body { overflow-x: hidden; }
+    html, body { overflow-x: hidden; }
     body.drawer-open { overflow: hidden; }
     /* Animate hamburger into X when drawer is open */
     #admin-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
@@ -116,7 +116,7 @@
   </aside>
 
   {{-- ── Page Body ──────────────────────────────────────── --}}
-  <main id="admin-main" class="px-4 py-5" style="padding-bottom:calc(env(safe-area-inset-bottom) + 32px);">
+  <main id="admin-main" class="px-4 py-5 overflow-x-hidden" style="padding-bottom:calc(env(safe-area-inset-bottom) + 32px);">
 
     {{-- Flash / validation messages --}}
     @if(session('success'))

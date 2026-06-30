@@ -37,10 +37,15 @@
       <option value="year">This Year</option>
       <option value="all">All Time</option>
     </select>
-    <div class="flex items-center gap-2">
-      <input type="date" id="chart-start-date" class="flex-1 text-[11px] text-muted bg-white border border-gray-200 px-2 py-2 outline-none">
-      <span class="text-[10px] text-muted">to</span>
-      <input type="date" id="chart-end-date" onchange="loadSalesChart('custom')" class="flex-1 text-[11px] text-muted bg-white border border-gray-200 px-2 py-2 outline-none">
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <span class="text-[9px] uppercase tracking-wider text-muted block mb-1">From</span>
+        <input type="date" id="chart-start-date" class="w-full text-[11px] text-muted bg-white border border-gray-200 px-2 py-2 outline-none">
+      </div>
+      <div>
+        <span class="text-[9px] uppercase tracking-wider text-muted block mb-1">To</span>
+        <input type="date" id="chart-end-date" onchange="loadSalesChart('custom')" class="w-full text-[11px] text-muted bg-white border border-gray-200 px-2 py-2 outline-none">
+      </div>
     </div>
   </div>
 
@@ -49,7 +54,7 @@
     <p id="chart-total-sales" class="text-2xl font-display font-medium text-secondary mt-0.5">₹0.00</p>
   </div>
 
-  <div class="relative w-full" style="height:240px;">
+  <div class="relative w-full overflow-hidden" style="height:240px;max-width:100%;">
     <canvas id="salesChart"></canvas>
   </div>
 </div>
