@@ -162,13 +162,13 @@
     @if($product->has_sizes)
     <div class="mb-2">
       <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
-        @foreach($product->sizes->where('stock', '>', 0) as $size)
+        @foreach($product->sizes->where('stock', '>', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
           <label class="shrink-0 cursor-pointer">
             <input type="radio" name="size" value="{{ $size->size }}" class="sr-only peer" required>
             <span class="inline-flex items-center justify-center w-10 h-10 border border-gray-200 text-xs font-bold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-colors">{{ $size->size }}</span>
           </label>
         @endforeach
-        @foreach($product->sizes->where('stock', 0) as $size)
+        @foreach($product->sizes->where('stock', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
           <span class="shrink-0 inline-flex items-center justify-center w-10 h-10 border border-gray-100 text-xs font-bold text-gray-300 line-through cursor-not-allowed">{{ $size->size }}</span>
         @endforeach
       </div>

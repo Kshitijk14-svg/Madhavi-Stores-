@@ -42,7 +42,11 @@
       // Float the WhatsApp button above whichever fixed bar is tallest.
       document.documentElement.style.setProperty('--fab-offset', bottomPadding + 'px');
     }
-    window.addEventListener('resize', setViewport);
+    let _svpTimer = null;
+    window.addEventListener('resize', function() {
+        if (_svpTimer) clearTimeout(_svpTimer);
+        _svpTimer = setTimeout(setViewport, 150);
+    });
     window.addEventListener('orientationchange', setViewport);
     document.addEventListener('DOMContentLoaded', setViewport);
   </script>
@@ -179,7 +183,7 @@
         if (leavingMain) pjaxPageCache[currentPjaxUrl] = leavingMain.innerHTML;
 
         gsap.to('#main', {
-            opacity: 0, y: 8, duration: 0.2,
+            opacity: 0, duration: 0.1,
             onComplete: () => {
                 loadingBar.style.width = '70%';
                 fetch(url)
@@ -197,7 +201,7 @@
                         // clearProps:'transform' prevents GSAP from leaving an inline
                         // transform on #main, which would break position:fixed children
                         // (the product bar, sort/filter drawers).
-                        gsap.fromTo('#main', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, clearProps: 'transform', onComplete: setViewport });
+                        gsap.fromTo('#main', { opacity: 0 }, { opacity: 1, duration: 0.18, clearProps: 'opacity', onComplete: setViewport });
                         document.dispatchEvent(new Event('pjax:success'));
 
                         setTimeout(() => {

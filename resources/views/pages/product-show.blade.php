@@ -126,7 +126,7 @@
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:12px;">
                             @php
-                                $sizes = $product->sizes;
+                                $sizes = $product->sizes->whereNotIn('size', ['XS', 'XXXL']);
                             @endphp
                             @foreach($sizes as $sizeModel)
                                 @php

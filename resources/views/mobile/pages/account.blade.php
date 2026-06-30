@@ -106,10 +106,8 @@
                 @foreach($order->items as $item)
                 <div class="flex items-center gap-3 bg-white border border-gray-100 p-2.5">
                   @if($item->product)
-                    <a href="{{ route('product.show', $item->product->slug) }}" class="shrink-0">
-                      <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
-                           class="w-12 h-12 object-cover bg-gray-50">
-                    </a>
+                    <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
+                         class="w-12 h-12 object-cover bg-gray-50 shrink-0">
                   @else
                     <div class="w-12 h-12 bg-gray-100 shrink-0"></div>
                   @endif
