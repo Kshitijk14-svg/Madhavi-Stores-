@@ -15,7 +15,7 @@
   </style>
 
   {{-- Image Gallery (Swiper) --}}
-  <div class="swiper product-gallery-swiper bg-gray-50" style="aspect-ratio:3/4;max-height:75vw;overflow:hidden;">
+  <div class="swiper product-gallery-swiper bg-gray-50" style="aspect-ratio:3/4;overflow:hidden;">
     <div class="swiper-wrapper">
       @php
         $galleryImages = array_filter(array_merge([$product->image_url], (array)($product->gallery_images ?? [])));

@@ -79,8 +79,8 @@
               <p class="text-xs font-bold text-primary font-mono">{{ $order->order_number }}</p>
               <p class="text-[10px] text-gray-400 mt-0.5">{{ $order->created_at->format('d M Y') }}</p>
             </div>
-            {{-- Total + status + chevron --}}
-            <div class="flex items-center gap-2 shrink-0">
+            {{-- Total + status stacked, chevron separate --}}
+            <div class="shrink-0 flex flex-col items-end gap-1">
               <span class="text-xs font-bold" style="color:var(--secondary);">₹{{ number_format($order->total,0) }}</span>
               <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5
                 @if($order->order_status==='Delivered') bg-green-50 text-green-700
@@ -89,10 +89,11 @@
                 @else bg-amber-50 text-amber-700 @endif">
                 {{ $order->order_status }}
               </span>
-              <svg id="chevron-{{ $order->id }}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform 0.25s;color:#aaa;">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-              </svg>
             </div>
+            <svg id="chevron-{{ $order->id }}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                 class="shrink-0" style="transition:transform 0.25s;color:#aaa;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
           </button>
 
           {{-- Expandable panel --}}
