@@ -120,9 +120,10 @@
               <div class="flex items-center gap-3 bg-gray-50 border border-gray-100 p-2.5">
                 @if($item->product)
                   <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}"
-                       class="w-12 h-12 object-cover bg-gray-100 shrink-0">
+                       class="w-12 h-12 object-cover bg-gray-100 shrink-0"
+                       style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">
                 @else
-                  <div class="w-12 h-12 bg-gray-100 shrink-0"></div>
+                  <div class="w-12 h-12 bg-gray-100 shrink-0" style="width:48px;height:48px;flex-shrink:0;"></div>
                 @endif
                 <div class="flex-1 min-w-0">
                   @if($item->product)
@@ -197,7 +198,7 @@
                   style="font-size:1.4rem;line-height:1;">×</button>
         </div>
         <div id="order-sheet-body" class="px-4 py-4"
-             style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(16px,env(safe-area-inset-bottom));"></div>
+             style="flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:max(16px,env(safe-area-inset-bottom));"></div>
       </div>
     @endif
   </div>
