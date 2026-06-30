@@ -185,7 +185,7 @@ class ProductController extends Controller
 
     public function show($slug)
     {
-        $product = Product::with(['sizes', 'reviews.user', 'category'])->where('slug', $slug)->firstOrFail();
+        $product = Product::with(['sizes', 'category'])->where('slug', $slug)->firstOrFail();
 
         // Get related products (same category, excluding current)
         $relatedProducts = Product::where('category_id', $product->category_id)
@@ -204,38 +204,6 @@ class ProductController extends Controller
             $relatedProducts = $relatedProducts->concat($extra);
         }
 
-        $hasPurchased = false;
-        if (auth()->check()) {
-            $hasPurchased = auth()->user()->orders()->whereHas('items', function ($query) use ($product) {
-                $query->where('product_id', $product->id);
-            })->exists();
-        }
-
-        return view('pages.product-show', compact('product', 'relatedProducts', 'hasPurchased'));
-    }
-
-    public function review(Request $request, Product $product)
-    {
-        $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000',
-        ]);
-
-        $hasPurchased = auth()->user()->orders()->whereHas('items', function ($query) use ($product) {
-            $query->where('product_id', $product->id);
-        })->exists();
-
-        if (!$hasPurchased) {
-            return back()->with('error', 'You can only review products you have purchased.');
-        }
-
-        // The Review model's saved/deleted hook recomputes the product's
-        // rating + review_count, so they stay correct even on review deletion.
-        $product->reviews()->updateOrCreate(
-            ['user_id' => auth()->id()],
-            ['rating' => $request->rating, 'comment' => $request->comment]
-        );
-
-        return back()->with('success', 'Review submitted successfully.');
+        return view('pages.product-show', compact('product', 'relatedProducts'));
     }
 }

@@ -43,15 +43,6 @@
         <span class="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5">{{ $savePct }}% off</span>
       @endif
     </div>
-    @if($product->rating)
-      <div class="flex items-center gap-1 mb-3">
-        @for($i = 1; $i <= 5; $i++)
-          <svg width="12" height="12" fill="{{ $i <= round($product->rating) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="text-amber-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        @endfor
-        <span class="text-[11px] text-gray-500 ml-1">{{ number_format($product->rating, 1) }} ({{ $product->review_count }})</span>
-      </div>
-    @endif
-
     {{-- Wishlist + Share (labeled action row) --}}
     @php $isWished = in_array($product->id, $wishlistIds ?? []); @endphp
     <div class="flex items-center gap-3 mt-1">
@@ -88,10 +79,11 @@
     </summary>
     <div class="px-4 pb-4 space-y-1.5">
       @foreach($product->details as $detail)
-        @if(!empty($detail['label']) && !empty($detail['value']))
-        <div class="flex gap-3 text-sm">
-          <span class="text-gray-400 font-light w-24 shrink-0">{{ $detail['label'] }}</span>
-          <span class="text-primary font-medium">{{ $detail['value'] }}</span>
+        @php $line = is_array($detail) ? trim(implode(' ', array_filter($detail))) : trim((string) $detail); @endphp
+        @if($line !== '')
+        <div class="flex gap-2 text-sm text-gray-600">
+          <span class="text-secondary shrink-0">•</span>
+          <span>{{ $line }}</span>
         </div>
         @endif
       @endforeach
@@ -111,58 +103,6 @@
     </div>
   </details>
   @endif
-
-  {{-- Reviews --}}
-  <details class="border-b border-gray-100" @if($product->reviews->isEmpty()) open @endif>
-    <summary class="flex items-center justify-between px-4 py-4 cursor-pointer list-none" style="min-height:52px;">
-      <span class="text-xs font-bold tracking-wider uppercase">Reviews ({{ $product->review_count ?? 0 }})</span>
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-    </summary>
-    <div class="px-4 pb-4">
-      @if($product->reviews->isEmpty())
-        <p class="text-sm text-gray-400 py-2">No reviews yet. Be the first!</p>
-      @else
-        <div class="space-y-4 mb-6">
-          @foreach($product->reviews as $review)
-          <div class="border-b border-gray-50 pb-3 last:border-0">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="flex gap-0.5">
-                @for($i = 1; $i <= 5; $i++)
-                  <svg width="10" height="10" fill="{{ $i <= $review->rating ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="text-amber-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                @endfor
-              </div>
-              <span class="text-[11px] font-semibold text-primary">{{ $review->user->name }}</span>
-              <span class="text-[10px] text-gray-400 ml-auto">{{ $review->created_at->format('d M') }}</span>
-            </div>
-            @if($review->comment)
-              <p class="text-sm font-light text-gray-600 leading-relaxed">{{ $review->comment }}</p>
-            @endif
-          </div>
-          @endforeach
-        </div>
-      @endif
-
-      @auth
-        @if($hasPurchased)
-        <form method="POST" action="{{ route('product.review', $product->id) }}" class="mt-4 pt-4 border-t border-gray-100">
-          @csrf
-          <p class="text-[10px] font-bold tracking-wider uppercase text-gray-500 mb-3">Write a Review</p>
-          <div class="flex gap-2 mb-3">
-            @for($i = 1; $i <= 5; $i++)
-            <label class="cursor-pointer">
-              <input type="radio" name="rating" value="{{ $i }}" class="sr-only peer" {{ $i === 5 ? 'required' : '' }}>
-              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="text-gray-300 peer-checked:fill-amber-400 peer-checked:text-amber-400 transition-colors"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            </label>
-            @endfor
-          </div>
-          <textarea name="comment" rows="3" placeholder="Share your experience..."
-                    class="w-full border border-gray-200 px-3 py-3 text-sm outline-none focus:border-primary resize-none mb-3"></textarea>
-          <button type="submit" class="w-full bg-primary text-white text-xs font-bold tracking-widest uppercase py-3.5" style="min-height:48px;">Submit Review</button>
-        </form>
-        @endif
-      @endauth
-    </div>
-  </details>
 
   {{-- Related Products --}}
   @if($relatedProducts->isNotEmpty())

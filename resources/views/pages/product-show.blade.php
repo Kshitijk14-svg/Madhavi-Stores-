@@ -81,13 +81,6 @@
                                 <span class="disc-badge" style="background:rgba(22,163,74,0.1);padding:4px 8px;border-radius:4px;">SAVE {{ round((($product->original_price ?: $product->price)-$finalPrice)/($product->original_price ?: $product->price)*100) }}%</span>
                             @endif
                         </div>
-                        
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;">
-                            <div style="color:var(--secondary);font-size:14px;letter-spacing:2px;">
-                                @for($i = 1; $i <= 5; $i++) ★ @endfor
-                            </div>
-                            <span class="eyebrow" style="text-transform:none;letter-spacing:0;font-weight:400;">({{ $product->review_count ?? 0 }} reviews)</span>
-                        </div>
                     </div>
 
                     <div style="margin-bottom:40px;color:var(--muted);font-weight:300;line-height:1.8;font-size:15px;">
@@ -191,53 +184,6 @@
                                 </li>
                             @endforeach
                         </ul>
-                    </div>
-
-                    <!-- Reviews Section -->
-                    <div style="border-top:1px solid var(--border);padding-top:32px;margin-top:32px;">
-                        <h3 class="eyebrow" style="color:var(--primary);margin-bottom:20px;">Customer Reviews</h3>
-                        @if($product->reviews->isEmpty())
-                            <p class="text-sm text-muted mb-6">No reviews yet.</p>
-                        @else
-                            <div class="space-y-6 mb-8">
-                                @foreach($product->reviews as $review)
-                                    <div class="border-b border-gray-100 pb-4">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <div style="color:var(--secondary);font-size:12px;letter-spacing:1px;">
-                                                @for($i = 1; $i <= 5; $i++) 
-                                                    {!! $i <= $review->rating ? '★' : '☆' !!} 
-                                                @endfor
-                                            </div>
-                                            <span class="text-xs font-semibold text-primary">{{ $review->user->name ?? 'Guest' }}</span>
-                                            <span class="text-[10px] text-muted">{{ $review->created_at->format('M d, Y') }}</span>
-                                        </div>
-                                        <p class="text-sm text-muted">{{ $review->comment }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        @if($hasPurchased)
-                            <h4 class="text-sm font-semibold mb-4">Write a Review</h4>
-                            <form action="{{ route('product.review', $product->id) }}" method="POST" class="space-y-4">
-                                @csrf
-                                <div>
-                                    <label class="block text-xs font-semibold text-muted mb-1">Rating</label>
-                                    <select name="rating" class="border border-gray-200 px-3 py-2 text-sm outline-none focus:border-secondary w-full max-w-[150px]">
-                                        <option value="5">5 - Excellent</option>
-                                        <option value="4">4 - Very Good</option>
-                                        <option value="3">3 - Good</option>
-                                        <option value="2">2 - Fair</option>
-                                        <option value="1">1 - Poor</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-muted mb-1">Comment</label>
-                                    <textarea name="comment" rows="3" class="border border-gray-200 px-3 py-2 text-sm outline-none focus:border-secondary w-full" placeholder="Share your experience..."></textarea>
-                                </div>
-                                <button type="submit" class="btn-primary py-2 px-6 text-xs">Submit Review</button>
-                            </form>
-                        @endif
                     </div>
                 </div>
             </div>

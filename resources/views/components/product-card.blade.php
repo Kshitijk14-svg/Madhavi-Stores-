@@ -36,17 +36,5 @@
                 <span class="text-muted line-through ml-2">₹{{ number_format($product['original_price']) }}</span>
             @endif
         </div>
-        
-        <!-- Rating -->
-        <div class="mt-2 flex items-center justify-center text-[#c5b358] text-xs">
-            @for($i = 1; $i <= 5; $i++)
-                @if($i <= floor($product['rating']))
-                    <span>★</span>
-                @else
-                    <span class="text-gray-300">★</span>
-                @endif
-            @endfor
-            <span class="text-muted ml-1">({{ $product['review_count'] }})</span>
-        </div>
     </div>
 </div>

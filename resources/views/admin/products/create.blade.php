@@ -280,7 +280,7 @@
         <div class="border-t border-gray-100 pt-6">
             <label for="has_sizes" class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Product Stock & Sizes Option</label>
             <select id="has_sizes" name="has_sizes" class="w-full md:w-1/3 px-4 py-3 bg-slate-50 border border-gray-200 focus:border-secondary focus:bg-white focus:outline-none transition-colors text-sm">
-                <option value="1" {{ old('has_sizes', '1') == '1' ? 'selected' : '' }}>This product has multiple sizes (XS to XXXL)</option>
+                <option value="1" {{ old('has_sizes', '1') == '1' ? 'selected' : '' }}>This product has multiple sizes (S to XXL)</option>
                 <option value="0" {{ old('has_sizes') == '0' ? 'selected' : '' }}>This product is one-size / has no sizes</option>
             </select>
         </div>
@@ -288,8 +288,8 @@
         {{-- Sizes & Stock (Show if has_sizes is 1) --}}
         <div id="sizes-stock-section" class="border-t border-gray-100 pt-6">
             <h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-4">Sizes & Inventory (Stock)</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                @foreach(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as $size)
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                @foreach(['S', 'M', 'L', 'XL', 'XXL'] as $size)
                 <div>
                     <label class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-1">{{ $size }}</label>
                     <input type="number" name="sizes[{{ $size }}]" min="0" placeholder="0" class="w-full px-3 py-2 bg-slate-50 border border-gray-200 text-sm">

@@ -71,7 +71,6 @@ Route::middleware('auth')->group(function () {
     // Wishlist Operations
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
     Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-    Route::post('/product/{product}/review', [ProductController::class, 'review'])->middleware('throttle:10,1')->name('product.review');
 
     // Checkout Operations (throttled — each store() can hit the Razorpay API)
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
