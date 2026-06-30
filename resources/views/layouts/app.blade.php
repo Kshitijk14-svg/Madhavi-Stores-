@@ -129,6 +129,22 @@
         }, 4000);
     }
 
+    // Share a product via the native share sheet, falling back to copying the link.
+    function shareProduct(url, title) {
+        const absUrl = new URL(url, window.location.origin).href;
+        if (navigator.share) {
+            navigator.share({ title: title || document.title, url: absUrl }).catch(() => {});
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(absUrl)
+                .then(() => showToast('Product link copied!', 'success'))
+                .catch(() => window.open('https://wa.me/?text=' + encodeURIComponent((title ? title + ' — ' : '') + absUrl), '_blank'));
+            return;
+        }
+        window.open('https://wa.me/?text=' + encodeURIComponent((title ? title + ' — ' : '') + absUrl), '_blank');
+    }
+
     // --- PJAX Navigation Engine ---
     // Manual scroll restoration so back/forward returns to the prior position.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -437,57 +453,10 @@
             });
         });
 
-        // 3. Intercept Order status and payment updates
-        const orderUpdateForms = document.querySelectorAll('.order-update-form');
-        orderUpdateForms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalText = submitBtn ? submitBtn.innerText : 'Save';
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = 'Saving...';
-                }
-                
-                const formData = new FormData(form);
-                const orderId = form.action.split('/').pop();
-                
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast(data.message, 'success');
-                        
-                        // Close modal dynamically
-                        if (typeof toggleOrderModal === 'function') {
-                            toggleOrderModal(orderId, false);
-                        }
-                        
-                        // Dynamically reload list or refresh content safely
-                        navigateToPage(window.location.href, false);
-                    } else {
-                        showToast(data.message || 'Error updating order status.', 'error');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    showToast('Communication error occurred.', 'error');
-                })
-                .finally(() => {
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.innerText = originalText;
-                    }
-                });
-            });
-        });
+        // 3. Order status/payment updates are handled by the admin orders page's own
+        //    script (resources/views/admin/orders/index.blade.php), which extracts the
+        //    order id correctly, keeps the modal open and updates badges live. A second
+        //    handler here previously double-bound and mis-parsed the id — removed.
 
         // 4. Hook Add to Bag forms globally
         const addToBagForms = document.querySelectorAll('form[action*="/cart/add"]');

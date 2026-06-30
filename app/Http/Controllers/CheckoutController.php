@@ -151,6 +151,13 @@ class CheckoutController extends Controller
             || Str::startsWith($request->razorpay_order_id, 'order_fake_')
         );
 
+        // The coupon used to PRICE the payment is recorded in the Razorpay order
+        // notes at store() time. We must create the order against THAT coupon, not
+        // whatever is currently in the session — otherwise a customer could swap to
+        // a larger coupon after the amount was fixed and be under-charged.
+        $couponCode = null;        // null = let CartService re-validate; never trust session here
+        $paidAmount = null;        // amount Razorpay actually charged (in paise)
+
         if (!$isMock) {
             try {
                 $api = new Api($keyId, $keySecret);
@@ -166,6 +173,20 @@ class CheckoutController extends Controller
                     'message' => 'Payment signature verification failed. Please contact support.',
                 ], 400);
             }
+
+            // Pull the coupon + charged amount from the gateway order (source of truth).
+            try {
+                $razorpayOrder = $api->order->fetch($request->razorpay_order_id);
+                $couponCode    = ($razorpayOrder['notes']['coupon_code'] ?? '') ?: null;
+                $paidAmount    = $razorpayOrder['amount'] ?? null;
+            } catch (\Exception $e) {
+                logger()->warning('Could not fetch Razorpay order for reconciliation: ' . $e->getMessage(), [
+                    'razorpay_order_id' => $request->razorpay_order_id,
+                ]);
+            }
+        } else {
+            // Local mock only — no gateway order to read; use the session coupon.
+            $couponCode = session('applied_coupon');
         }
 
         $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
@@ -176,7 +197,7 @@ class CheckoutController extends Controller
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature'  => $request->razorpay_signature,
                 'payment_status'      => 'Paid',
-            ]);
+            ], $couponCode);
         } catch (CheckoutException $e) {
             // Payment captured but the order could not be created (e.g. stock gone).
             logger()->warning('Paid order could not be created: ' . $e->getMessage(), [
@@ -198,6 +219,20 @@ class CheckoutController extends Controller
             ], 500);
         }
 
+        // Reconcile: the finalised order total must equal what the gateway charged.
+        // A mismatch means the cart/price/coupon changed between store() and now;
+        // the payment is signature-verified so we keep the order, but flag it loudly
+        // for staff to review (and potentially refund the difference).
+        if ($paidAmount !== null && intval(round($order->total * 100)) !== intval($paidAmount)) {
+            logger()->error('Order/payment amount mismatch — manual review required.', [
+                'order_number'        => $order->order_number,
+                'order_total_paise'   => intval(round($order->total * 100)),
+                'razorpay_amount'     => intval($paidAmount),
+                'razorpay_payment_id' => $request->razorpay_payment_id,
+                'user_id'             => $user->id,
+            ]);
+        }
+
         session()->flash('success', 'Thank you! Your order ' . $order->order_number . ' was successfully placed.');
         return response()->json([
             'success'  => true,
@@ -217,6 +252,11 @@ class CheckoutController extends Controller
     {
         $secret = config('razorpay.webhook_secret');
         if (empty($secret)) {
+            // Never silently drop webhooks in production — a missing secret means the
+            // server-to-server safety net is disabled and paid orders may be lost.
+            if (app()->isProduction()) {
+                logger()->warning('Razorpay webhook received but RAZORPAY_WEBHOOK_SECRET is not configured — webhook ignored.');
+            }
             return response()->json(['status' => 'ignored'], 200);
         }
 

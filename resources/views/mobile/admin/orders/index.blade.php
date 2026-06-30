@@ -56,7 +56,7 @@
   {{-- Order cards --}}
   <div class="space-y-3">
     @foreach($orders as $order)
-      <div class="border border-gray-100 bg-white p-4">
+      <div id="order-card-{{ $order->id }}" class="border border-gray-100 bg-white p-4">
         <div class="flex items-start justify-between gap-2">
           <div>
             <p class="font-mono text-sm font-bold text-primary">{{ $order->order_number }}</p>
@@ -71,11 +71,11 @@
         </div>
 
         <div class="flex items-center flex-wrap gap-2 mt-3">
-          <span class="text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider
+          <span id="payment-status-badge-{{ $order->id }}" class="text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider
             {{ $order->payment_status === 'Paid' ? 'bg-emerald-50 text-emerald-700' : '' }}
             {{ $order->payment_status === 'Pending' ? 'bg-amber-50 text-amber-700' : '' }}
             {{ $order->payment_status === 'Refunded' ? 'bg-rose-50 text-rose-700' : '' }}">{{ $order->payment_status }}</span>
-          <span class="text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider
+          <span id="order-status-badge-{{ $order->id }}" class="text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider
             {{ $order->order_status === 'Pending' ? 'bg-amber-50 text-amber-700' : '' }}
             {{ $order->order_status === 'Processing' ? 'bg-purple-50 text-purple-700' : '' }}
             {{ $order->order_status === 'Shipped' ? 'bg-indigo-50 text-indigo-700' : '' }}
@@ -147,7 +147,7 @@
           {{-- Status editor --}}
           <div class="bg-silk/20 border border-gray-100 p-4">
             <h4 class="text-[10px] font-bold tracking-widest text-primary uppercase mb-3">Update Status</h4>
-            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST" class="space-y-3">
+            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST" class="space-y-3 order-update-form" data-order-id="{{ $order->id }}">
               @csrf
               <div>
                 <label class="text-[9px] font-semibold text-muted uppercase tracking-wider block mb-1">Order Status</label>
@@ -177,8 +177,7 @@
               @csrf
               <button type="submit" class="w-full py-2.5 text-[10px] text-secondary bg-white border border-secondary uppercase font-semibold tracking-wider">✉ Email Invoice to Customer</button>
             </form>
-            <form action="{{ route('admin.orders.delete', $order->id) }}" method="POST"
-                  onsubmit="return confirm('Permanently delete this order record?')">
+            <form action="{{ route('admin.orders.delete', $order->id) }}" method="POST" class="order-delete-form" data-order-id="{{ $order->id }}">
               @csrf
               <button type="submit" class="w-full py-2.5 text-[10px] text-red-600 bg-red-50 border border-red-200 uppercase font-semibold tracking-wider">Delete Order Record</button>
             </form>
@@ -203,7 +202,30 @@
     document.body.style.overflow = show ? 'hidden' : '';
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function orderStatusClass(status) {
+    return ({
+      'Pending':'bg-amber-50 text-amber-700','Processing':'bg-purple-50 text-purple-700',
+      'Shipped':'bg-indigo-50 text-indigo-700','Delivered':'bg-emerald-50 text-emerald-700',
+      'Cancelled':'bg-rose-50 text-rose-700'
+    })[status] || '';
+  }
+  function paymentStatusClass(status) {
+    return ({
+      'Paid':'bg-emerald-50 text-emerald-700','Pending':'bg-amber-50 text-amber-700','Refunded':'bg-rose-50 text-rose-700'
+    })[status] || '';
+  }
+  function adminCsrfHeaders() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (meta) headers['X-CSRF-TOKEN'] = meta.getAttribute('content');
+    return headers;
+  }
+
+  // Bind immediately (this script renders after the order cards). Using an IIFE
+  // instead of DOMContentLoaded so handlers also bind when loaded via PJAX, where
+  // DOMContentLoaded has already fired.
+  (function () {
+    // Email invoice
     document.querySelectorAll('.invoice-email-form').forEach(form => {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -211,20 +233,63 @@
         const original = btn.innerHTML;
         btn.innerHTML = 'Sending...';
         btn.disabled = true;
-        fetch(form.action, {
-          method: 'POST',
-          body: new FormData(form),
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
-        })
+        fetch(form.action, { method: 'POST', body: new FormData(form), headers: adminCsrfHeaders() })
           .then(r => r.json())
-          .then(d => showToast(d.message || 'Invoice emailed.', 'success'))
+          .then(d => showToast(d.message || 'Invoice emailed.', d.success ? 'success' : 'error'))
           .catch(() => showToast('Error sending invoice.', 'error'))
           .finally(() => { btn.innerHTML = original; btn.disabled = false; });
       });
     });
-  });
+
+    // Update status — keeps the sheet open, updates the card badges live.
+    document.querySelectorAll('.order-update-form').forEach(form => {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const original = btn.innerHTML;
+        const orderId = form.getAttribute('data-order-id');
+        btn.innerHTML = 'Saving...';
+        btn.disabled = true;
+        fetch(form.action, { method: 'POST', body: new FormData(form), headers: adminCsrfHeaders() })
+          .then(r => r.json())
+          .then(d => {
+            if (d.success) {
+              const ob = document.getElementById('order-status-badge-' + orderId);
+              const pb = document.getElementById('payment-status-badge-' + orderId);
+              if (ob) { ob.textContent = d.order_status; ob.className = 'text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider ' + orderStatusClass(d.order_status); }
+              if (pb) { pb.textContent = d.payment_status; pb.className = 'text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider ' + paymentStatusClass(d.payment_status); }
+            }
+            showToast(d.message || 'Order updated.', d.success ? 'success' : 'error');
+          })
+          .catch(() => showToast('Error saving changes.', 'error'))
+          .finally(() => { btn.innerHTML = original; btn.disabled = false; });
+      });
+    });
+
+    // Delete order — removes the card + sheet on success.
+    document.querySelectorAll('.order-delete-form').forEach(form => {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!confirm('Permanently delete this order record?')) return;
+        const btn = form.querySelector('button[type="submit"]');
+        const orderId = form.getAttribute('data-order-id');
+        btn.disabled = true;
+        fetch(form.action, { method: 'POST', body: new FormData(form), headers: adminCsrfHeaders() })
+          .then(r => r.json())
+          .then(d => {
+            if (d.success) {
+              showToast(d.message || 'Order record deleted.', 'success');
+              document.body.style.overflow = '';
+              document.getElementById('order-modal-' + orderId)?.remove();
+              document.getElementById('order-card-' + orderId)?.remove();
+            } else {
+              showToast(d.message || 'Could not delete order.', 'error');
+              btn.disabled = false;
+            }
+          })
+          .catch(() => { showToast('Error deleting order.', 'error'); btn.disabled = false; });
+      });
+    });
+  })();
 </script>
 @endsection

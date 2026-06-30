@@ -90,6 +90,22 @@
         }, 3000);
     }
 
+    // Share a product via the native share sheet, falling back to copying the link.
+    function shareProduct(url, title) {
+        const absUrl = new URL(url, window.location.origin).href;
+        if (navigator.share) {
+            navigator.share({ title: title || document.title, url: absUrl }).catch(() => {});
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(absUrl)
+                .then(() => showToast('Product link copied!', 'success'))
+                .catch(() => window.open('https://wa.me/?text=' + encodeURIComponent((title ? title + ' — ' : '') + absUrl), '_blank'));
+            return;
+        }
+        window.open('https://wa.me/?text=' + encodeURIComponent((title ? title + ' — ' : '') + absUrl), '_blank');
+    }
+
     // Stripped down PJAX for mobile speed.
     // Manual scroll restoration so back/forward returns to the prior position.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';

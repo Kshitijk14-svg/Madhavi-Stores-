@@ -50,6 +50,21 @@
                     
                     <!-- Pagination -->
                     <div class="swiper-pagination product-dots" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:8px;"></div>
+
+                    <!-- Wishlist + Share (stacked, bottom-right of gallery) -->
+                    <div style="position:absolute;bottom:16px;right:16px;z-index:11;display:flex;flex-direction:column;gap:10px;">
+                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" id="wishlist-form">
+                            @csrf
+                            <button type="submit" aria-label="Toggle wishlist" style="width:44px;height:44px;border-radius:9999px;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;">
+                                <svg width="20" height="20" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+                            </button>
+                        </form>
+                        <button type="button" aria-label="Share product"
+                                onclick="shareProduct('{{ route('product.show', $product->slug) }}', @js($product->name))"
+                                style="width:44px;height:44px;border-radius:9999px;background:rgba(255,255,255,0.95);backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;color:var(--primary);">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -151,14 +166,7 @@
                                 Add to Bag
                             </button>
                         </form>
-
-                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST" id="wishlist-form" class="flex-shrink-0 lg:w-full">
-                            @csrf
-                            <button type="submit" class="btn-secondary w-[50px] h-[50px] lg:w-full lg:h-[60px] flex items-center justify-center lg:gap-3 p-0">
-                                <svg width="18" height="18" fill="{{ in_array($product->id, $wishlistIds) ? 'currentColor' : 'none' }}" class="{{ in_array($product->id, $wishlistIds) ? 'text-red-500' : 'text-primary' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-                                <span class="hidden lg:inline">{{ in_array($product->id, $wishlistIds) ? 'Remove from Wishlist' : 'Add to Wishlist' }}</span>
-                            </button>
-                        </form>
+                        {{-- Wishlist + Share moved to the gallery's bottom-right corner. --}}
                     </div>
 
                     <!-- Product Details List -->

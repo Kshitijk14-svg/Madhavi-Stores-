@@ -811,9 +811,14 @@ class AdminController extends Controller
         return redirect()->route('admin.orders.index')->with('success', 'Order status updated successfully.');
     }
 
-    public function deleteOrder($id)
+    public function deleteOrder(Request $request, $id)
     {
         Order::findOrFail($id)->delete();
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Order record deleted.']);
+        }
+
         return redirect()->route('admin.orders.index')->with('success', 'Order record deleted.');
     }
 

@@ -99,7 +99,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100/60">
                     @foreach($orders as $order)
-                        <tr class="hover:bg-silk/10 transition-colors">
+                        <tr id="order-row-{{ $order->id }}" class="hover:bg-silk/10 transition-colors">
                             <td class="py-4 px-4 font-mono font-semibold text-primary">
                                 {{ $order->order_number }}
                             </td>
@@ -265,9 +265,19 @@
                                             </a>
                                         </div>
 
+                                        {{-- Email Invoice to Customer --}}
+                                        <div class="pt-2">
+                                            <form action="{{ route('admin.orders.send_invoice', $order->id) }}" method="POST" class="invoice-email-form">
+                                                @csrf
+                                                <button type="submit" class="w-full py-2 text-[10px] text-secondary bg-white border border-secondary hover:bg-secondary/10 transition-colors uppercase font-semibold tracking-wider">
+                                                    ✉ Email Invoice to Customer
+                                                </button>
+                                            </form>
+                                        </div>
+
                                         {{-- Delete Order --}}
                                         <div class="pt-2 border-t border-gray-100">
-                                            <form action="{{ route('admin.orders.delete', $order->id) }}" method="POST" onsubmit="return confirm('Caution! Are you sure you want to permanently delete this order record?')" class="inline">
+                                            <form action="{{ route('admin.orders.delete', $order->id) }}" method="POST" class="order-delete-form" data-order-id="{{ $order->id }}">
                                                 @csrf
                                                 <button type="submit" class="w-full py-2 text-[10px] text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors uppercase font-semibold tracking-wider">
                                                     Delete Order Record
@@ -373,6 +383,65 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             });
+        });
+    });
+
+    function adminCsrfHeaders() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+        if (meta) headers['X-CSRF-TOKEN'] = meta.getAttribute('content');
+        return headers;
+    }
+
+    // Email Invoice to Customer (AJAX) — keeps the modal open, just toasts the result.
+    document.querySelectorAll('.invoice-email-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Sending...';
+            btn.disabled = true;
+
+            fetch(form.action, { method: 'POST', body: new FormData(form), headers: adminCsrfHeaders() })
+                .then(res => res.json())
+                .then(data => {
+                    const msg = data.message || (data.success ? 'Invoice emailed.' : 'Could not send invoice.');
+                    if (typeof showToast === 'function') showToast(msg, data.success ? 'success' : 'error');
+                    else alert(msg);
+                })
+                .catch(() => {
+                    if (typeof showToast === 'function') showToast('Error sending invoice. Please try again.', 'error');
+                    else alert('Error sending invoice.');
+                })
+                .finally(() => { btn.innerHTML = originalText; btn.disabled = false; });
+        });
+    });
+
+    // Delete order (AJAX) — removes the row + modal from the DOM on success.
+    document.querySelectorAll('.order-delete-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!confirm('Caution! Are you sure you want to permanently delete this order record?')) return;
+            const btn = form.querySelector('button[type="submit"]');
+            const orderId = form.getAttribute('data-order-id');
+            btn.disabled = true;
+
+            fetch(form.action, { method: 'POST', body: new FormData(form), headers: adminCsrfHeaders() })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (typeof showToast === 'function') showToast(data.message || 'Order record deleted.', 'success');
+                        document.getElementById('order-modal-' + orderId)?.remove();
+                        document.getElementById('order-row-' + orderId)?.remove();
+                    } else {
+                        if (typeof showToast === 'function') showToast(data.message || 'Could not delete order.', 'error');
+                        btn.disabled = false;
+                    }
+                })
+                .catch(() => {
+                    if (typeof showToast === 'function') showToast('Error deleting order. Please try again.', 'error');
+                    btn.disabled = false;
+                });
         });
     });
 </script>
