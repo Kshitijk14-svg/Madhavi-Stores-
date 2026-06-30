@@ -19,6 +19,7 @@
     #admin-drawer { transition: transform 0.32s cubic-bezier(0.4,0,0.2,1); }
     #admin-drawer.closed { transform: translateX(100%); }
     #admin-drawer-backdrop { transition: opacity 0.3s ease; }
+    body { overflow-x: hidden; }
     body.drawer-open { overflow: hidden; }
     /* Animate hamburger into X when drawer is open */
     #admin-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
@@ -35,15 +36,14 @@
             class="mob-toggle -ml-2" style="padding:8px;">
       <span></span><span></span><span></span>
     </button>
-    <div class="flex flex-col items-center leading-none">
+    <div class="flex-1 min-w-0 overflow-hidden flex flex-col items-center leading-none">
       <span class="text-[9px] tracking-[0.25em] uppercase text-muted">Madhavi Admin</span>
-      <span class="text-sm font-bold text-primary mt-0.5">@yield('admin_title', 'Dashboard')</span>
+      <span class="text-sm font-bold text-primary mt-0.5 truncate max-w-full">@yield('admin_title', 'Dashboard')</span>
     </div>
-    <form action="{{ route('logout') }}" method="POST">
-      @csrf
-      <button type="submit" aria-label="Log out"
-              class="w-10 h-10 -mr-2 flex items-center justify-center text-muted hover:text-primary text-lg">⎋</button>
-    </form>
+    <a href="{{ route('home') }}" aria-label="View store"
+       class="w-10 h-10 -mr-2 flex items-center justify-center text-muted hover:text-primary">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.592 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+    </a>
   </header>
 
   @php
@@ -93,6 +93,11 @@
           @endif
         </a>
       @endforeach
+      <div style="height:1px;background:#f0f0f0;margin:8px 0 4px;"></div>
+      <a href="{{ route('home') }}"
+         style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-style:italic;font-weight:300;display:flex;align-items:center;gap:8px;padding:10px 0;color:var(--secondary);text-decoration:none;opacity:0.8;">
+        ← Visit Store
+      </a>
     </nav>
 
     {{-- Footer: admin name + sign out --}}
