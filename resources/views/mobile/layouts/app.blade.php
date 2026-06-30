@@ -33,7 +33,12 @@
       if (productBar && window.getComputedStyle(productBar).display !== 'none' && window.getComputedStyle(productBar).position === 'fixed') {
         bottomPadding = productBar.offsetHeight;
       }
-      if(main) main.style.paddingBottom = bottomPadding + 'px';
+      // Pad the whole scroll area (footer included) so the fixed product bar
+      // never overlaps the footer; #main itself stays unpadded.
+      if (main) main.style.paddingBottom = '';
+      document.body.style.paddingBottom = bottomPadding + 'px';
+      // Float the WhatsApp button above the product bar (0 when no bar present).
+      document.documentElement.style.setProperty('--fab-offset', bottomPadding + 'px');
     }
     window.addEventListener('resize', setViewport);
     window.addEventListener('orientationchange', setViewport);
@@ -85,7 +90,26 @@
         }, 3000);
     }
 
-    // Stripped down PJAX for mobile speed
+    // Stripped down PJAX for mobile speed.
+    // Manual scroll restoration so back/forward returns to the prior position.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    let currentPjaxUrl = window.location.href;
+    const pjaxScrollPositions = {};
+    const pjaxPageCache = {};
+    history.replaceState({ url: currentPjaxUrl }, document.title, currentPjaxUrl);
+
+    // Keep the active page's scroll position fresh — popstate fires *after* the
+    // URL changes, so we cannot read it reliably at that point.
+    let pjaxScrollTimer = null;
+    window.addEventListener('scroll', function() {
+        if (pjaxScrollTimer) return;
+        pjaxScrollTimer = setTimeout(() => {
+            pjaxScrollPositions[currentPjaxUrl] = window.scrollY;
+            pjaxScrollTimer = null;
+        }, 100);
+    }, { passive: true });
+
     document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
         if (!link) return;
@@ -97,6 +121,23 @@
         }
     });
 
+    // Swap #main content and re-run any inline page scripts (Swiper, etc.).
+    function applyPjaxContent(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        document.title = doc.title;
+        const newMainContent = doc.getElementById('main');
+        const currentMain = document.getElementById('main');
+        if (!newMainContent || !currentMain) return false;
+        currentMain.innerHTML = newMainContent.innerHTML;
+        currentMain.querySelectorAll('script').forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.textContent = oldScript.textContent;
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+        return true;
+    }
+
     function navigateToPage(url, pushState = true) {
         let loadingBar = document.getElementById('pjax-loading-bar');
         if (!loadingBar) {
@@ -106,9 +147,14 @@
             loadingBar.style.width = '0%';
             document.body.appendChild(loadingBar);
         }
-        
+
         loadingBar.style.opacity = '1';
         loadingBar.style.width = '30%';
+
+        // Remember the page we are leaving (scroll + markup) for instant back nav.
+        pjaxScrollPositions[currentPjaxUrl] = window.scrollY;
+        const leavingMain = document.getElementById('main');
+        if (leavingMain) pjaxPageCache[currentPjaxUrl] = leavingMain.innerHTML;
 
         gsap.to('#main', {
             opacity: 0, y: 8, duration: 0.2,
@@ -118,30 +164,19 @@
                     .then(response => { if (!response.ok) throw new Error(); return response.text(); })
                     .then(html => {
                         loadingBar.style.width = '100%';
-                        const doc = new DOMParser().parseFromString(html, 'text/html');
-                        document.title = doc.title;
-                        
-                        const newMainContent = doc.getElementById('main');
-                        const currentMain = document.getElementById('main');
-                        if (newMainContent && currentMain) {
-                            currentMain.innerHTML = newMainContent.innerHTML;
-                            const scripts = currentMain.querySelectorAll('script');
-                            scripts.forEach(oldScript => {
-                                const newScript = document.createElement('script');
-                                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                                newScript.textContent = oldScript.textContent;
-                                oldScript.parentNode.replaceChild(newScript, oldScript);
-                            });
-                        } else {
-                            window.location.href = url; return;
-                        }
-                        
-                        if (pushState) history.pushState({ url: url }, doc.title, url);
-                        
+                        if (!applyPjaxContent(html)) { window.location.href = url; return; }
+                        pjaxPageCache[url] = document.getElementById('main').innerHTML;
+
+                        if (pushState) history.pushState({ url: url }, document.title, url);
+                        currentPjaxUrl = url;
+
                         window.scrollTo({ top: 0, behavior: 'instant' });
-                        gsap.fromTo('#main', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, onComplete: setViewport });
+                        // clearProps:'transform' prevents GSAP from leaving an inline
+                        // transform on #main, which would break position:fixed children
+                        // (the product bar, sort/filter drawers).
+                        gsap.fromTo('#main', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, clearProps: 'transform', onComplete: setViewport });
                         document.dispatchEvent(new Event('pjax:success'));
-                        
+
                         setTimeout(() => {
                             loadingBar.style.opacity = '0';
                             setTimeout(() => { loadingBar.style.width = '0%'; }, 300);
@@ -152,9 +187,39 @@
         });
     }
 
+    // Back / forward: restore from cache instantly (no fade) and recover scroll.
+    function restorePjaxPage(url) {
+        const targetScroll = pjaxScrollPositions[url] || 0;
+        const cached = pjaxPageCache[url];
+        currentPjaxUrl = url;
+
+        const finish = () => {
+            gsap.set('#main', { clearProps: 'transform', opacity: 1, y: 0 });
+            setViewport();
+            document.dispatchEvent(new Event('pjax:success'));
+            window.scrollTo({ top: targetScroll, behavior: 'instant' });
+            // Re-apply after layout/images settle.
+            requestAnimationFrame(() => window.scrollTo({ top: targetScroll, behavior: 'instant' }));
+        };
+
+        if (cached) {
+            if (!applyPjaxContent(cached)) { window.location.href = url; return; }
+            finish();
+        } else {
+            fetch(url)
+                .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+                .then(html => {
+                    if (!applyPjaxContent(html)) { window.location.href = url; return; }
+                    pjaxPageCache[url] = document.getElementById('main').innerHTML;
+                    finish();
+                })
+                .catch(() => { window.location.href = url; });
+        }
+    }
+
     window.addEventListener('popstate', function(e) {
-        if (e.state && e.state.url) navigateToPage(e.state.url, false);
-        else window.location.reload();
+        const url = (e.state && e.state.url) ? e.state.url : window.location.href;
+        restorePjaxPage(url);
     });
 
     function bindMobileCartListeners() {

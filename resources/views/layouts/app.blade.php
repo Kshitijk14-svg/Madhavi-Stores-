@@ -130,23 +130,61 @@
     }
 
     // --- PJAX Navigation Engine ---
+    // Manual scroll restoration so back/forward returns to the prior position.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    let currentPjaxUrl = window.location.href;
+    const pjaxScrollPositions = {};
+    const pjaxPageCache = {};
+    history.replaceState({ url: currentPjaxUrl }, document.title, currentPjaxUrl);
+
+    // Keep the active page's scroll position fresh — popstate fires *after* the
+    // URL changes, so it cannot be read reliably at that point.
+    let pjaxScrollTimer = null;
+    window.addEventListener('scroll', function() {
+        if (pjaxScrollTimer) return;
+        pjaxScrollTimer = setTimeout(() => {
+            pjaxScrollPositions[currentPjaxUrl] = window.scrollY;
+            pjaxScrollTimer = null;
+        }, 100);
+    }, { passive: true });
+
     document.addEventListener('click', function(e) {
         const link = e.target.closest('a');
         if (!link) return;
-        
+
         // Only intercept same-origin, non-hash, standard links
         if (link.href && link.origin === window.location.origin && !link.hash && !link.getAttribute('target') && !link.classList.contains('no-pjax')) {
             const url = link.href;
-            
+
             // Bypass special actions
             if (url.includes('/logout') || url.includes('/invoice') || url.includes('/admin/orders/invoice')) {
                 return;
             }
-            
+
             e.preventDefault();
             navigateToPage(url);
         }
     });
+
+    // Swap #main content and re-run inline page scripts.
+    function applyPjaxContent(html, sourceUrl) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        document.title = doc.title;
+        const newMainContent = doc.getElementById('main');
+        const currentMain = document.getElementById('main');
+        if (!newMainContent || !currentMain) return false;
+        currentMain.innerHTML = newMainContent.innerHTML;
+        currentMain.querySelectorAll('script').forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.textContent = oldScript.textContent;
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+        updateActiveNavbarLinks(sourceUrl);
+        bindDynamicContentListeners();
+        return true;
+    }
 
     function navigateToPage(url, pushState = true) {
         // Create luxury top loading indicator bar if it doesn't exist
@@ -158,9 +196,14 @@
             loadingBar.style.width = '0%';
             document.body.appendChild(loadingBar);
         }
-        
+
         loadingBar.style.opacity = '1';
         loadingBar.style.width = '30%';
+
+        // Remember the page we are leaving (scroll + markup) for instant back nav.
+        pjaxScrollPositions[currentPjaxUrl] = window.scrollY;
+        const leavingMain = document.getElementById('main');
+        if (leavingMain) pjaxPageCache[currentPjaxUrl] = leavingMain.innerHTML;
 
         // Smoothly exit content via GSAP
         gsap.to('#main', {
@@ -170,7 +213,7 @@
             ease: 'power2.out',
             onComplete: () => {
                 loadingBar.style.width = '70%';
-                
+
                 fetch(url)
                     .then(response => {
                         if (!response.ok) throw new Error('Network error');
@@ -178,52 +221,31 @@
                     })
                     .then(html => {
                         loadingBar.style.width = '100%';
-                        
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        
-                        // Update title
-                        document.title = doc.title;
-                        
-                        // Swap main container content
-                        const newMainContent = doc.getElementById('main');
-                        const currentMain = document.getElementById('main');
-                        if (newMainContent && currentMain) {
-                            currentMain.innerHTML = newMainContent.innerHTML;
-                            
-                            // Extract and run script tags inside the swapped container
-                            const scripts = currentMain.querySelectorAll('script');
-                            scripts.forEach(oldScript => {
-                                const newScript = document.createElement('script');
-                                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                                newScript.textContent = oldScript.textContent;
-                                oldScript.parentNode.replaceChild(newScript, oldScript);
-                            });
-                        } else {
+
+                        // Swap main container content (+ scripts, nav, listeners)
+                        if (!applyPjaxContent(html, url)) {
                             // Fallback for non-PJAX target pages (e.g. auth layout pages)
                             window.location.href = url;
                             return;
                         }
-                        
-                        if (pushState) {
-                            history.pushState({ url: url }, doc.title, url);
-                        }
-                        
-                        // Re-initialize active navigation link styling
-                        updateActiveNavbarLinks(url);
-                        
-                        // Re-bind all dynamic elements and form intercepts
-                        bindDynamicContentListeners();
+                        pjaxPageCache[url] = document.getElementById('main').innerHTML;
 
-                        // Scroll back to top smoothly
+                        if (pushState) {
+                            history.pushState({ url: url }, document.title, url);
+                        }
+                        currentPjaxUrl = url;
+
+                        // Scroll back to top
                         window.scrollTo({ top: 0, behavior: 'instant' });
-                        
-                        // Fade dynamic content back in
-                        gsap.fromTo('#main', 
+
+                        // Fade dynamic content back in. clearProps:'transform' prevents
+                        // GSAP from leaving an inline transform on #main, which would
+                        // break position:fixed descendants (product bar, drawers).
+                        gsap.fromTo('#main',
                             { opacity: 0, y: -8 },
-                            { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', onComplete: () => { if(typeof setViewport === 'function') setViewport(); } }
+                            { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'transform', onComplete: () => { if(typeof setViewport === 'function') setViewport(); } }
                         );
-                        
+
                         // Dismiss loader
                         setTimeout(() => {
                             loadingBar.style.opacity = '0';
@@ -238,12 +260,37 @@
         });
     }
 
-    window.addEventListener('popstate', function(e) {
-        if (e.state && e.state.url) {
-            navigateToPage(e.state.url, false);
+    // Back / forward: restore from cache instantly (no fade) and recover scroll.
+    function restorePjaxPage(url) {
+        const targetScroll = pjaxScrollPositions[url] || 0;
+        const cached = pjaxPageCache[url];
+        currentPjaxUrl = url;
+
+        const finish = () => {
+            gsap.set('#main', { clearProps: 'transform', opacity: 1, y: 0 });
+            if (typeof setViewport === 'function') setViewport();
+            window.scrollTo({ top: targetScroll, behavior: 'instant' });
+            requestAnimationFrame(() => window.scrollTo({ top: targetScroll, behavior: 'instant' }));
+        };
+
+        if (cached) {
+            if (!applyPjaxContent(cached, url)) { window.location.href = url; return; }
+            finish();
         } else {
-            window.location.reload();
+            fetch(url)
+                .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+                .then(html => {
+                    if (!applyPjaxContent(html, url)) { window.location.href = url; return; }
+                    pjaxPageCache[url] = document.getElementById('main').innerHTML;
+                    finish();
+                })
+                .catch(() => { window.location.href = url; });
         }
+    }
+
+    window.addEventListener('popstate', function(e) {
+        const url = (e.state && e.state.url) ? e.state.url : window.location.href;
+        restorePjaxPage(url);
     });
 
     function updateActiveNavbarLinks(currentUrl) {
