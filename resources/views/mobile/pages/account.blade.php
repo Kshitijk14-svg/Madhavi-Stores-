@@ -187,17 +187,17 @@
 
       {{-- Bottom sheet --}}
       <div id="order-sheet"
-           style="display:none;position:fixed;bottom:0;left:0;right:0;max-height:85vh;
+           style="display:none;flex-direction:column;position:fixed;bottom:0;left:0;right:0;max-height:85vh;
                   background:#fff;z-index:61;
-                  transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);
-                  overflow-y:auto;padding-bottom:env(safe-area-inset-bottom);">
-        <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100 sticky top-0 bg-white">
+                  transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);">
+        <div style="flex-shrink:0;" class="flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white">
           <p id="order-sheet-title" class="text-xs font-bold font-mono text-primary"></p>
           <button onclick="closeOrderSheet()"
                   class="w-8 h-8 flex items-center justify-center text-gray-400 text-xl leading-none"
                   style="font-size:1.4rem;line-height:1;">×</button>
         </div>
-        <div id="order-sheet-body" class="px-4 py-4"></div>
+        <div id="order-sheet-body" class="px-4 py-4"
+             style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(16px,env(safe-area-inset-bottom));"></div>
       </div>
     @endif
   </div>
@@ -283,7 +283,7 @@
     document.getElementById('order-sheet-title').textContent = orderNum;
     const sheet    = document.getElementById('order-sheet');
     const backdrop = document.getElementById('order-sheet-backdrop');
-    sheet.style.display    = 'block';
+    sheet.style.display    = 'flex';
     backdrop.style.display = 'block';
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
