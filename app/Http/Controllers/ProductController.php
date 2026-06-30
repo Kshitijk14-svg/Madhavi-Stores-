@@ -141,6 +141,48 @@ class ProductController extends Controller
         return view('pages.shop', compact('products', 'categories', 'allTags', 'filterCounts'));
     }
 
+    /**
+     * Live search autocomplete. Returns a small JSON list of matching products
+     * using the same matching rules as index()'s search filter.
+     */
+    public function suggestions(Request $request)
+    {
+        $search = trim((string) $request->input('q', ''));
+
+        // Don't run a query for trivially short terms — keeps it cheap and avoids
+        // matching almost everything on a single character.
+        if (mb_strlen($search) < 2) {
+            return response()->json([]);
+        }
+
+        $products = Product::query()
+            ->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('seo_keywords', 'like', "%{$search}%")
+                  ->orWhereJsonContains('tags', $search);
+
+                if (is_numeric($search)) {
+                    $q->orWhere('id', $search);
+                }
+            })
+            ->latest()
+            ->take(6)
+            ->get();
+
+        $suggestions = $products->map(function (Product $product) {
+            return [
+                'id'    => $product->id,
+                'name'  => $product->name,
+                'slug'  => $product->slug,
+                'price' => $product->final_price,
+                'image' => $product->thumb_url,
+                'url'   => route('product.show', $product->slug),
+            ];
+        });
+
+        return response()->json($suggestions);
+    }
+
     public function show($slug)
     {
         $product = Product::with(['sizes', 'reviews.user', 'category'])->where('slug', $slug)->firstOrFail();

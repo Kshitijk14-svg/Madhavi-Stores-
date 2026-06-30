@@ -27,7 +27,7 @@
             @foreach($collections as $collection)
                 <a href="{{ route('shop', ['category' => $collection->slug]) }}" class="group block relative overflow-hidden bg-gray-50 aspect-[4/5]">
                     @if($collection->image_url)
-                        <img src="{{ asset('storage/' . $collection->image_url) }}" alt="{{ $collection->name }}" 
+                        <img src="{{ $collection->image_url }}" alt="{{ $collection->name }}"
                              loading="lazy"
                              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
                     @else

@@ -15,6 +15,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 
 // Collection and Products
 Route::get('/shop', [ProductController::class, 'index'])->name('shop');
+// Live search autocomplete (JSON) — public, throttled to curb scraping.
+Route::get('/search/suggestions', [ProductController::class, 'suggestions'])->middleware('throttle:60,1')->name('search.suggestions');
 Route::get('/collections', [ProductController::class, 'collections'])->name('collections.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 

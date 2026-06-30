@@ -313,6 +313,11 @@
     document.getElementById('filter-back').classList.remove('open');
     document.getElementById('filter-panel').classList.remove('open');
   });
+
+  // Remember the active search so it shows under "Recent" in the search drawer.
+  @if(request('search'))
+    if (window.MadhaviSearch) window.MadhaviSearch.pushHistory(@js(request('search')));
+  @endif
 </script>
 
 @endsection

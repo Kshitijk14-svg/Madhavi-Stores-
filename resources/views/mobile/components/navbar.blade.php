@@ -7,7 +7,7 @@
       </a>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
-      <a href="{{ route('shop') }}?search=open" aria-label="Search" style="color:var(--primary);display:flex;align-items:center;">
+      <a href="{{ route('shop') }}#search" aria-label="Search" style="color:var(--primary);display:flex;align-items:center;">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
       </a>
       <button id="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu" style="color:var(--primary);display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:none;border:none;cursor:pointer;padding:0;">

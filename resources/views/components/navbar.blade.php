@@ -64,6 +64,7 @@
       <button id="search-close" type="button" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
+      <div id="search-suggest" class="ss-box"></div>
     </form>
     <div style="margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <span class="eyebrow">Trending:</span>
@@ -136,6 +137,15 @@
   document.getElementById('open-search')?.addEventListener('click', function(){ toggleDrawer(sb,sbox,true); setTimeout(function(){ document.getElementById('search-input')?.focus(); },350); });
   document.getElementById('search-close')?.addEventListener('click', function(){ toggleDrawer(sb,sbox,false); });
   sb?.addEventListener('click', function(){ toggleDrawer(sb,sbox,false); });
+
+  // Live suggestions + recent-search history on the search drawer.
+  if (window.MadhaviSearch) {
+    window.MadhaviSearch.attach(
+      document.getElementById('search-input'),
+      document.getElementById('search-suggest'),
+      { url: '{{ route('search.suggestions') }}', shopBase: '{{ route('shop') }}' }
+    );
+  }
 
   // Mobile menu
   var mb = document.getElementById('mob-back'), mp = document.getElementById('mob-panel');

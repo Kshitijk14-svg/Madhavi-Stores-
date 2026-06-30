@@ -144,7 +144,9 @@
         }
         window.open('https://wa.me/?text=' + encodeURIComponent((title ? title + ' — ' : '') + absUrl), '_blank');
     }
-
+    </script>
+    @include('components.search-suggest-script')
+    <script>
     // --- PJAX Navigation Engine ---
     // Manual scroll restoration so back/forward returns to the prior position.
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';

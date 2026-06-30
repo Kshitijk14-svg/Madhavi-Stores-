@@ -19,20 +19,6 @@
     @if(count($galleryImages) > 1)
     <div class="swiper-pagination" style="bottom:10px;"></div>
     @endif
-    {{-- Wishlist + Share (stacked, bottom-right of gallery) --}}
-    <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-2">
-      <form method="POST" action="{{ route('wishlist.toggle', $product->id) }}">
-        @csrf
-        <button type="submit" aria-label="Add to wishlist" class="w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-sm shadow-md rounded-full">
-          <svg width="18" height="18" fill="{{ in_array($product->id, $wishlistIds ?? []) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" class="{{ in_array($product->id, $wishlistIds ?? []) ? 'text-red-500' : 'text-primary' }}"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
-        </button>
-      </form>
-      <button type="button" aria-label="Share product"
-              onclick="shareProduct('{{ route('product.show', $product->slug) }}', @js($product->name))"
-              class="w-10 h-10 flex items-center justify-center bg-white/90 backdrop-blur-sm shadow-md rounded-full text-primary">
-        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
-      </button>
-    </div>
   </div>
 
   {{-- Product Info --}}
@@ -65,6 +51,25 @@
         <span class="text-[11px] text-gray-500 ml-1">{{ number_format($product->rating, 1) }} ({{ $product->review_count }})</span>
       </div>
     @endif
+
+    {{-- Wishlist + Share (labeled action row) --}}
+    @php $isWished = in_array($product->id, $wishlistIds ?? []); @endphp
+    <div class="flex items-center gap-3 mt-1">
+      <form method="POST" action="{{ route('wishlist.toggle', $product->id) }}" class="flex-1">
+        @csrf
+        <button type="submit" aria-label="{{ $isWished ? 'Remove from wishlist' : 'Add to wishlist' }}"
+                class="w-full flex items-center justify-center gap-2 border border-gray-200 py-2.5 text-[11px] font-bold tracking-wider uppercase {{ $isWished ? 'text-red-500 border-red-200' : 'text-primary' }}">
+          <svg width="15" height="15" fill="{{ $isWished ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+          {{ $isWished ? 'Wishlisted' : 'Wishlist' }}
+        </button>
+      </form>
+      <button type="button" aria-label="Share product"
+              onclick="shareProduct('{{ route('product.show', $product->slug) }}', @js($product->name))"
+              class="flex-1 flex items-center justify-center gap-2 border border-gray-200 py-2.5 text-[11px] font-bold tracking-wider uppercase text-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
+        Share
+      </button>
+    </div>
   </div>
 
   {{-- Description --}}
@@ -76,7 +81,7 @@
 
   {{-- Product Details --}}
   @if(!empty($product->details) && count($product->details) > 0)
-  <details class="border-b border-gray-100">
+  <details class="border-b border-gray-100" open>
     <summary class="flex items-center justify-between px-4 py-4 cursor-pointer list-none" style="min-height:52px;">
       <span class="text-xs font-bold tracking-wider uppercase">Product Details</span>
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="text-gray-400"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>

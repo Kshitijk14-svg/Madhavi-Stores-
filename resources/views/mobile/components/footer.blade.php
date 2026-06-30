@@ -17,6 +17,13 @@
     <a href="https://wa.me/918799998770" target="_blank" rel="noopener" style="font-size:13px;color:rgba(255,255,255,0.5);text-decoration:none;">Chat on WhatsApp</a>
   </div>
 
+  {{-- Explore (mirror navbar pages) --}}
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px 20px;margin-bottom:28px;">
+    @foreach([['Home',route('home')],['Shop',route('shop')],['Collections',route('collections.index')],['Our Story',route('about')]] as [$l,$h])
+      <a href="{{ $h }}" style="font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.6);text-decoration:none;">{{ $l }}</a>
+    @endforeach
+  </div>
+
   {{-- Social --}}
   <div style="display:flex;justify-content:center;gap:24px;margin-bottom:28px;">
     @foreach([['Instagram','https://instagram.com/madhavistores'],['WhatsApp','https://wa.me/918799998770'],['YouTube','https://youtube.com']] as [$social, $url])

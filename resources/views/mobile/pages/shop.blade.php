@@ -5,13 +5,14 @@
 <div class="pb-24">
 
   {{-- Search bar --}}
-  <form method="GET" action="{{ route('shop') }}" class="px-4 py-3 border-b border-gray-100 flex gap-2">
+  <form method="GET" action="{{ route('shop') }}" class="px-4 py-3 border-b border-gray-100 flex gap-2" style="position:relative;">
     <input type="text" name="search" value="{{ request('search') }}" placeholder="Search products..."
            class="flex-1 border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-primary rounded-none"
-           id="mob-search-input">
+           id="mob-search-input" autocomplete="off">
     <button type="submit" class="px-4 bg-primary text-white flex items-center justify-center" style="min-height:44px;">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
     </button>
+    <div id="mob-search-suggest" class="ss-box" style="left:16px;right:16px;"></div>
   </form>
 
   {{-- Active Filters Summary --}}
@@ -216,5 +217,35 @@
     </form>
   </div>
 </div>
+
+<script>
+  // Live suggestions + recent-search history on the mobile search bar.
+  // Runs on first load and on every PJAX swap (this <script> lives inside #main).
+  (function(){
+    if (window.MadhaviSearch) {
+      window.MadhaviSearch.attach(
+        document.getElementById('mob-search-input'),
+        document.getElementById('mob-search-suggest'),
+        { url: '{{ route('search.suggestions') }}', shopBase: '{{ route('shop') }}' }
+      );
+    }
+    // The navbar search icon links to /shop#search — focus the box without a stale term.
+    function focusSearchFromHash(){
+      if (location.hash === '#search') {
+        var mi = document.getElementById('mob-search-input');
+        if (mi) mi.focus();
+      }
+    }
+    focusSearchFromHash();
+    // Handle tapping the search icon while already on /shop (hash change, no reload).
+    if (!window._msHashBound) {
+      window._msHashBound = true;
+      window.addEventListener('hashchange', focusSearchFromHash);
+    }
+    @if(request('search'))
+      if (window.MadhaviSearch) window.MadhaviSearch.pushHistory(@js(request('search')));
+    @endif
+  })();
+</script>
 
 @endsection
