@@ -190,7 +190,6 @@
 
 @section('scripts')
 <script>
-  // Slide the gallery image-number caption when the active slide changes.
   let _galleryCounterPrev = 1;
   function updateGalleryCounter(n) {
     const el = document.getElementById('gallery-counter-current');
@@ -199,27 +198,42 @@
     _galleryCounterPrev = n;
     el.textContent = n;
     el.classList.remove('enter-up', 'enter-down');
-    void el.offsetWidth; // restart the animation
+    void el.offsetWidth;
     el.classList.add(cls);
   }
 
   function initPgSwiper() {
     const root = document.querySelector('.product-gallery-swiper');
     if (!root) return;
+    // Destroy existing instance before recreating (safe for PJAX re-entries)
+    if (window.__pgSwiper) {
+      try { window.__pgSwiper.destroy(true, true); } catch(e) {}
+      window.__pgSwiper = null;
+    }
     _galleryCounterPrev = 1;
     const multi = root.querySelectorAll('.swiper-slide').length > 1;
-    new Swiper('.product-gallery-swiper', {
+    window.__pgSwiper = new Swiper('.product-gallery-swiper', {
       loop: multi,
       pagination: { el: '.product-gallery-swiper .swiper-pagination', clickable: true },
       touchRatio: 1,
-      on: {
-        slideChange: function () { updateGalleryCounter(this.realIndex + 1); },
-      },
+      on: { slideChange: function() { updateGalleryCounter(this.realIndex + 1); } }
     });
   }
 
-  initPgSwiper();
+  // Deduplicate the pjax:success listener across PJAX re-executions of this script
+  if (window.__pgSwiperPjaxBound) {
+    document.removeEventListener('pjax:success', window.__pgSwiperPjaxBound);
+  }
+  window.__pgSwiperPjaxBound = initPgSwiper;
   document.addEventListener('pjax:success', initPgSwiper);
+
+  // On first full-page load swiper-bundle.min.js loads AFTER this inline script
+  // (it's in the layout body, below </main>). Defer to window load in that case.
+  if (typeof Swiper !== 'undefined') {
+    initPgSwiper();
+  } else {
+    window.addEventListener('load', initPgSwiper, {once: true});
+  }
 </script>
 @endsection
 @endsection
