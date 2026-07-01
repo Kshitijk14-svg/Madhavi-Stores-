@@ -89,6 +89,28 @@ class OtpFlowTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_correct_otp_succeeds_after_a_prior_wrong_attempt(): void
+    {
+        Mail::fake();
+
+        $this->post('/register', [
+            'name'                  => 'Alice',
+            'email'                 => 'alice@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $this->post('/verify-email', ['otp' => '000000'])
+            ->assertSessionHasErrors('otp');
+
+        $this->post('/verify-email', ['otp' => $this->lastSentOtp()])
+            ->assertRedirect();
+
+        $user = User::where('email', 'alice@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_expired_otp_is_rejected(): void
     {
         Mail::fake();
