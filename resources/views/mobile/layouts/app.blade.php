@@ -31,7 +31,7 @@
       let bottomPadding = 0;
       // Measure any fixed bottom bar present on this page (product bar or checkout bar)
       // and add its height as body padding so the footer is never hidden behind it.
-      ['mob-product-bar', 'mob-checkout-bar'].forEach(function(id) {
+      ['mob-checkout-bar'].forEach(function(id) {
         const bar = document.getElementById(id);
         if (bar && window.getComputedStyle(bar).display !== 'none' && window.getComputedStyle(bar).position === 'fixed') {
           bottomPadding = Math.max(bottomPadding, bar.offsetHeight);

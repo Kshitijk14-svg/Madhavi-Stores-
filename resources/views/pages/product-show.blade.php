@@ -153,21 +153,10 @@
                     </div>
                     @endif
 
-                    <!-- Actions -->
-                    <div id="mob-product-bar" class="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md shadow-[0_-8px_30px_rgb(0,0,0,0.08)] z-50 flex gap-3 pb-[calc(16px+env(safe-area-inset-bottom))] lg:static lg:p-0 lg:bg-transparent lg:shadow-none lg:flex-col lg:gap-4 lg:mb-12">
-                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form" class="flex-1">
-                            @csrf
-                            <input type="hidden" name="product_id" value="{{ $product->id }}">
-                            <input type="hidden" name="quantity" value="1">
-                            @if($product->has_sizes)
-                                <input type="hidden" name="size" id="selected-size" value="">
-                            @endif
-                            <button type="submit" class="btn-primary w-full h-full min-h-[50px] lg:min-h-[60px]" style="text-align:center; {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity:0.5;cursor:not-allowed;' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
-                                Add to Bag
-                            </button>
-                        </form>
-                    </div>
-
+                    <!-- Actions + Wishlist/Share: mobile shows them in DOM order (Wishlist
+                         then Actions); lg:flex-col-reverse restores the original desktop
+                         order (Actions above Wishlist) without touching the DOM. -->
+                    <div class="flex flex-col lg:flex-col-reverse">
                     <!-- Wishlist + Share (labeled action row) -->
                     @php $isWished = in_array($product->id, $wishlistIds); @endphp
                     <div style="display:flex;gap:12px;margin-bottom:40px;">
@@ -185,6 +174,22 @@
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
                             Share
                         </button>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 mb-10 lg:mb-12">
+                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form" class="flex-1">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <input type="hidden" name="quantity" value="1">
+                            @if($product->has_sizes)
+                                <input type="hidden" name="size" id="selected-size" value="">
+                            @endif
+                            <button type="submit" class="btn-primary w-full h-full min-h-[50px] lg:min-h-[60px]" style="text-align:center; {{ !$product->has_sizes && $product->stock <= 0 ? 'opacity:0.5;cursor:not-allowed;' : '' }}" {{ !$product->has_sizes && $product->stock <= 0 ? 'disabled' : '' }}>
+                                Add to Bag
+                            </button>
+                        </form>
+                    </div>
                     </div>
 
                     <!-- Product Details List -->

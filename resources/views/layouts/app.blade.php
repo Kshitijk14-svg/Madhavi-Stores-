@@ -55,12 +55,9 @@
       const main = document.getElementById('main');
       if (main && window.innerWidth < 1024) {
         const bottomBar = document.getElementById('mob-bottom-bar');
-        const productBar = document.getElementById('mob-product-bar');
-        
+
         let bottomPadding = 0;
-        if (productBar && window.getComputedStyle(productBar).display !== 'none' && window.getComputedStyle(productBar).position === 'fixed') {
-          bottomPadding = productBar.offsetHeight;
-        } else if (bottomBar && window.getComputedStyle(bottomBar).display !== 'none') {
+        if (bottomBar && window.getComputedStyle(bottomBar).display !== 'none') {
           bottomPadding = bottomBar.offsetHeight;
         }
         

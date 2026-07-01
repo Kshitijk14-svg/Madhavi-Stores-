@@ -119,7 +119,7 @@
 
     @if($section['id'] === 'new_arrivals')
       {{-- ═══ 4. NEW ARRIVALS SLIDER ═══ --}}
-      <section style="padding:56px 0;background:#fff;">
+      <section style="padding:56px 0;background:var(--background);">
         <div class="wrap">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
             <div>
@@ -194,7 +194,7 @@
 
     @if($section['id'] === 'bestsellers')
       {{-- ═══ 6. BESTSELLERS ═══ --}}
-      <section style="padding:56px 0;background:var(--silk);">
+      <section style="padding:56px 0;background:var(--background);">
         <div class="wrap">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
             <div>
@@ -269,7 +269,7 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=70',
         ]);
       @endphp
-      <section style="padding:56px 0;background:var(--silk);">
+      <section style="padding:56px 0;background:var(--background);">
         <div class="wrap">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;">
             <div>

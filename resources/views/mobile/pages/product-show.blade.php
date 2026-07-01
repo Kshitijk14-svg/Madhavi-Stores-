@@ -2,7 +2,7 @@
 @section('title', $product->seo_title ?: $product->name . ' — Madhavi Stores')
 
 @section('content')
-<div class="pb-32">
+<div class="pb-24">
 
   <style>
     .gallery-counter{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:13px;letter-spacing:0.18em;font-variant-numeric:tabular-nums;}
@@ -82,6 +82,41 @@
     </div>
   </div>
 
+  {{-- Size Selection + Add to Bag (directly below wishlist/share) --}}
+  <div class="px-4 pb-4">
+    <form method="POST" action="{{ route('cart.add') }}" id="mob-atc-form">
+      @csrf
+      <input type="hidden" name="product_id" value="{{ $product->id }}">
+      <input type="hidden" name="quantity" value="1">
+      @if($product->has_sizes)
+      <div class="mb-2">
+        <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
+          @foreach($product->sizes->where('stock', '>', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
+            <label class="shrink-0 cursor-pointer">
+              <input type="radio" name="size" value="{{ $size->size }}" class="sr-only peer" required>
+              <span class="inline-flex items-center justify-center w-10 h-10 border border-gray-200 text-xs font-bold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-colors">{{ $size->size }}</span>
+            </label>
+          @endforeach
+          @foreach($product->sizes->where('stock', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
+            <span class="shrink-0 inline-flex items-center justify-center w-10 h-10 border border-gray-100 text-xs font-bold text-gray-300 line-through cursor-not-allowed">{{ $size->size }}</span>
+          @endforeach
+        </div>
+      </div>
+      @endif
+      <div class="flex gap-2">
+        <a href="{{ route('cart') }}"
+           class="flex-shrink-0 w-12 h-12 flex items-center justify-center border border-gray-200 text-primary">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+        </a>
+        @if($product->stock > 0 || ($product->has_sizes && $product->sizes->sum('stock') > 0))
+          <button type="submit" class="flex-1 bg-primary text-white text-xs font-bold tracking-widest uppercase h-12">Add to Bag</button>
+        @else
+          <button type="button" disabled class="flex-1 bg-gray-200 text-gray-400 text-xs font-bold tracking-widest uppercase h-12 cursor-not-allowed">Out of Stock</button>
+        @endif
+      </div>
+    </form>
+  </div>
+
   {{-- Description --}}
   @if($product->description)
   <div class="px-4 pb-4 border-b border-gray-100">
@@ -150,42 +185,6 @@
   </div>
   @endif
 
-</div>
-
-{{-- Sticky Bottom CTA (product bar — hidden by bottom-bar for non-product pages) --}}
-<div id="mob-product-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 px-4 py-3"
-     style="padding-bottom:env(safe-area-inset-bottom);">
-  <form method="POST" action="{{ route('cart.add') }}" id="mob-atc-form">
-    @csrf
-    <input type="hidden" name="product_id" value="{{ $product->id }}">
-    <input type="hidden" name="quantity" value="1">
-    @if($product->has_sizes)
-    <div class="mb-2">
-      <div class="flex gap-1.5 overflow-x-auto hide-scrollbar pb-1">
-        @foreach($product->sizes->where('stock', '>', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
-          <label class="shrink-0 cursor-pointer">
-            <input type="radio" name="size" value="{{ $size->size }}" class="sr-only peer" required>
-            <span class="inline-flex items-center justify-center w-10 h-10 border border-gray-200 text-xs font-bold peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-colors">{{ $size->size }}</span>
-          </label>
-        @endforeach
-        @foreach($product->sizes->where('stock', 0)->whereNotIn('size', ['XS', 'XXXL']) as $size)
-          <span class="shrink-0 inline-flex items-center justify-center w-10 h-10 border border-gray-100 text-xs font-bold text-gray-300 line-through cursor-not-allowed">{{ $size->size }}</span>
-        @endforeach
-      </div>
-    </div>
-    @endif
-    <div class="flex gap-2">
-      <a href="{{ route('cart') }}"
-         class="flex-shrink-0 w-12 h-12 flex items-center justify-center border border-gray-200 text-primary">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
-      </a>
-      @if($product->stock > 0 || ($product->has_sizes && $product->sizes->sum('stock') > 0))
-        <button type="submit" class="flex-1 bg-primary text-white text-xs font-bold tracking-widest uppercase h-12">Add to Bag</button>
-      @else
-        <button type="button" disabled class="flex-1 bg-gray-200 text-gray-400 text-xs font-bold tracking-widest uppercase h-12 cursor-not-allowed">Out of Stock</button>
-      @endif
-    </div>
-  </form>
 </div>
 
 @section('scripts')

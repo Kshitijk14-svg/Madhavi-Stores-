@@ -103,7 +103,7 @@
 
     @if($section['id'] === 'new_arrivals')
       {{-- ═══ 4. MOBILE NEW ARRIVALS ═══ --}}
-      <section style="padding:32px 0 16px;background:#fff;">
+      <section style="padding:32px 0 16px;background:var(--background);">
         <div class="flex items-end justify-between px-4 mb-6">
           <div>
             <p class="eyebrow" style="margin-bottom:4px;">Fresh In</p>
@@ -159,7 +159,7 @@
 
     @if($section['id'] === 'bestsellers')
       {{-- ═══ 6. MOBILE BESTSELLERS ═══ --}}
-      <section style="padding:32px 0 16px;background:#fff;">
+      <section style="padding:32px 0 16px;background:var(--background);">
         <div class="flex items-end justify-between px-4 mb-6">
           <div>
             <p class="eyebrow" style="margin-bottom:4px;">Most Loved</p>
@@ -211,7 +211,7 @@
           'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&q=60',
         ]);
       @endphp
-      <section style="padding:36px 0;background:#fff;">
+      <section style="padding:36px 0;background:var(--background);">
         <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px;margin-bottom:20px;">
           <div>
             <p class="eyebrow" style="margin-bottom:4px;">@madhavi_stores</p>
