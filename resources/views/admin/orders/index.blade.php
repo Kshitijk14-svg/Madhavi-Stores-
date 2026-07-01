@@ -221,6 +221,7 @@
                                             <div class="text-xs space-y-1.5 text-muted">
                                                 <div class="font-semibold text-primary">{{ $order->first_name }} {{ $order->last_name }}</div>
                                                 <div>{{ $order->email }}</div>
+                                                <div>{{ $order->phone ? '+91 ' . $order->phone : '—' }}</div>
                                                 <div class="pt-1.5 border-t border-gray-100/60 mt-1.5">{{ $order->address }}</div>
                                                 <div>{{ $order->city }} — {{ $order->postal_code }}</div>
                                                 <div class="pt-2 text-primary font-semibold mt-1">Method: {{ $order->payment_method }}</div>

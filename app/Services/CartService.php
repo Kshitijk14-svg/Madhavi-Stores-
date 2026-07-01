@@ -171,6 +171,7 @@ class CartService
                 'user_id'             => $user->id,
                 'order_number'        => $orderNumber,
                 'email'               => $customer['email'],
+                'phone'               => $customer['phone'] ?? null,
                 'first_name'          => $customer['first_name'],
                 'last_name'           => $customer['last_name'],
                 'address'             => $customer['address'],

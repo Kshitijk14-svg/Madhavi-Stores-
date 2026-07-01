@@ -59,6 +59,13 @@
       <input type="email" name="email" required class="w-full border border-gray-200 px-3 py-3 text-sm outline-none focus:border-primary">
     </div>
     <div>
+      <label class="text-[10px] font-bold tracking-wider uppercase text-gray-500 block mb-1">Mobile Number *</label>
+      <div class="flex">
+        <span class="flex items-center px-3 border border-r-0 border-gray-200 text-sm text-gray-500">+91</span>
+        <input type="tel" name="phone" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number" required class="w-full border border-gray-200 px-3 py-3 text-sm outline-none focus:border-primary">
+      </div>
+    </div>
+    <div>
       <label class="text-[10px] font-bold tracking-wider uppercase text-gray-500 block mb-1">Address *</label>
       <textarea name="address" required rows="2" class="w-full border border-gray-200 px-3 py-3 text-sm outline-none focus:border-primary resize-none"></textarea>
     </div>
@@ -150,7 +157,7 @@ function placeOrder() {
           if (v.redirect) window.location.href = v.redirect;
         });
       },
-      prefill: { name: res.customer?.name, email: res.customer?.email },
+      prefill: { name: res.customer?.name, email: res.customer?.email, contact: res.customer?.phone },
       theme: { color: '#1a1a1a' }
     };
     new Razorpay(options).open();

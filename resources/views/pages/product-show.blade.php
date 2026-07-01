@@ -177,8 +177,8 @@
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex gap-3 mb-10 lg:mb-12">
-                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form" class="flex-1">
+                    <div class="flex flex-col gap-3 mb-10 lg:mb-12">
+                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-bag-form">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="quantity" value="1">
@@ -189,6 +189,7 @@
                                 Add to Bag
                             </button>
                         </form>
+                        <a href="{{ route('cart') }}" class="btn-secondary w-full h-full min-h-[50px] lg:min-h-[60px]" style="text-align:center;">View Bag</a>
                     </div>
                     </div>
 

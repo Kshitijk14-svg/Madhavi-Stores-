@@ -42,6 +42,7 @@ class CheckoutController extends Controller
             'first_name'     => 'required|string|max:100',
             'last_name'      => 'required|string|max:100',
             'email'          => 'required|email|max:255',
+            'phone'          => ['required', 'digits:10', 'regex:/^[6-9]\d{9}$/'],
             'address'        => 'required|string',
             'city'           => 'required|string|max:100',
             'postal_code'    => 'required|string|max:20',
@@ -49,7 +50,7 @@ class CheckoutController extends Controller
 
         $user     = Auth::user();
         $summary  = $this->cart->getSummary(CartOwner::forUser($user));
-        $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
+        $customer = $request->only(['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code']);
 
         // The actual method (Card/UPI/NetBanking/Wallet) is chosen inside the
         // Razorpay modal; we record a single generic method server-side rather
@@ -86,6 +87,7 @@ class CheckoutController extends Controller
                 'customer'          => [
                     'name'  => $request->first_name . ' ' . $request->last_name,
                     'email' => $request->email,
+                    'phone' => $request->phone,
                 ],
             ]);
         }
@@ -118,6 +120,7 @@ class CheckoutController extends Controller
                 'customer'          => [
                     'name'  => $request->first_name . ' ' . $request->last_name,
                     'email' => $request->email,
+                    'phone' => $request->phone,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -135,6 +138,7 @@ class CheckoutController extends Controller
             'first_name'          => 'required|string|max:100',
             'last_name'           => 'required|string|max:100',
             'email'               => 'required|email|max:255',
+            'phone'               => ['required', 'digits:10', 'regex:/^[6-9]\d{9}$/'],
             'address'             => 'required|string',
             'city'                => 'required|string|max:100',
             'postal_code'         => 'required|string|max:20',
@@ -190,7 +194,7 @@ class CheckoutController extends Controller
             $couponCode = session('applied_coupon');
         }
 
-        $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
+        $customer = $request->only(['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code']);
 
         try {
             $order = $this->cart->createOrder($user, $customer, 'Razorpay', [
@@ -301,6 +305,7 @@ class CheckoutController extends Controller
             'first_name'  => $notes['first_name']  ?? '',
             'last_name'   => $notes['last_name']   ?? '',
             'email'       => $notes['email']       ?? $user->email,
+            'phone'       => $notes['phone']       ?? '',
             'address'     => $notes['address']     ?? '',
             'city'        => $notes['city']        ?? '',
             'postal_code' => $notes['postal_code'] ?? '',

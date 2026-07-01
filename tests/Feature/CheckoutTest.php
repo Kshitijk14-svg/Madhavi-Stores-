@@ -21,6 +21,7 @@ class CheckoutTest extends TestCase
         'first_name'  => 'Test',
         'last_name'   => 'Buyer',
         'email'       => 'buyer@example.com',
+        'phone'       => '9876543210',
         'address'     => '1 Test St',
         'city'        => 'Mumbai',
         'postal_code' => '400001',
@@ -40,6 +41,49 @@ class CheckoutTest extends TestCase
         $this->actingAs($user)->get('/checkout')->assertOk();
     }
 
+    public function test_checkout_requires_a_phone_number(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $payload = collect($this->customer)->except('phone')->all();
+
+        $this->actingAs($user)
+            ->postJson('/checkout', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('phone');
+    }
+
+    public function test_checkout_rejects_a_non_indian_looking_phone_number(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $payload = array_merge($this->customer, ['phone' => '1234567890']); // leading digit not 6-9
+
+        $this->actingAs($user)
+            ->postJson('/checkout', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('phone');
+    }
+
+    public function test_checkout_accepts_a_valid_phone_number_and_passes_validation(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $response = $this->actingAs($user)->postJson('/checkout', $this->customer);
+
+        // No Razorpay keys configured in the test environment, so this can't
+        // reach a real/mocked gateway response — but a valid phone must get
+        // past validation (422) and fail for the unrelated "gateway not
+        // configured" reason (503) instead.
+        $response->assertStatus(503);
+    }
+
     public function test_cod_order_is_created_and_stock_decremented(): void
     {
         $user = User::factory()->create();
@@ -49,6 +93,7 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
         $order = $this->service()->createOrder($user, $this->customer, 'COD');
 
+        $this->assertEquals('9876543210', $order->phone);
         $this->assertEquals(2000, $order->total);
         $this->assertEquals('COD', $order->payment_method);
         $this->assertDatabaseHas('order_items', ['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 2]);

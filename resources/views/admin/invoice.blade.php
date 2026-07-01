@@ -196,6 +196,7 @@
             <div class="section-label">Shipped To</div>
             <p class="name">{{ $order->first_name }} {{ $order->last_name }}</p>
             <p>{{ $order->email }}</p>
+            <p>{{ $order->phone ? '+91 ' . $order->phone : '—' }}</p>
             <p>{{ $order->address }}</p>
             <p>{{ $order->city }}, {{ $order->postal_code }}</p>
         </div>

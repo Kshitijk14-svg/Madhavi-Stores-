@@ -103,16 +103,14 @@
         </div>
       </div>
       @endif
-      <div class="flex gap-2">
-        <a href="{{ route('cart') }}"
-           class="flex-shrink-0 w-12 h-12 flex items-center justify-center border border-gray-200 text-primary">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
-        </a>
+      <div class="flex flex-col gap-2">
         @if($product->stock > 0 || ($product->has_sizes && $product->sizes->sum('stock') > 0))
-          <button type="submit" class="flex-1 bg-primary text-white text-xs font-bold tracking-widest uppercase h-12">Add to Bag</button>
+          <button type="submit" class="w-full bg-primary text-white text-xs font-bold tracking-widest uppercase h-12">Add to Bag</button>
         @else
-          <button type="button" disabled class="flex-1 bg-gray-200 text-gray-400 text-xs font-bold tracking-widest uppercase h-12 cursor-not-allowed">Out of Stock</button>
+          <button type="button" disabled class="w-full bg-gray-200 text-gray-400 text-xs font-bold tracking-widest uppercase h-12 cursor-not-allowed">Out of Stock</button>
         @endif
+        <a href="{{ route('cart') }}"
+           class="w-full flex items-center justify-center border border-gray-200 text-primary text-xs font-bold tracking-widest uppercase h-12">View Bag</a>
       </div>
     </form>
   </div>

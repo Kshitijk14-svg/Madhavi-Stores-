@@ -30,6 +30,10 @@
                                 <input type="text" name="last_name" id="last_name" placeholder="Last Name" value="{{ $lastName }}" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
                             </div>
                             <input type="email" name="email" id="email" placeholder="Email Address" value="{{ $email }}" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
+                            <div class="flex">
+                                <span class="flex items-center px-4 border border-r-0 border-primary/10 text-sm text-muted">+91</span>
+                                <input type="tel" name="phone" id="phone" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
+                            </div>
                             <input type="text" name="address" id="address" placeholder="Address" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
                             <div class="grid grid-cols-2 gap-4">
                                 <input type="text" name="city" id="city" placeholder="City" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
@@ -127,7 +131,7 @@
                 const originalText = submitBtn.innerHTML;
                 
                 // Form validation check
-                const fields = ['first_name', 'last_name', 'email', 'address', 'city', 'postal_code'];
+                const fields = ['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code'];
                 let hasError = false;
                 fields.forEach(field => {
                     const input = document.getElementById(field);
@@ -210,6 +214,7 @@
                         "prefill": {
                             "name": rzpData.customer.name,
                             "email": rzpData.customer.email,
+                            "contact": rzpData.customer.phone,
                         },
                         "theme": {
                             "color": "#181818"
