@@ -4,7 +4,7 @@
 @section('content')
 
 {{-- PAGE BANNER --}}
-<div class="bg-silk border-b border-gray-100 py-5">
+<div class="bg-background border-b border-gray-100 py-5">
   <div class="wrap">
     <nav class="flex items-center gap-2 text-[10px] font-semibold tracking-widest uppercase text-muted mb-2">
       <a href="{{ route('home') }}" class="hover:text-secondary transition-colors">Home</a>

@@ -5,7 +5,7 @@
 <div class="pb-24">
 
   {{-- Header (No Image) --}}
-  <section class="py-12 bg-gray-50 text-center border-b border-gray-100">
+  <section class="py-12 bg-background text-center border-b border-gray-100">
     <div class="px-6">
       <p class="eyebrow" style="color:var(--secondary);margin-bottom:8px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Our Story</p>
       <h1 style="font-family:'Cormorant Garamond',serif;font-size:2.25rem;font-weight:300;line-height:1.2;color:var(--primary);margin-bottom:4px;">Welcome to Madhavi Stores</h1>
@@ -21,7 +21,7 @@
   </section>
 
   {{-- Collection --}}
-  <section class="bg-gray-50 px-6 py-10 border-t border-b border-gray-100">
+  <section class="bg-background px-6 py-10 border-t border-b border-gray-100">
     <div class="text-center mb-8">
       <p class="eyebrow" style="color:var(--secondary);margin-bottom:4px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;">Curated Design</p>
       <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.75rem;font-weight:300;">Our Collection</h2>

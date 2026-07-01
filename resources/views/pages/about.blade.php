@@ -6,7 +6,7 @@
 @section('content')
 
 <!-- HEADER -->
-<section class="py-20 lg:py-28 bg-silk text-center">
+<section class="py-20 lg:py-28 bg-background text-center">
     <div class="max-w-3xl mx-auto px-6">
         <span class="text-secondary text-xs tracking-widest uppercase font-bold mb-4 block">Our Story</span>
         <h1 class="font-display text-4xl lg:text-6xl font-light text-primary leading-tight">Welcome to Madhavi Stores</h1>
