@@ -3,7 +3,7 @@
 
 @section('content')
 
-<section style="padding: 64px 0; background: var(--white); min-height: 80vh;">
+<section style="padding: 64px 0; background: var(--background); min-height: 80vh;">
   <div class="wrap" style="max-width: 1000px; margin: 0 auto;">
     
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 24px;">

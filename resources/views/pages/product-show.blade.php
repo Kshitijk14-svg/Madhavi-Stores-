@@ -20,7 +20,7 @@
   @keyframes galleryCounterDown{0%{transform:translateY(-110%);opacity:0;}100%{transform:translateY(0);opacity:1;}}
 </style>
 
-<section class="py-12 lg:py-20" style="background:var(--white);">
+<section class="py-12 lg:py-20" style="background:var(--background);">
     <div class="wrap">
         <nav style="display:flex;align-items:center;gap:8px;margin-bottom:40px;">
             <a href="{{ route('home') }}" class="eyebrow" style="text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--muted)'">Home</a>
