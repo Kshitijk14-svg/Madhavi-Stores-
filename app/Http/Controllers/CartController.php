@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ResolvesCartOwner;
 use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\Order;
@@ -9,17 +10,19 @@ use App\Models\Product;
 use App\Models\ProductSize;
 use App\Services\CartService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
+    use ResolvesCartOwner;
+
     public function __construct(private CartService $cart)
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $summary = $this->cart->getSummary(Auth::user());
+        $owner   = $this->resolveOwner($request);
+        $summary = $this->cart->getSummary($owner);
 
         return view('pages.cart', [
             'cartItems' => $summary['cartItems'],
@@ -40,15 +43,14 @@ class CartController extends Controller
             'quantity'   => 'nullable|integer|min:1',
         ]);
 
-        $user      = Auth::user();
+        $owner     = $this->resolveOwner($request, creating: true);
         $productId = $request->product_id;
         $product   = Product::findOrFail($productId);
 
         $size     = $product->has_sizes ? ($request->size ?? 'M') : null;
         $quantity = $request->quantity ?? 1;
 
-        $cartItem = CartItem::where('user_id', $user->id)
-            ->where('product_id', $productId)
+        $cartItem = $owner->scope(CartItem::where('product_id', $productId))
             ->where('size', $size)
             ->first();
 
@@ -70,7 +72,7 @@ class CartController extends Controller
             $cartItem->save();
         } else {
             CartItem::create([
-                'user_id'    => $user->id,
+                ...$owner->attributes(),
                 'product_id' => $productId,
                 'size'       => $size,
                 'quantity'   => $quantity,
@@ -81,7 +83,7 @@ class CartController extends Controller
             return response()->json([
                 'success'    => true,
                 'message'    => 'Product added to your shopping bag.',
-                'cart_count' => CartItem::where('user_id', $user->id)->sum('quantity'),
+                'cart_count' => $owner->scope(CartItem::query())->sum('quantity'),
             ]);
         }
 
@@ -103,7 +105,8 @@ class CartController extends Controller
             'action'       => 'required|in:increase,decrease',
         ]);
 
-        $cartItem = CartItem::where('user_id', Auth::id())->where('id', $request->cart_item_id)->firstOrFail();
+        $owner    = $this->resolveOwner($request);
+        $cartItem = $owner->scope(CartItem::query())->where('id', $request->cart_item_id)->firstOrFail();
 
         if ($request->action === 'increase') {
             if ($cartItem->product) {
@@ -135,7 +138,7 @@ class CartController extends Controller
         }
 
         if ($request->ajax()) {
-            $summary  = $this->cart->getSummary(Auth::user());
+            $summary  = $this->cart->getSummary($owner);
             $stillIn  = $cartItem->exists;
             $lineTotal = ($stillIn && $cartItem->product)
                 ? '₹' . number_format($cartItem->product->final_price * $cartItem->quantity)
@@ -157,13 +160,14 @@ class CartController extends Controller
         return redirect()->route('cart')->with('success', 'Shopping bag updated.');
     }
 
-    public function remove($id)
+    public function remove(Request $request, $id)
     {
-        $cartItem = CartItem::where('user_id', Auth::id())->where('id', $id)->firstOrFail();
+        $owner    = $this->resolveOwner($request);
+        $cartItem = $owner->scope(CartItem::query())->where('id', $id)->firstOrFail();
         $cartItem->delete();
 
-        if (request()->ajax()) {
-            $summary = $this->cart->getSummary(Auth::user());
+        if ($request->ajax()) {
+            $summary = $this->cart->getSummary($owner);
 
             return response()->json([
                 'success'    => true,
@@ -183,7 +187,7 @@ class CartController extends Controller
     {
         $request->validate(['code' => 'required|string']);
 
-        $user   = Auth::user();
+        $owner  = $this->resolveOwner($request);
         $coupon = Coupon::where('code', $request->code)->first();
 
         if (!$coupon) {
@@ -191,12 +195,15 @@ class CartController extends Controller
         }
 
         // Compute subtotal with the same final_price logic the checkout uses.
-        $summary  = $this->cart->getSummary($user);
+        $summary  = $this->cart->getSummary($owner);
         $subtotal = $summary['subtotal'];
 
         // Validate exactly as checkout will (global + min cart + per-user limit),
-        // so a coupon accepted here is never rejected at checkout.
-        $userUsage = Order::where('user_id', $user->id)->where('coupon_code', $coupon->code)->count();
+        // so a coupon accepted here is never rejected at checkout. Guests have no
+        // Order history, so their per-user usage is always 0.
+        $userUsage = $owner->isGuest()
+            ? 0
+            : Order::where('user_id', $owner->userId)->where('coupon_code', $coupon->code)->count();
         if (!$coupon->isValidFor($subtotal, $userUsage)) {
             $msg = 'This coupon is inactive, expired, or no longer available.';
             if ($subtotal < $coupon->min_cart_value) {

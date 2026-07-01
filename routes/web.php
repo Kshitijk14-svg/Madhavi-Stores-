@@ -53,25 +53,24 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.reset.post');
 });
 
+// ── Cart & Wishlist (guests allowed; checkout still requires login) ──
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+// Coupon apply is brute-forceable for valid codes — throttle it.
+Route::post('/coupon/apply', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('coupon.apply');
+Route::post('/coupon/remove', [CartController::class, 'removeCoupon'])->name('coupon.remove');
+
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+
 // ── Authenticated Routes ───────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AuthController::class, 'account'])->name('account');
     Route::post('/account', [AuthController::class, 'updateProfile'])->name('account.update');
     Route::get('/account/orders/{id}/receipt', [AuthController::class, 'orderReceipt'])->name('account.order.receipt');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-    // Cart Operations
-    Route::get('/cart', [CartController::class, 'index'])->name('cart');
-    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-    Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-    Route::post('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
-    // Coupon apply is brute-forceable for valid codes — throttle it.
-    Route::post('/coupon/apply', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('coupon.apply');
-    Route::post('/coupon/remove', [CartController::class, 'removeCoupon'])->name('coupon.remove');
-
-    // Wishlist Operations
-    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
-    Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 
     // Checkout Operations (throttled — each store() can hit the Razorpay API)
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');

@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Mail\OtpMail;
+use App\Services\CartService;
+use App\Support\GuestCartToken;
 
 class AuthController extends Controller
 {
@@ -42,6 +44,12 @@ class AuthController extends Controller
                 return back()
                     ->withErrors(['email' => 'Please verify your email address before signing in.'])
                     ->withInput();
+            }
+
+            // Fold anything the visitor added while browsing as a guest into
+            // their real account — nothing is lost by logging in.
+            if ($guestToken = GuestCartToken::current($request)) {
+                app(CartService::class)->mergeGuestIntoUser(Auth::user(), $guestToken);
             }
 
             if (Auth::user()->isAdmin()) {
@@ -215,6 +223,12 @@ class AuthController extends Controller
 
         Auth::login($user, true);
         $request->session()->regenerate();
+
+        // Fold anything the visitor added while browsing as a guest into
+        // their new account — nothing is lost by registering/logging in.
+        if ($guestToken = GuestCartToken::current($request)) {
+            app(CartService::class)->mergeGuestIntoUser($user, $guestToken);
+        }
 
         if ($user->isAdmin()) {
             return redirect('/admin');

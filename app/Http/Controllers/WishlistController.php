@@ -3,20 +3,25 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Controllers\Concerns\ResolvesCartOwner;
 use App\Models\Product;
 use App\Models\WishlistItem;
 use App\Models\CartItem;
-use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
 {
-    public function index()
+    use ResolvesCartOwner;
+
+    public function index(Request $request)
     {
-        $user = Auth::user();
-        $wishlistItems = WishlistItem::with('product')->where('user_id', $user->id)->get();
-        
+        $owner = $this->resolveOwner($request);
+
+        $wishlistItems = $owner->isEmpty()
+            ? collect()
+            : $owner->scope(WishlistItem::with('product'))->get();
+
         // Count cart items to display count badge
-        $cartCount = CartItem::where('user_id', $user->id)->sum('quantity');
+        $cartCount = $owner->isEmpty() ? 0 : $owner->scope(CartItem::query())->sum('quantity');
 
         return view('pages.wishlist', compact('wishlistItems', 'cartCount'));
     }
@@ -30,9 +35,9 @@ class WishlistController extends Controller
             ['product_id' => 'required|exists:products,id']
         )->validate();
 
-        $user = Auth::user();
+        $owner = $this->resolveOwner($request, creating: true);
 
-        $exists = WishlistItem::where('user_id', $user->id)
+        $exists = $owner->scope(WishlistItem::query())
                              ->where('product_id', $productId)
                              ->first();
 
@@ -42,7 +47,7 @@ class WishlistController extends Controller
             $status = 'info';
         } else {
             WishlistItem::create([
-                'user_id' => $user->id,
+                ...$owner->attributes(),
                 'product_id' => $productId,
             ]);
             $message = 'Product added to your wishlist.';

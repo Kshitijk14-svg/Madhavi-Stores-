@@ -10,6 +10,9 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductSize;
 use App\Models\User;
+use App\Models\WishlistItem;
+use App\Support\CartOwner;
+use App\Support\GuestCartToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,16 +30,19 @@ use Illuminate\Support\Str;
 class CartService
 {
     /**
-     * Build the cart summary for a user.
+     * Build the cart summary for a cart owner (an authenticated user, or a guest
+     * identified by a cookie token — see App\Support\CartOwner).
      *
      * Side effects (intentional, matches prior behaviour): removes orphaned cart
      * rows whose product was deleted, and clears an invalid session coupon.
      *
      * @return array{cartItems:\Illuminate\Support\Collection,subtotal:float,discount:float,tax:float,total:float,coupon:?Coupon,couponCode:?string,cartCount:int}
      */
-    public function getSummary(User $user): array
+    public function getSummary(CartOwner $owner): array
     {
-        $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
+        $cartItems = $owner->isEmpty()
+            ? collect()
+            : $owner->scope(CartItem::with('product'))->get();
 
         $subtotal = 0;
         foreach ($cartItems as $key => $item) {
@@ -48,7 +54,7 @@ class CartService
             $subtotal += $item->product->final_price * $item->quantity;
         }
 
-        [$discount, $coupon] = $this->resolveCoupon($user, session('applied_coupon'), $subtotal, false);
+        [$discount, $coupon] = $this->resolveCoupon($owner, session('applied_coupon'), $subtotal, false);
 
         $tax   = 0;
         $total = max(0, $subtotal - $discount);
@@ -72,7 +78,7 @@ class CartService
      * @param  bool  $lock  acquire a row lock (true only inside the order transaction)
      * @return array{0:float,1:?Coupon}  [discount, coupon|null]
      */
-    private function resolveCoupon(User $user, ?string $code, float $subtotal, bool $lock): array
+    private function resolveCoupon(CartOwner $owner, ?string $code, float $subtotal, bool $lock): array
     {
         if (!$code) {
             return [0, null];
@@ -91,7 +97,10 @@ class CartService
             return [0, null];
         }
 
-        $userUsage = Order::where('user_id', $user->id)->where('coupon_code', $code)->count();
+        // Guests have no Order history to have used a coupon against.
+        $userUsage = $owner->isGuest()
+            ? 0
+            : Order::where('user_id', $owner->userId)->where('coupon_code', $code)->count();
 
         if (!$coupon->isValidFor($subtotal, $userUsage)) {
             if (!$lock) {
@@ -148,7 +157,7 @@ class CartService
                 $subtotal += $item->product->final_price * $item->quantity;
             }
 
-            [$discount, $coupon] = $this->resolveCoupon($user, $couponCode, $subtotal, true);
+            [$discount, $coupon] = $this->resolveCoupon(CartOwner::forUser($user), $couponCode, $subtotal, true);
 
             $tax   = 0;
             $total = max(0, $subtotal - $discount);
@@ -227,5 +236,78 @@ class CartService
 
             return $order;
         });
+    }
+
+    /**
+     * Fold a guest's cart/wishlist into a user's, the moment they log in
+     * (AuthController::login / verify). Runs atomically so a failure never
+     * leaves a half-merged cart. No-op if the guest never had a cookie.
+     */
+    public function mergeGuestIntoUser(User $user, ?string $guestToken): void
+    {
+        if (!$guestToken) {
+            return;
+        }
+
+        DB::transaction(function () use ($user, $guestToken) {
+            $this->mergeGuestCartItems($user, $guestToken);
+            $this->mergeGuestWishlistItems($user, $guestToken);
+        });
+
+        GuestCartToken::forget();
+    }
+
+    private function mergeGuestCartItems(User $user, string $guestToken): void
+    {
+        $guestItems = CartItem::with('product')->where('guest_token', $guestToken)->get();
+
+        foreach ($guestItems as $guestItem) {
+            $existing = CartItem::where('user_id', $user->id)
+                ->where('product_id', $guestItem->product_id)
+                ->where('size', $guestItem->size)
+                ->where('color', $guestItem->color)
+                ->first();
+
+            if ($existing) {
+                $combined = $existing->quantity + $guestItem->quantity;
+                $cap = $this->availableStock($guestItem->product, $guestItem->size);
+                $existing->quantity = $cap !== null ? max(1, min($combined, $cap)) : $combined;
+                $existing->save();
+            } else {
+                $guestItem->user_id = $user->id;
+                $guestItem->guest_token = null;
+                $guestItem->save();
+            }
+        }
+
+        // Cleans up rows left behind by the "existing" branch above; a no-op
+        // for rows the "else" branch already re-pointed to the user.
+        CartItem::where('guest_token', $guestToken)->delete();
+    }
+
+    private function mergeGuestWishlistItems(User $user, string $guestToken): void
+    {
+        $existingProductIds = WishlistItem::where('user_id', $user->id)->pluck('product_id')->all();
+
+        foreach (WishlistItem::where('guest_token', $guestToken)->get() as $item) {
+            if (in_array($item->product_id, $existingProductIds, true)) {
+                continue; // already wishlisted — drop the guest duplicate
+            }
+            $item->update(['user_id' => $user->id, 'guest_token' => null]);
+        }
+
+        WishlistItem::where('guest_token', $guestToken)->delete();
+    }
+
+    /** Null means "no cap" (product/size vanished — leave the pre-existing quantity as-is). */
+    private function availableStock(?Product $product, ?string $size): ?int
+    {
+        if (!$product) {
+            return null;
+        }
+        if ($product->has_sizes && $size) {
+            return ProductSize::where('product_id', $product->id)->where('size', $size)->value('stock');
+        }
+        return $product->stock;
     }
 }

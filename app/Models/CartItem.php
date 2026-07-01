@@ -10,8 +10,17 @@ class CartItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'product_id', 'quantity', 'size', 'color'
+        'user_id', 'guest_token', 'product_id', 'quantity', 'size', 'color'
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $item) {
+            if (!$item->user_id && !$item->guest_token) {
+                throw new \RuntimeException('CartItem requires either a user_id or a guest_token.');
+            }
+        });
+    }
 
     public function user()
     {

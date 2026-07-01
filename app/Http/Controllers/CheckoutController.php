@@ -6,6 +6,7 @@ use App\Exceptions\CheckoutException;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CartService;
+use App\Support\CartOwner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -19,7 +20,7 @@ class CheckoutController extends Controller
 
     public function index()
     {
-        $summary = $this->cart->getSummary(Auth::user());
+        $summary = $this->cart->getSummary(CartOwner::forUser(Auth::user()));
 
         if ($summary['cartItems']->isEmpty()) {
             return redirect()->route('cart')->with('error', 'Your shopping bag is empty.');
@@ -47,7 +48,7 @@ class CheckoutController extends Controller
         ]);
 
         $user     = Auth::user();
-        $summary  = $this->cart->getSummary($user);
+        $summary  = $this->cart->getSummary(CartOwner::forUser($user));
         $customer = $request->only(['first_name', 'last_name', 'email', 'address', 'city', 'postal_code']);
 
         // The actual method (Card/UPI/NetBanking/Wallet) is chosen inside the

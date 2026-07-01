@@ -31,6 +31,15 @@ class CheckoutTest extends TestCase
         return app(CartService::class);
     }
 
+    public function test_checkout_page_loads_for_authenticated_user_with_cart_items(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 1]);
+
+        $this->actingAs($user)->get('/checkout')->assertOk();
+    }
+
     public function test_cod_order_is_created_and_stock_decremented(): void
     {
         $user = User::factory()->create();

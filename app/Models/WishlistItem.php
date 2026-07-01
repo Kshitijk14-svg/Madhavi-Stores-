@@ -7,8 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 class WishlistItem extends Model
 {
     protected $fillable = [
-        'user_id', 'product_id'
+        'user_id', 'guest_token', 'product_id'
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $item) {
+            if (!$item->user_id && !$item->guest_token) {
+                throw new \RuntimeException('WishlistItem requires either a user_id or a guest_token.');
+            }
+        });
+    }
 
     public function user()
     {

@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\CartItem;
+use App\Models\WishlistItem;
+use App\Support\CartOwner;
+use App\Support\GuestCartToken;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -34,19 +38,29 @@ class AppServiceProvider extends ServiceProvider
         // request (memoised) so it's not a query per rendered sub-view. This is
         // why individual controllers no longer need to pass $cartCount — pages
         // that used to forget it (shop, collections) previously showed 0.
+        //
+        // Guests (not logged in) get their own cart/wishlist via a cookie token
+        // (see App\Support\GuestCartToken) — read-only here, so simply viewing a
+        // page never mints a cookie for a visitor who hasn't added anything yet.
         view()->composer('*', function ($view) {
+            static $owner = null;
             static $wishlistIds = null;
             static $cartCount = null;
 
+            if ($owner === null) {
+                $owner = auth()->check()
+                    ? CartOwner::forUser(auth()->user())
+                    : CartOwner::forGuestToken(GuestCartToken::current(request()));
+            }
             if ($wishlistIds === null) {
-                $wishlistIds = auth()->check()
-                    ? auth()->user()->wishlistItems()->pluck('product_id')->toArray()
-                    : [];
+                $wishlistIds = $owner->isEmpty()
+                    ? []
+                    : $owner->scope(WishlistItem::query())->pluck('product_id')->toArray();
             }
             if ($cartCount === null) {
-                $cartCount = auth()->check()
-                    ? (int) auth()->user()->cartItems()->sum('quantity')
-                    : 0;
+                $cartCount = $owner->isEmpty()
+                    ? 0
+                    : (int) $owner->scope(CartItem::query())->sum('quantity');
             }
 
             $view->with('wishlistIds', $wishlistIds);
