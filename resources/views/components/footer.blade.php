@@ -71,7 +71,7 @@
         &copy; {{ date('Y') }} Madhavi Stores. Crafted with intention.
       </p>
       <div style="display:flex;gap:24px;flex-wrap:wrap;">
-        @foreach([['Shipping Policy', route('shipping.policy')],['Exchange &amp; Return Policy', route('return.policy')],['Privacy Policy', route('privacy.policy')]] as [$label, $href])
+        @foreach([['Shipping Policy', route('shipping.policy')],['Exchange &amp; Return Policy', route('return.policy')],['Privacy Policy', route('privacy.policy')],['Terms &amp; Conditions', route('terms.conditions')]] as [$label, $href])
           <a href="{{ $href }}" style="font-size:9px;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-decoration:none;transition:color 0.2s;"
              onmouseover="this.style.color='rgba(255,255,255,0.5)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'">{!! $label !!}</a>
         @endforeach

@@ -21,7 +21,7 @@
 
       <div>
         <h2 class="font-display text-2xl text-primary mb-3">Delivery Timelines</h2>
-        <p>Standard delivery across India typically takes 4–8 business days depending on your location. Remote pin codes may require additional time.</p>
+        <p>Orders are delivered within a minimum of 4–5 days and a maximum of 5–6 days depending on your location. Remote pin codes may require additional time.</p>
       </div>
 
       <div>

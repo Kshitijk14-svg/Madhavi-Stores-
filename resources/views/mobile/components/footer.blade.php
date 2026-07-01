@@ -33,7 +33,7 @@
 
   {{-- Policy links --}}
   <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:16px;border-top:1px solid rgba(255,255,255,0.08);padding-top:24px;">
-    @foreach([['Shipping Policy', route('shipping.policy')],['Returns', route('return.policy')],['Privacy', route('privacy.policy')]] as [$label, $href])
+    @foreach([['Shipping Policy', route('shipping.policy')],['Returns', route('return.policy')],['Privacy', route('privacy.policy')],['Terms', route('terms.conditions')]] as [$label, $href])
       <a href="{{ $href }}" style="font-size:9px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.3);text-decoration:none;">{{ $label }}</a>
     @endforeach
   </div>

@@ -50,7 +50,7 @@
 
   <div class="form-group check-row">
     <input type="checkbox" id="terms" required>
-    <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+    <label for="terms">I agree to the <a href="{{ route('terms.conditions') }}" target="_blank">Terms of Service</a> and <a href="{{ route('privacy.policy') }}" target="_blank">Privacy Policy</a></label>
   </div>
 
   <button type="submit" class="auth-submit">Create Account</button>

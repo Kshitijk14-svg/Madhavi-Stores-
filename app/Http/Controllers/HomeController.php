@@ -150,4 +150,9 @@ class HomeController extends Controller
     {
         return $this->policyPage('pages.privacy-policy');
     }
+
+    public function termsAndConditions()
+    {
+        return $this->policyPage('pages.terms-and-conditions');
+    }
 }

@@ -25,6 +25,7 @@ Route::get('/about',    [HomeController::class, 'about'])->name('about');
 Route::get('/shipping-policy', [HomeController::class, 'shippingPolicy'])->name('shipping.policy');
 Route::get('/return-policy',   [HomeController::class, 'returnPolicy'])->name('return.policy');
 Route::get('/privacy-policy',  [HomeController::class, 'privacyPolicy'])->name('privacy.policy');
+Route::get('/terms-and-conditions', [HomeController::class, 'termsAndConditions'])->name('terms.conditions');
 
 // Razorpay server-to-server webhook (no auth, CSRF-exempt — see bootstrap/app.php).
 // Signature-verified inside the controller.
