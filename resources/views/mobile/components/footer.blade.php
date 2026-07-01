@@ -26,7 +26,7 @@
 
   {{-- Social --}}
   <div style="display:flex;justify-content:center;gap:24px;margin-bottom:28px;">
-    @foreach([['Instagram','https://instagram.com/madhavistores'],['WhatsApp','https://wa.me/918799998770'],['YouTube','https://youtube.com']] as [$social, $url])
+    @foreach([['Instagram','https://www.instagram.com/madhavi_stores?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=='],['WhatsApp','https://wa.me/918799998770']] as [$social, $url])
       <a href="{{ $url }}" target="_blank" rel="noopener" style="font-size:9px;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:rgba(255,255,255,0.4);text-decoration:none;">{{ $social }}</a>
     @endforeach
   </div>

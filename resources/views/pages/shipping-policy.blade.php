@@ -26,7 +26,7 @@
 
       <div>
         <h2 class="font-display text-2xl text-primary mb-3">Shipping Charges</h2>
-        <p>Enjoy free shipping on all prepaid orders above ₹5,000. A nominal shipping fee may apply to orders below this value and to Cash-on-Delivery orders, shown at checkout.</p>
+        <p>We are pleased to offer free shipping on all orders all over India. There are no shipping charges, regardless of the order value or payment method.</p>
       </div>
 
       <div>
@@ -39,10 +39,6 @@
       </div>
 
       <p class="text-xs text-muted/70 pt-4">Last updated {{ date('F Y') }}. Madhavi Stores reserves the right to update this policy at any time.</p>
-    </div>
-
-    <div class="text-center mt-14">
-      <a href="{{ route('shop') }}" class="btn-primary">Continue Shopping</a>
     </div>
 
   </div>

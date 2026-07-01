@@ -287,7 +287,6 @@ class AdminController extends Controller
             'stock'          => 'nullable|integer|min:0',
             'has_sizes'      => 'nullable|boolean',
             'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
-            'image_url'      => 'nullable|url',
             'size_chart_image'=> 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
@@ -311,7 +310,7 @@ class AdminController extends Controller
             $slug = $originalSlug . '-' . $count++;
         }
 
-        $imageUrl = $request->image_url;
+        $imageUrl = null;
         if ($request->hasFile('image')) {
             $imageUrl = $this->convertToWebp($request->file('image'), 'images/products') ?: $imageUrl;
             $this->generateThumbnail($imageUrl);
@@ -401,7 +400,6 @@ class AdminController extends Controller
             'original_price' => 'nullable|numeric|min:0',
             'category_id'    => 'required|exists:categories,id',
             'image'          => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
-            'image_url'      => 'nullable|url',
             'badge'          => 'nullable|string|max:50',
             'is_bestseller'  => 'nullable|boolean',
             'discount_type'  => 'nullable|in:percent,fixed',
@@ -429,7 +427,7 @@ class AdminController extends Controller
         }
 
         $oldImageUrl = $product->image_url;
-        $imageUrl = $request->image_url ?? $product->image_url;
+        $imageUrl = $product->image_url;
         if ($request->hasFile('image')) {
             $newImageUrl = $this->convertToWebp($request->file('image'), 'images/products');
             if ($newImageUrl) {
@@ -607,12 +605,11 @@ class AdminController extends Controller
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name',
             'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
-            'image_url' => 'nullable|url',
             'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $slug     = Str::slug($request->name);
-        $imageUrl = $request->image_url;
+        $imageUrl = null;
 
         if ($request->hasFile('image')) {
             $imageUrl = $this->convertToWebp($request->file('image'), 'images/categories') ?: $imageUrl;
@@ -649,12 +646,11 @@ class AdminController extends Controller
         $request->validate([
             'name'      => 'required|string|max:255|unique:categories,name,' . $id,
             'image'     => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
-            'image_url' => 'nullable|url',
             'size_chart_image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         $slug     = Str::slug($request->name);
-        $imageUrl = $request->image_url ?? $category->image_url;
+        $imageUrl = $category->image_url;
 
         if ($request->hasFile('image')) {
             $imageUrl = $this->convertToWebp($request->file('image'), 'images/categories') ?: $imageUrl;

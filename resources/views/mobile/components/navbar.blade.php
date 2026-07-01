@@ -1,15 +1,17 @@
 {{-- ══ MOBILE NAV BAR ══ --}}
 <header style="position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid #f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;">
-    <div style="flex-shrink:0;">
+  <div style="display:flex;align-items:center;justify-content:center;padding:12px 16px;position:relative;">
+    <div style="position:absolute;left:16px;">
+      <a href="{{ route('shop') }}#search" aria-label="Search" style="color:var(--primary);display:flex;align-items:center;">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+      </a>
+    </div>
+    <div>
       <a href="{{ route('home') }}" style="display:flex;align-items:center;">
         <img src="{{ asset('images/brand/Brand_logo.svg') }}" alt="Madhavi Stores" style="height:30px;width:auto;object-fit:contain;">
       </a>
     </div>
-    <div style="display:flex;align-items:center;gap:16px;">
-      <a href="{{ route('shop') }}#search" aria-label="Search" style="color:var(--primary);display:flex;align-items:center;">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-      </a>
+    <div style="position:absolute;right:16px;">
       <button id="mob-menu-btn" onclick="toggleSidebar()" aria-label="Menu" class="mob-toggle" style="padding:4px;">
         <span></span><span></span><span></span>
       </button>

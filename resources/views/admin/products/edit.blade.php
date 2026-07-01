@@ -71,13 +71,6 @@
                        class="w-full px-4 py-2.5 bg-slate-50 border border-gray-200 focus:border-secondary focus:bg-white focus:outline-none transition-colors text-sm file:mr-4 file:py-1 file:px-3 file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-secondary hover:file:text-primary transition-all">
             </div>
 
-            {{-- Image URL fallback --}}
-            <div>
-                <label for="image_url" class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Or Direct Image URL</label>
-                <input type="url" id="image_url" name="image_url" placeholder="https://example.com/image.jpg" value="{{ old('image_url', $product->image_url) }}"
-                       class="w-full px-4 py-3 bg-slate-50 border border-gray-200 focus:border-secondary focus:bg-white focus:outline-none transition-colors text-sm">
-            </div>
-            
             {{-- Size Chart Image Upload --}}
             <div>
                 <label for="size_chart_image" class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-2">Upload New Size Chart (Optional)</label>

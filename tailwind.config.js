@@ -24,7 +24,7 @@ export default {
         silk: '#f0ebe3',
         muted: '#888888',
         border: '#e5e5e5',
-        background: '#f9f8f3',
+        background: '#FDFBF7',
         surface: '#ffffff',
       },
       fontFamily: {

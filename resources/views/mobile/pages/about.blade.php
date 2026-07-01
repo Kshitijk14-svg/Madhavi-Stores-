@@ -56,11 +56,5 @@
       As an authentic apparel brand, our goal is simple: to offer premium, meticulously selected outfits that deliver the rich heritage of Indian textiles with a modern touch. Every single piece at Madhavi Stores undergoes a strict quality check before it reaches you, ensuring your shopping experience is nothing short of exceptional.
     </p>
   </section>
-
-  {{-- CTA --}}
-  <section class="px-6 py-6 text-center border-t border-gray-100">
-    <a href="{{ route('shop') }}" class="btn-primary inline-block" style="padding:14px 32px;font-size:12px;font-weight:700;letter-spacing:0.2em;">Explore Collection</a>
-  </section>
-
 </div>
 @endsection

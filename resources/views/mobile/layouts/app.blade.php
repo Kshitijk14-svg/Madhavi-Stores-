@@ -16,7 +16,7 @@
   <link rel="apple-touch-icon" href="{{ asset('images/brand/Brand_Favicon.svg') }}">
 
   {{-- Theme Color for Mobile Browsers --}}
-  <meta name="theme-color" content="#f9f8f3">
+  <meta name="theme-color" content="#FDFBF7">
 
   <title>@yield('title', 'Madhavi Stores | Quiet Luxury. Indian Heritage.')</title>
 
@@ -51,7 +51,7 @@
     document.addEventListener('DOMContentLoaded', setViewport);
   </script>
 </head>
-<body class="bg-white text-primary">
+<body class="text-primary">
 
   @include('mobile.components.navbar', ['cartCount' => $cartCount ?? 0])
 

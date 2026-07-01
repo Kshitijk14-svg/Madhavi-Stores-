@@ -55,11 +55,6 @@
 
       <p class="text-xs text-muted/70 pt-4">Last updated {{ date('F Y') }}. Madhavi Stores reserves the right to modify these terms at any time.</p>
     </div>
-
-    <div class="text-center mt-14">
-      <a href="{{ route('shop') }}" class="btn-primary">Continue Shopping</a>
-    </div>
-
   </div>
 </section>
 

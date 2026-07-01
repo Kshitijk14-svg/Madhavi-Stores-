@@ -120,9 +120,7 @@
                     <div style="margin-bottom:40px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                             <span class="eyebrow" style="color:var(--primary);">Select Size</span>
-                            @if($product->size_chart_image || ($product->category && $product->category->size_chart_image) || true)
-                                <button onclick="openSizeGuide()" style="background:none;border:none;border-bottom:1px solid var(--secondary);color:var(--secondary);font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;">Size Guide</button>
-                            @endif
+                            <button onclick="openSizeGuide()" style="background:none;border:none;border-bottom:1px solid var(--secondary);color:var(--secondary);font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;">Size Guide</button>
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:12px;">
                             @php
@@ -215,25 +213,6 @@
     </div>
 </section>
 
-<!-- Size Guide Modal -->
-@php
-    $sizeChartImage = $product->size_chart_image ?: ($product->category ? $product->category->size_chart_image : null);
-@endphp
-@if($sizeChartImage)
-<div id="size-guide-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSizeGuide()"></div>
-    <div class="relative bg-white w-[90%] max-w-2xl p-6 rounded-none shadow-2xl">
-        <button onclick="closeSizeGuide()" class="absolute top-4 right-4 text-muted hover:text-primary transition-colors">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-        <h2 class="font-display text-2xl italic text-primary mb-4 text-center">Size Guide</h2>
-        <div class="w-full flex justify-center">
-            <img src="{{ asset($sizeChartImage) }}" alt="Size Guide" class="max-w-full h-auto object-contain max-h-[70vh]">
-        </div>
-    </div>
-</div>
-@endif
-
 <!-- RELATED PRODUCTS -->
 <section style="padding:80px 0;background:var(--silk);">
     <div class="wrap">
@@ -317,24 +296,15 @@
             $chartImg = $product->size_chart_image ?: ($product->category ? $product->category->size_chart_image : null);
         @endphp
         @if($chartImg)
-            <img src="{{ $chartImg }}" alt="Size Chart" style="width:100%;height:auto;object-fit:contain;">
+            <img src="{{ asset($chartImg) }}" alt="Size Chart" style="width:100%;height:auto;object-fit:contain;">
         @else
-            <img src="https://images.unsplash.com/photo-1599304917647-79aaad6f31ef?w=800&q=80" alt="Standard Size Chart" style="width:100%;height:auto;object-fit:contain;margin-bottom:16px;">
-            <p class="text-muted text-sm text-center">Standard measurement guide. Please note variations may occur by style.</p>
+            <div style="padding:40px 0;text-align:center;">
+                <p class="text-muted text-sm">Size chart not available for this product yet.</p>
+                <p class="text-muted text-sm mt-2">Please contact us for sizing help.</p>
+            </div>
         @endif
     </div>
 </div>
-
-<script>
-    function openSizeGuide() {
-        document.getElementById('size-guide-modal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-    function closeSizeGuide() {
-        document.getElementById('size-guide-modal').style.display = 'none';
-        document.body.style.overflow = '';
-    }
-</script>
 
 {{-- JSON-LD Product Schema for SEO --}}
 <script type="application/ld+json">
@@ -474,7 +444,7 @@
 function openSizeGuide() {
     const modal = document.getElementById('size-guide-modal');
     if(modal) {
-        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 }
@@ -482,7 +452,7 @@ function openSizeGuide() {
 function closeSizeGuide() {
     const modal = document.getElementById('size-guide-modal');
     if(modal) {
-        modal.classList.add('hidden');
+        modal.style.display = 'none';
         document.body.style.overflow = '';
     }
 }

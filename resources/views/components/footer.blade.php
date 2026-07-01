@@ -14,7 +14,7 @@
         A tribute to Indian heritage, reimagined for the modern muse. Every thread tells a story of craft, culture, and quiet elegance.
       </p>
       <div style="display:flex;gap:20px;">
-        @foreach([['Instagram','https://instagram.com/madhavistores'],['WhatsApp','https://wa.me/918799998770'],['YouTube','https://youtube.com']] as [$social, $url])
+        @foreach([['Instagram','https://www.instagram.com/madhavi_stores?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=='],['WhatsApp','https://wa.me/918799998770']] as [$social, $url])
           <a href="{{ $url }}" target="_blank" rel="noopener" style="font-size:9px;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:rgba(255,255,255,0.3);text-decoration:none;transition:color 0.2s;"
              onmouseover="this.style.color='#ebb829'" onmouseout="this.style.color='rgba(255,255,255,0.3)'">{{ $social }}</a>
         @endforeach
