@@ -84,6 +84,16 @@ class CartService
             return [0, null];
         }
 
+        // Coupons require a real account — a guest's checkout email is never
+        // verified, so there's no durable identity to enforce a per-user limit
+        // against. Deny outright rather than try to track unverifiable usage.
+        if ($owner->isGuest()) {
+            if (!$lock) {
+                session()->forget('applied_coupon');
+            }
+            return [0, null];
+        }
+
         $query = Coupon::where('code', $code);
         if ($lock) {
             $query->lockForUpdate();
@@ -97,10 +107,7 @@ class CartService
             return [0, null];
         }
 
-        // Guests have no Order history to have used a coupon against.
-        $userUsage = $owner->isGuest()
-            ? 0
-            : Order::where('user_id', $owner->userId)->where('coupon_code', $code)->count();
+        $userUsage = Order::where('user_id', $owner->userId)->where('coupon_code', $code)->count();
 
         if (!$coupon->isValidFor($subtotal, $userUsage)) {
             if (!$lock) {
@@ -130,7 +137,7 @@ class CartService
      *
      * @throws CheckoutException  with a user-safe message
      */
-    public function createOrder(User $user, array $customer, string $paymentMethod, array $payment = [], ?string $couponCode = null): Order
+    public function createOrder(CartOwner $owner, array $customer, string $paymentMethod, array $payment = [], ?string $couponCode = null): Order
     {
         // Idempotency guard — before opening a transaction.
         if (!empty($payment['razorpay_payment_id'])) {
@@ -142,8 +149,12 @@ class CartService
 
         $couponCode = $couponCode ?? session('applied_coupon');
 
-        return DB::transaction(function () use ($user, $customer, $paymentMethod, $payment, $couponCode) {
-            $cartItems = CartItem::with('product')->where('user_id', $user->id)->get();
+        if (!empty($customer['email'])) {
+            $customer['email'] = strtolower(trim($customer['email']));
+        }
+
+        return DB::transaction(function () use ($owner, $customer, $paymentMethod, $payment, $couponCode) {
+            $cartItems = $owner->scope(CartItem::with('product'))->get();
 
             if ($cartItems->isEmpty()) {
                 throw new CheckoutException('Your shopping bag is empty.');
@@ -157,7 +168,7 @@ class CartService
                 $subtotal += $item->product->final_price * $item->quantity;
             }
 
-            [$discount, $coupon] = $this->resolveCoupon(CartOwner::forUser($user), $couponCode, $subtotal, true);
+            [$discount, $coupon] = $this->resolveCoupon($owner, $couponCode, $subtotal, true);
 
             $tax   = 0;
             $total = max(0, $subtotal - $discount);
@@ -168,7 +179,7 @@ class CartService
             }
 
             $order = Order::create([
-                'user_id'             => $user->id,
+                'user_id'             => $owner->userId,
                 'order_number'        => $orderNumber,
                 'email'               => $customer['email'],
                 'phone'               => $customer['phone'] ?? null,
@@ -232,11 +243,21 @@ class CartService
                 $coupon->incrementUsage();
             }
 
-            CartItem::where('user_id', $user->id)->delete();
+            $owner->scope(CartItem::query())->delete();
             session()->forget('applied_coupon');
 
             return $order;
         });
+    }
+
+    /**
+     * Attach any guest orders placed under this email to the now-real account —
+     * called both right after a normal registration and from the post-purchase
+     * "create an account from this order" flow (AuthController).
+     */
+    public function claimGuestOrders(User $user): int
+    {
+        return Order::where('email', $user->email)->whereNull('user_id')->update(['user_id' => $user->id]);
     }
 
     /**

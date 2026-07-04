@@ -3,28 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CheckoutException;
+use App\Http\Controllers\Concerns\ResolvesCartOwner;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CartService;
 use App\Support\CartOwner;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Razorpay\Api\Api;
 
 class CheckoutController extends Controller
 {
+    use ResolvesCartOwner;
+
     public function __construct(private CartService $cart)
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $summary = $this->cart->getSummary(CartOwner::forUser(Auth::user()));
+        $summary = $this->cart->getSummary($this->resolveOwner($request));
 
         if ($summary['cartItems']->isEmpty()) {
             return redirect()->route('cart')->with('error', 'Your shopping bag is empty.');
         }
+
+        $addresses = auth()->check()
+            ? auth()->user()->addresses()->orderByDesc('is_default')->orderByDesc('created_at')->get()
+            : collect();
 
         return view('pages.checkout', [
             'cartItems' => $summary['cartItems'],
@@ -33,6 +39,7 @@ class CheckoutController extends Controller
             'tax'       => $summary['tax'],
             'total'     => $summary['total'],
             'coupon'    => $summary['coupon'],
+            'addresses' => $addresses,
         ]);
     }
 
@@ -48,8 +55,8 @@ class CheckoutController extends Controller
             'postal_code'    => 'required|string|max:20',
         ]);
 
-        $user     = Auth::user();
-        $summary  = $this->cart->getSummary(CartOwner::forUser($user));
+        $owner    = $this->resolveOwner($request);
+        $summary  = $this->cart->getSummary($owner);
         $customer = $request->only(['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code']);
 
         // The actual method (Card/UPI/NetBanking/Wallet) is chosen inside the
@@ -95,14 +102,16 @@ class CheckoutController extends Controller
         try {
             $api          = new Api($keyId, $keySecret);
             $razorpayOrder = $api->order->create([
-                'receipt'         => 'rcpt_' . time() . '_' . $user->id,
+                'receipt'         => 'rcpt_' . time() . '_' . ($owner->userId ?? 'guest'),
                 'amount'          => intval(round($total * 100)),
                 'currency'        => 'INR',
                 'payment_capture' => 1,
                 // Carried back to us by the webhook so an order can be created even
-                // if the customer closes the tab after paying.
+                // if the customer closes the tab after paying (guest_token covers
+                // the case where the buyer wasn't signed in).
                 'notes'           => array_merge($customer, [
-                    'user_id'        => (string) $user->id,
+                    'user_id'        => $owner->userId ? (string) $owner->userId : '',
+                    'guest_token'    => $owner->guestToken ?? '',
                     'payment_method' => $paymentMethod,
                     'coupon_code'    => $summary['couponCode'] ?? '',
                 ]),
@@ -147,7 +156,7 @@ class CheckoutController extends Controller
             'razorpay_signature'  => 'required|string',
         ]);
 
-        $user      = Auth::user();
+        $owner     = $this->resolveOwner($request);
         $keyId     = config('razorpay.key_id');
         $keySecret = config('razorpay.key_secret');
 
@@ -197,7 +206,7 @@ class CheckoutController extends Controller
         $customer = $request->only(['first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code']);
 
         try {
-            $order = $this->cart->createOrder($user, $customer, 'Razorpay', [
+            $order = $this->cart->createOrder($owner, $customer, 'Razorpay', [
                 'razorpay_order_id'   => $request->razorpay_order_id,
                 'razorpay_payment_id' => $request->razorpay_payment_id,
                 'razorpay_signature'  => $request->razorpay_signature,
@@ -207,7 +216,7 @@ class CheckoutController extends Controller
             // Payment captured but the order could not be created (e.g. stock gone).
             logger()->warning('Paid order could not be created: ' . $e->getMessage(), [
                 'razorpay_payment_id' => $request->razorpay_payment_id,
-                'user_id'             => $user->id,
+                'user_id'             => $owner->userId,
             ]);
             return response()->json([
                 'success' => false,
@@ -216,7 +225,7 @@ class CheckoutController extends Controller
         } catch (\Throwable $e) {
             logger()->error('Paid order creation failed: ' . $e->getMessage(), [
                 'razorpay_payment_id' => $request->razorpay_payment_id,
-                'user_id'             => $user->id,
+                'user_id'             => $owner->userId,
             ]);
             return response()->json([
                 'success' => false,
@@ -234,14 +243,23 @@ class CheckoutController extends Controller
                 'order_total_paise'   => intval(round($order->total * 100)),
                 'razorpay_amount'     => intval($paidAmount),
                 'razorpay_payment_id' => $request->razorpay_payment_id,
-                'user_id'             => $user->id,
+                'user_id'             => $owner->userId,
             ]);
         }
+
+        // Guests have no /account to land on — send them to the self-service
+        // order-tracking page instead, prefilled so they land straight on the result.
+        // Stashed in session (not a query string) so the order number/email never
+        // end up in the URL, browser history, or server access logs.
+        if (!$owner->userId) {
+            session(['track_order_lookup' => ['order_number' => $order->order_number, 'email' => $order->email]]);
+        }
+        $redirect = $owner->userId ? route('account') : route('track-order');
 
         session()->flash('success', 'Thank you! Your order ' . $order->order_number . ' was successfully placed.');
         return response()->json([
             'success'  => true,
-            'redirect' => route('account'),
+            'redirect' => $redirect,
             'message'  => 'Thank you! Your order ' . $order->order_number . ' was successfully placed.',
         ]);
     }
@@ -286,8 +304,10 @@ class CheckoutController extends Controller
         $payment = $data['payload']['payment']['entity'] ?? [];
         $notes   = $payment['notes'] ?? [];
         $paymentId = $payment['id'] ?? null;
+        $userId    = $notes['user_id'] ?? null;
+        $guestToken = $notes['guest_token'] ?? null;
 
-        if (!$paymentId || empty($notes['user_id'])) {
+        if (!$paymentId || (empty($userId) && empty($guestToken))) {
             return response()->json(['status' => 'ignored'], 200);
         }
 
@@ -296,15 +316,20 @@ class CheckoutController extends Controller
             return response()->json(['status' => 'exists'], 200);
         }
 
-        $user = User::find($notes['user_id']);
-        if (!$user) {
-            return response()->json(['status' => 'ignored'], 200);
+        if (!empty($userId)) {
+            $user = User::find($userId);
+            if (!$user) {
+                return response()->json(['status' => 'ignored'], 200);
+            }
+            $owner = CartOwner::forUser($user);
+        } else {
+            $owner = CartOwner::forGuestToken($guestToken);
         }
 
         $customer = [
             'first_name'  => $notes['first_name']  ?? '',
             'last_name'   => $notes['last_name']   ?? '',
-            'email'       => $notes['email']       ?? $user->email,
+            'email'       => $notes['email']       ?? '',
             'phone'       => $notes['phone']       ?? '',
             'address'     => $notes['address']     ?? '',
             'city'        => $notes['city']        ?? '',
@@ -313,7 +338,7 @@ class CheckoutController extends Controller
 
         try {
             $this->cart->createOrder(
-                $user,
+                $owner,
                 $customer,
                 $notes['payment_method'] ?? 'Razorpay',
                 [

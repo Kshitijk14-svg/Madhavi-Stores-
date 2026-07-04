@@ -3,11 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\SitemapController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -53,7 +55,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.reset.post');
 });
 
-// ── Cart & Wishlist (guests allowed; checkout still requires login) ──
+// ── Cart, Wishlist & Checkout (guests allowed) ──
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
@@ -65,17 +67,28 @@ Route::post('/coupon/remove', [CartController::class, 'removeCoupon'])->name('co
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
 Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 
+// Checkout Operations (throttled — each store() can hit the Razorpay API)
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
+Route::post('/checkout/verify', [CheckoutController::class, 'verifyPayment'])->middleware('throttle:20,1')->name('checkout.verify');
+
+// Guest order tracking (self-service status lookup by order number + email)
+Route::get('/track-order', [OrderTrackingController::class, 'show'])->middleware('throttle:10,1')->name('track-order');
+Route::post('/track-order', [OrderTrackingController::class, 'lookup'])->middleware('throttle:10,1')->name('track-order.lookup');
+Route::post('/track-order/claim', [AuthController::class, 'claimOrderAccount'])->middleware('throttle:10,1')->name('track-order.claim');
+
 // ── Authenticated Routes ───────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AuthController::class, 'account'])->name('account');
     Route::post('/account', [AuthController::class, 'updateProfile'])->name('account.update');
     Route::get('/account/orders/{id}/receipt', [AuthController::class, 'orderReceipt'])->name('account.order.receipt');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Checkout Operations (throttled — each store() can hit the Razorpay API)
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:20,1')->name('checkout.store');
-    Route::post('/checkout/verify', [CheckoutController::class, 'verifyPayment'])->middleware('throttle:20,1')->name('checkout.verify');
+    Route::post('/account/addresses', [AddressController::class, 'store'])->name('account.addresses.store');
+    Route::post('/account/addresses/{id}/update', [AddressController::class, 'update'])->name('account.addresses.update');
+    Route::post('/account/addresses/{id}/delete', [AddressController::class, 'destroy'])->name('account.addresses.delete');
+    Route::post('/account/addresses/{id}/default', [AddressController::class, 'setDefault'])->name('account.addresses.default');
+
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
 // Admin Routes (Custom Blade Admin Dashboard)

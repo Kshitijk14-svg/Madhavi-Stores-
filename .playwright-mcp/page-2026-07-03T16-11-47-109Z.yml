@@ -1,0 +1,277 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e2]:
+    - text: ✦ Free shipping on orders above ₹5,000 · Easy 30-day returns ✦
+    - button [ref=f14e3] [cursor=pointer]:
+      - img [ref=f14e4]
+  - banner [ref=f14e6]:
+    - generic [ref=f14e7]:
+      - link "Madhavi Stores" [ref=f14e9] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123
+        - img "Madhavi Stores" [ref=f14e10]
+      - navigation [ref=f14e11]:
+        - link "Home" [ref=f14e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123
+        - link "Shop" [ref=f14e13] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/shop
+        - link "Collections" [ref=f14e14] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/collections
+        - link "Our Story" [ref=f14e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/about
+      - generic [ref=f14e16]:
+        - button "Search" [ref=f14e17] [cursor=pointer]:
+          - img [ref=f14e18]
+          - generic [ref=f14e20]: Search
+        - link "Wishlist" [ref=f14e21] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/wishlist
+          - img [ref=f14e22]
+        - link "Account" [ref=f14e24] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/account
+          - img [ref=f14e25]
+        - link "Cart" [ref=f14e27] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/cart
+          - img [ref=f14e28]
+  - generic [ref=f14e31]:
+    - generic [ref=f14e32]:
+      - img [ref=f14e33]
+      - textbox "Search sarees, kurtas, lehengas…" [ref=f14e35]
+      - button [ref=f14e36] [cursor=pointer]:
+        - img [ref=f14e37]
+    - generic [ref=f14e39]:
+      - generic [ref=f14e40]: "Trending:"
+      - link "Organza Saree" [ref=f14e41] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Organza+Saree
+      - link "Chanderi Kurta" [ref=f14e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Chanderi+Kurta
+      - link "Anarkali Set" [ref=f14e43] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Anarkali+Set
+      - link "Block Print" [ref=f14e44] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Block+Print
+      - link "Lehenga" [ref=f14e45] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Lehenga
+  - generic [ref=f14e46]:
+    - generic [ref=f14e47]:
+      - img "Madhavi Stores" [ref=f14e48]
+      - button [ref=f14e49] [cursor=pointer]:
+        - img [ref=f14e50]
+    - navigation [ref=f14e52]:
+      - link "Home" [ref=f14e53] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123
+        - text: Home
+        - img [ref=f14e54]
+      - link "Shop" [ref=f14e56] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop
+        - text: Shop
+        - img [ref=f14e57]
+      - link "Collections" [ref=f14e59] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/collections
+        - text: Collections
+        - img [ref=f14e60]
+      - link "Our Story" [ref=f14e62] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/about
+        - text: Our Story
+        - img [ref=f14e63]
+      - link "Wishlist" [ref=f14e65] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/wishlist
+        - text: Wishlist
+        - img [ref=f14e66]
+    - generic [ref=f14e68]:
+      - link "Sign In" [ref=f14e69] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/login
+      - link "Cart (0)" [ref=f14e70] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/cart
+  - main [ref=f14e71]:
+    - generic [ref=f14e73]:
+      - navigation [ref=f14e74]:
+        - link "Home" [ref=f14e75] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123
+        - generic [ref=f14e76]: /
+        - link "Collection" [ref=f14e77] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/shop
+        - generic [ref=f14e78]: /
+        - generic [ref=f14e79]: Ivory Chanderi Kurta
+      - generic [ref=f14e80]:
+        - generic [ref=f14e81]:
+          - generic [ref=f14e82]:
+            - generic [ref=f14e83]:
+              - group "1 / 4" [ref=f14e84]:
+                - img "Ivory Chanderi Kurta" [ref=f14e85]
+              - group "2 / 4":
+                - img "Ivory Chanderi Kurta"
+              - group "3 / 4":
+                - img "Ivory Chanderi Kurta"
+              - group "4 / 4":
+                - img "Ivory Chanderi Kurta"
+            - button "Previous slide" [ref=f14e86] [cursor=pointer]:
+              - img [ref=f14e87]
+            - button "Next slide" [ref=f14e89] [cursor=pointer]:
+              - img [ref=f14e90]
+            - generic [ref=f14e92]:
+              - button "Go to slide 1" [ref=f14e93] [cursor=pointer]
+              - button "Go to slide 2" [ref=f14e94] [cursor=pointer]
+              - button "Go to slide 3" [ref=f14e95] [cursor=pointer]
+              - button "Go to slide 4" [ref=f14e96] [cursor=pointer]
+          - generic [ref=f14e97]:
+            - generic [ref=f14e99]: "1"
+            - generic [ref=f14e100]: /
+            - generic [ref=f14e101]: "4"
+        - generic [ref=f14e103]:
+          - generic [ref=f14e104]:
+            - generic [ref=f14e105]: NEW
+            - generic [ref=f14e106]: NEW ARRIVAL
+            - heading "Ivory Chanderi Kurta" [level=1] [ref=f14e107]
+            - generic [ref=f14e108]:
+              - generic [ref=f14e109]: ₹4,500.00
+              - generic [ref=f14e110]: ₹5,500.00
+              - generic [ref=f14e111]: SAVE 18%
+          - paragraph [ref=f14e113]: Discover our exclusive handcrafted ethnic wear, designed to bring elegance and quiet luxury to your wardrobe.
+          - generic [ref=f14e114]:
+            - generic [ref=f14e115]:
+              - generic [ref=f14e116]: Select Size
+              - button "Size Guide" [ref=f14e117] [cursor=pointer]
+            - generic [ref=f14e118]:
+              - button "S" [disabled] [ref=f14e119]
+              - button "M" [ref=f14e120] [cursor=pointer]
+              - button "L" [disabled] [ref=f14e121]
+              - button "XL" [disabled] [ref=f14e122]
+              - button "XXL" [disabled] [ref=f14e123]
+          - generic [ref=f14e124]:
+            - generic [ref=f14e125]:
+              - button "Add to wishlist" [ref=f14e127] [cursor=pointer]:
+                - img [ref=f14e128]
+                - text: Wishlist
+              - button "Share product" [ref=f14e130] [cursor=pointer]:
+                - img [ref=f14e131]
+                - text: Share
+            - generic [ref=f14e133]:
+              - button "Add to Bag" [ref=f14e135] [cursor=pointer]
+              - link "View Bag" [ref=f14e136] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/cart
+          - generic [ref=f14e137]:
+            - heading "Product Details" [level=3] [ref=f14e138]
+            - list [ref=f14e139]:
+              - listitem [ref=f14e140]: 100% premium handcrafted fabric.
+              - listitem [ref=f14e142]: Dry clean only recommended.
+              - listitem [ref=f14e144]: Ethically sourced and produced in India.
+              - listitem [ref=f14e146]: Standard fit, fits true to size.
+    - generic [ref=f14e149]:
+      - heading "Complete The Look" [level=2] [ref=f14e150]
+      - generic [ref=f14e151]:
+        - generic [ref=f14e152]:
+          - generic [ref=f14e153]:
+            - link "Midnight Anarkali Set" [ref=f14e154] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/midnight-anarkali-set
+              - img "Midnight Anarkali Set" [ref=f14e155]
+            - button [ref=f14e156] [cursor=pointer]:
+              - img [ref=f14e157]
+            - link "Add to Cart" [ref=f14e159] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/midnight-anarkali-set
+          - generic [ref=f14e160]:
+            - heading "Midnight Anarkali Set" [level=3] [ref=f14e161]:
+              - link "Midnight Anarkali Set" [ref=f14e162] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/product/midnight-anarkali-set
+            - generic [ref=f14e164]: ₹8,500
+        - generic [ref=f14e165]:
+          - generic [ref=f14e166]:
+            - link "Mustard Handloom Kurta" [ref=f14e167] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/mustard-handloom-kurta
+              - img "Mustard Handloom Kurta" [ref=f14e168]
+            - button [ref=f14e169] [cursor=pointer]:
+              - img [ref=f14e170]
+            - link "Add to Cart" [ref=f14e172] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/mustard-handloom-kurta
+          - generic [ref=f14e173]:
+            - heading "Mustard Handloom Kurta" [level=3] [ref=f14e174]:
+              - link "Mustard Handloom Kurta" [ref=f14e175] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/product/mustard-handloom-kurta
+            - generic [ref=f14e176]:
+              - generic [ref=f14e177]: ₹2,800
+              - generic [ref=f14e178]: ₹3,200
+        - generic [ref=f14e179]:
+          - generic [ref=f14e180]:
+            - link "Pearl Embroidered Lehenga" [ref=f14e181] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/pearl-embroidered-lehenga
+              - img "Pearl Embroidered Lehenga" [ref=f14e182]
+            - generic [ref=f14e183]: LIMITED
+            - button [ref=f14e184] [cursor=pointer]:
+              - img [ref=f14e185]
+            - link "Add to Cart" [ref=f14e187] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/pearl-embroidered-lehenga
+          - generic [ref=f14e188]:
+            - heading "Pearl Embroidered Lehenga" [level=3] [ref=f14e189]:
+              - link "Pearl Embroidered Lehenga" [ref=f14e190] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/product/pearl-embroidered-lehenga
+            - generic [ref=f14e192]: ₹15,500
+        - generic [ref=f14e193]:
+          - generic [ref=f14e194]:
+            - link "Onyx Velvet Tunic" [ref=f14e195] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/onyx-velvet-tunic
+              - img "Onyx Velvet Tunic" [ref=f14e196]
+            - generic [ref=f14e197]: NEW
+            - button [ref=f14e198] [cursor=pointer]:
+              - img [ref=f14e199]
+            - link "Add to Cart" [ref=f14e201] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/product/onyx-velvet-tunic
+          - generic [ref=f14e202]:
+            - heading "Onyx Velvet Tunic" [level=3] [ref=f14e203]:
+              - link "Onyx Velvet Tunic" [ref=f14e204] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/product/onyx-velvet-tunic
+            - generic [ref=f14e206]: ₹3,400
+  - contentinfo [ref=f14e207]:
+    - generic [ref=f14e208]:
+      - generic [ref=f14e209]:
+        - link "Madhavi Stores" [ref=f14e210] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123
+          - img "Madhavi Stores" [ref=f14e211]
+        - paragraph [ref=f14e212]: The Ethnic Brand
+        - paragraph [ref=f14e213]: A tribute to Indian heritage, reimagined for the modern muse. Every thread tells a story of craft, culture, and quiet elegance.
+        - generic [ref=f14e214]:
+          - link "Instagram" [ref=f14e215] [cursor=pointer]:
+            - /url: https://www.instagram.com/madhavi_stores?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==
+          - link "WhatsApp" [ref=f14e216] [cursor=pointer]:
+            - /url: https://wa.me/918799998770
+      - generic [ref=f14e217]:
+        - paragraph [ref=f14e218]: Explore
+        - list [ref=f14e219]:
+          - listitem [ref=f14e220]:
+            - link "Home" [ref=f14e221] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123
+          - listitem [ref=f14e222]:
+            - link "Shop" [ref=f14e223] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/shop
+          - listitem [ref=f14e224]:
+            - link "Collections" [ref=f14e225] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/collections
+          - listitem [ref=f14e226]:
+            - link "Our Story" [ref=f14e227] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/about
+      - generic [ref=f14e228]:
+        - paragraph [ref=f14e229]: Visit Us
+        - generic [ref=f14e230]:
+          - text: Opposite Laxmicycle,
+          - text: GG Road, Nanded,
+          - text: Maharashtra 431601
+        - link "+91 87999 98770" [ref=f14e231] [cursor=pointer]:
+          - /url: tel:+918799998770
+        - link "Chat on WhatsApp" [ref=f14e232] [cursor=pointer]:
+          - /url: https://wa.me/918799998770
+      - generic [ref=f14e233]:
+        - paragraph [ref=f14e234]: Join the Atelier
+        - paragraph [ref=f14e235]: New drops, exclusive offers, editorial content.
+        - generic [ref=f14e236]:
+          - textbox "Your email" [ref=f14e237]
+          - button [ref=f14e238] [cursor=pointer]:
+            - img [ref=f14e239]
+    - generic [ref=f14e242]:
+      - paragraph [ref=f14e243]: © 2026 Madhavi Stores. Crafted with intention.
+      - generic [ref=f14e244]:
+        - link "Shipping Policy" [ref=f14e245] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/shipping-policy
+        - link "Exchange & Return Policy" [ref=f14e246] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/return-policy
+        - link "Privacy Policy" [ref=f14e247] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/privacy-policy
+        - link "Terms & Conditions" [ref=f14e248] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/terms-and-conditions
+  - link "Chat with us on WhatsApp" [ref=f14e249] [cursor=pointer]:
+    - /url: https://wa.me/918799998770?text=Hello%20Madhavi%20Stores%21%20I%20have%20a%20question%20about%20
+    - img [ref=f14e250]

@@ -1,0 +1,190 @@
+- generic [active] [ref=f22e1]:
+  - generic [ref=f22e2]:
+    - text: ✦ Free shipping on orders above ₹5,000 · Easy 30-day returns ✦
+    - button [ref=f22e3] [cursor=pointer]:
+      - img [ref=f22e4]
+  - banner [ref=f22e6]:
+    - generic [ref=f22e7]:
+      - link "Madhavi Stores" [ref=f22e9] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123
+        - img "Madhavi Stores" [ref=f22e10]
+      - navigation [ref=f22e11]:
+        - link "Home" [ref=f22e12] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123
+        - link "Shop" [ref=f22e13] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/shop
+        - link "Collections" [ref=f22e14] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/collections
+        - link "Our Story" [ref=f22e15] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/about
+      - generic [ref=f22e16]:
+        - button "Search" [ref=f22e17] [cursor=pointer]:
+          - img [ref=f22e18]
+          - generic [ref=f22e20]: Search
+        - link "Wishlist" [ref=f22e21] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/wishlist
+          - img [ref=f22e22]
+        - link "Account" [ref=f22e24] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/account
+          - img [ref=f22e25]
+        - link "Cart" [ref=f22e27] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/cart
+          - img [ref=f22e28]
+          - generic [ref=f22e30]: "1"
+  - generic [ref=f22e32]:
+    - generic [ref=f22e33]:
+      - img [ref=f22e34]
+      - textbox "Search sarees, kurtas, lehengas…" [ref=f22e36]
+      - button [ref=f22e37] [cursor=pointer]:
+        - img [ref=f22e38]
+    - generic [ref=f22e40]:
+      - generic [ref=f22e41]: "Trending:"
+      - link "Organza Saree" [ref=f22e42] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Organza+Saree
+      - link "Chanderi Kurta" [ref=f22e43] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Chanderi+Kurta
+      - link "Anarkali Set" [ref=f22e44] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Anarkali+Set
+      - link "Block Print" [ref=f22e45] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Block+Print
+      - link "Lehenga" [ref=f22e46] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop?search=Lehenga
+  - generic [ref=f22e47]:
+    - generic [ref=f22e48]:
+      - img "Madhavi Stores" [ref=f22e49]
+      - button [ref=f22e50] [cursor=pointer]:
+        - img [ref=f22e51]
+    - navigation [ref=f22e53]:
+      - link "Home" [ref=f22e54] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123
+        - text: Home
+        - img [ref=f22e55]
+      - link "Shop" [ref=f22e57] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/shop
+        - text: Shop
+        - img [ref=f22e58]
+      - link "Collections" [ref=f22e60] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/collections
+        - text: Collections
+        - img [ref=f22e61]
+      - link "Our Story" [ref=f22e63] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/about
+        - text: Our Story
+        - img [ref=f22e64]
+      - link "Wishlist" [ref=f22e66] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/wishlist
+        - text: Wishlist
+        - img [ref=f22e67]
+    - generic [ref=f22e69]:
+      - link "Sign In" [ref=f22e70] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/login
+      - link "Cart (1)" [ref=f22e71] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/cart
+  - main [ref=f22e72]:
+    - generic [ref=f22e74]:
+      - heading "Checkout" [level=1] [ref=f22e75]
+      - generic [ref=f22e76]:
+        - generic [ref=f22e78]:
+          - generic [ref=f22e79]:
+            - heading "1 Shipping Information" [level=2] [ref=f22e80]:
+              - generic [ref=f22e81]: "1"
+              - text: Shipping Information
+            - paragraph [ref=f22e82]:
+              - text: You can
+              - link "sign in" [ref=f22e83] [cursor=pointer]:
+                - /url: http://127.0.0.1:8123/login
+              - text: to keep your order history, or continue as a guest below.
+            - generic [ref=f22e84]:
+              - generic [ref=f22e85]:
+                - textbox "First Name" [ref=f22e86]
+                - textbox "Last Name" [ref=f22e87]
+              - textbox "Email Address" [ref=f22e88]
+              - generic [ref=f22e89]:
+                - generic [ref=f22e90]: "+91"
+                - textbox "Enter a valid 10-digit Indian mobile number" [ref=f22e91]:
+                  - /placeholder: 10-digit mobile number
+              - textbox "Address" [ref=f22e92]
+              - generic [ref=f22e93]:
+                - textbox "City" [ref=f22e94]
+                - textbox "Postal Code" [ref=f22e95]
+          - generic [ref=f22e96]:
+            - heading "2 Payment" [level=2] [ref=f22e97]:
+              - generic [ref=f22e98]: "2"
+              - text: Payment
+            - paragraph [ref=f22e99]: You'll choose how to pay — Card, UPI, Net Banking or Wallet — in the secure Razorpay window after you place your order.
+          - button "Pay Securely" [ref=f22e100] [cursor=pointer]
+        - complementary [ref=f22e101]:
+          - generic [ref=f22e102]:
+            - heading "Your Order" [level=3] [ref=f22e103]
+            - generic [ref=f22e105]:
+              - img "Ivory Chanderi Kurta" [ref=f22e107]
+              - generic [ref=f22e108]:
+                - paragraph [ref=f22e109]: Ivory Chanderi Kurta
+                - paragraph [ref=f22e110]: "Size: M × 1"
+                - paragraph [ref=f22e111]: ₹4,500
+            - generic [ref=f22e112]:
+              - generic [ref=f22e113]:
+                - generic [ref=f22e114]: Subtotal
+                - generic [ref=f22e115]: ₹4,500
+              - generic [ref=f22e116]:
+                - generic [ref=f22e117]: Total
+                - generic [ref=f22e118]: ₹4,500
+  - contentinfo [ref=f22e119]:
+    - generic [ref=f22e120]:
+      - generic [ref=f22e121]:
+        - link "Madhavi Stores" [ref=f22e122] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123
+          - img "Madhavi Stores" [ref=f22e123]
+        - paragraph [ref=f22e124]: The Ethnic Brand
+        - paragraph [ref=f22e125]: A tribute to Indian heritage, reimagined for the modern muse. Every thread tells a story of craft, culture, and quiet elegance.
+        - generic [ref=f22e126]:
+          - link "Instagram" [ref=f22e127] [cursor=pointer]:
+            - /url: https://www.instagram.com/madhavi_stores?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==
+          - link "WhatsApp" [ref=f22e128] [cursor=pointer]:
+            - /url: https://wa.me/918799998770
+      - generic [ref=f22e129]:
+        - paragraph [ref=f22e130]: Explore
+        - list [ref=f22e131]:
+          - listitem [ref=f22e132]:
+            - link "Home" [ref=f22e133] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123
+          - listitem [ref=f22e134]:
+            - link "Shop" [ref=f22e135] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/shop
+          - listitem [ref=f22e136]:
+            - link "Collections" [ref=f22e137] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/collections
+          - listitem [ref=f22e138]:
+            - link "Our Story" [ref=f22e139] [cursor=pointer]:
+              - /url: http://127.0.0.1:8123/about
+      - generic [ref=f22e140]:
+        - paragraph [ref=f22e141]: Visit Us
+        - generic [ref=f22e142]:
+          - text: Opposite Laxmicycle,
+          - text: GG Road, Nanded,
+          - text: Maharashtra 431601
+        - link "+91 87999 98770" [ref=f22e143] [cursor=pointer]:
+          - /url: tel:+918799998770
+        - link "Chat on WhatsApp" [ref=f22e144] [cursor=pointer]:
+          - /url: https://wa.me/918799998770
+      - generic [ref=f22e145]:
+        - paragraph [ref=f22e146]: Join the Atelier
+        - paragraph [ref=f22e147]: New drops, exclusive offers, editorial content.
+        - generic [ref=f22e148]:
+          - textbox "Your email" [ref=f22e149]
+          - button [ref=f22e150] [cursor=pointer]:
+            - img [ref=f22e151]
+    - generic [ref=f22e154]:
+      - paragraph [ref=f22e155]: © 2026 Madhavi Stores. Crafted with intention.
+      - generic [ref=f22e156]:
+        - link "Shipping Policy" [ref=f22e157] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/shipping-policy
+        - link "Exchange & Return Policy" [ref=f22e158] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/return-policy
+        - link "Privacy Policy" [ref=f22e159] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/privacy-policy
+        - link "Terms & Conditions" [ref=f22e160] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/terms-and-conditions
+  - link "Chat with us on WhatsApp" [ref=f22e161] [cursor=pointer]:
+    - /url: https://wa.me/918799998770?text=Hello%20Madhavi%20Stores%21%20I%20have%20a%20question%20about%20
+    - img [ref=f22e162]

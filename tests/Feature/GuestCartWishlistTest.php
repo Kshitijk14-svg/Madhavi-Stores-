@@ -76,8 +76,10 @@ class GuestCartWishlistTest extends TestCase
         $this->assertNotNull($row->guest_token);
     }
 
-    public function test_guest_can_apply_coupon(): void
+    public function test_guest_cannot_apply_coupon(): void
     {
+        // Coupons require an account — a guest's checkout email is never
+        // verified, so there's no durable identity to enforce usage limits against.
         $product = Product::factory()->create(['price' => 1000, 'stock' => 10]);
         \App\Models\Coupon::factory()->create(['code' => 'GUEST10']);
 
@@ -88,13 +90,16 @@ class GuestCartWishlistTest extends TestCase
             ->post('/coupon/apply', ['code' => 'GUEST10'], ['X-Requested-With' => 'XMLHttpRequest']);
 
         $response->assertOk();
-        $response->assertJson(['success' => true]);
+        $response->assertJson(['success' => false]);
     }
 
-    public function test_guest_is_still_redirected_to_login_at_checkout(): void
+    public function test_guest_can_reach_checkout_with_a_cart(): void
     {
-        $this->get('/checkout')->assertRedirect(route('login'));
-        $this->post('/checkout', [])->assertRedirect(route('login'));
+        $product = Product::factory()->create(['stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+        $token = $this->guestTokenFromCartItems();
+
+        $this->withCookie('guest_cart_token', $token)->get('/checkout')->assertOk();
     }
 
     public function test_merge_on_login_combines_guest_and_existing_user_cart_without_duplicating(): void

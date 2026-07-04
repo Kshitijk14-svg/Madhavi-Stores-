@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -13,6 +14,14 @@ class Order extends Model
         'payment_status', 'order_status', 'subtotal', 'discount',
         'tax', 'total', 'coupon_code', 'coupon_id'
     ];
+
+    /** Normalize on write so email matching (guest coupon history, account claims) is never case/whitespace-sensitive. */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : $value,
+        );
+    }
 
     public function user()
     {

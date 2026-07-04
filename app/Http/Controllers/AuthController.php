@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\Order;
 use App\Models\User;
 use App\Mail\OtpMail;
 use App\Services\CartService;
@@ -129,6 +130,57 @@ class AuthController extends Controller
             ->with('success', 'Verification code sent! Check your email to finish signing up.');
     }
 
+    // ── CLAIM ACCOUNT FROM A GUEST ORDER (OTP-verified) ──
+    // Anyone could otherwise place a guest order under someone else's email and
+    // immediately "claim" a password-protected account under it — so this must
+    // prove real email ownership via OTP before creating anything, exactly like
+    // normal registration. Deliberately narrower than normal registration too:
+    // once verified, this links ONLY the one order just proven, not every guest
+    // order under that email (see verify()'s 'claim_order' branch).
+    public function claimOrderAccount(Request $request)
+    {
+        $request->validate([
+            'order_number' => 'required|string|max:50',
+            'email'        => 'required|email|max:255',
+            'name'         => 'required|string|max:100',
+            'password'     => 'required|min:8|confirmed',
+        ]);
+
+        $email = strtolower(trim($request->email));
+
+        $order = Order::where('order_number', $request->order_number)
+            ->where('email', $email)
+            ->whereNull('user_id')
+            ->first();
+
+        if (!$order) {
+            return back()->withErrors(['email' => 'We could not match that order to an account we can create.']);
+        }
+
+        if (User::where('email', $email)->exists()) {
+            return back()->withErrors(['email' => 'An account with this email already exists. Please sign in instead.']);
+        }
+
+        session([
+            'otp_email'            => $email,
+            'otp_purpose'          => 'claim_order',
+            'pending_registration' => [
+                'name'     => $request->name,
+                'email'    => $email,
+                'password' => Hash::make($request->password),
+            ],
+            'pending_order_claim' => $order->order_number,
+        ]);
+
+        if (! $this->sendOtp($email, 'claim_order')) {
+            session()->forget(['otp_email', 'otp_purpose', 'pending_registration', 'pending_order_claim']);
+            return back()->withErrors(['email' => 'We could not send the verification email right now. Please try again in a moment.']);
+        }
+
+        return redirect()->route('verify.show')
+            ->with('success', 'Verification code sent! Check your email to finish saving your order.');
+    }
+
     // ── SHOW VERIFY ─────────────────────────────────────────
     public function showVerify()
     {
@@ -192,6 +244,40 @@ class AuthController extends Controller
             return redirect()->route('password.reset.show');
         }
 
+        if ($purpose === 'claim_order') {
+            $pending     = session('pending_registration');
+            $orderNumber = session('pending_order_claim');
+
+            if (! $pending || ($pending['email'] ?? null) !== $email || ! $orderNumber) {
+                session()->forget(['otp_email', 'otp_purpose', 'pending_registration', 'pending_order_claim']);
+                return redirect()->route('track-order')
+                    ->withErrors(['email' => 'Your session expired. Please try again.']);
+            }
+
+            $user = User::create([
+                'name'              => $pending['name'],
+                'email'             => $pending['email'],
+                'password'          => $pending['password'],
+                'email_verified_at' => now(),
+            ]);
+
+            // Re-check it's still unclaimed — someone else could have claimed it
+            // while this OTP was pending. Link only if it's still available.
+            $order = Order::where('order_number', $orderNumber)->where('email', $email)->whereNull('user_id')->first();
+            $order?->update(['user_id' => $user->id]);
+
+            session()->forget(['otp_email', 'otp_purpose', 'pending_registration', 'pending_order_claim']);
+
+            Auth::login($user, true);
+            $request->session()->regenerate();
+
+            if ($guestToken = GuestCartToken::current($request)) {
+                app(CartService::class)->mergeGuestIntoUser($user, $guestToken);
+            }
+
+            return redirect()->route('account')->with('success', 'Account created — your order history is now saved.');
+        }
+
         // Register verification flow — create the account now that email ownership
         // is proven. Requires a valid pending_registration in session.
         $pending = session('pending_registration');
@@ -223,6 +309,9 @@ class AuthController extends Controller
 
         Auth::login($user, true);
         $request->session()->regenerate();
+
+        // Link any past guest orders placed under this email before the account existed.
+        app(CartService::class)->claimGuestOrders($user);
 
         // Fold anything the visitor added while browsing as a guest into
         // their new account — nothing is lost by registering/logging in.
@@ -336,7 +425,12 @@ class AuthController extends Controller
 
         $cartCount = \App\Models\CartItem::where('user_id', $user->id)->sum('quantity');
 
-        return view('pages.account', compact('user', 'orders', 'wishlist', 'cartCount'));
+        $addresses = \App\Models\Address::where('user_id', $user->id)
+            ->orderByDesc('is_default')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('pages.account', compact('user', 'orders', 'wishlist', 'cartCount', 'addresses'));
     }
 
     // ── ORDER RECEIPT (customer PDF download/view) ──────────

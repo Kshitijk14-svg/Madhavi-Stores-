@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductSize;
 use App\Models\User;
 use App\Services\CartService;
+use App\Support\CartOwner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -91,7 +92,7 @@ class CheckoutTest extends TestCase
         CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 2]);
 
         $this->actingAs($user);
-        $order = $this->service()->createOrder($user, $this->customer, 'COD');
+        $order = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
 
         $this->assertEquals('9876543210', $order->phone);
         $this->assertEquals(2000, $order->total);
@@ -108,7 +109,7 @@ class CheckoutTest extends TestCase
         CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 1]);
 
         $this->actingAs($user);
-        $order = $this->service()->createOrder($user, $this->customer, 'COD');
+        $order = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
 
         $this->assertEquals(900, $order->total);
         $this->assertEquals(900, $order->items->first()->price);
@@ -123,7 +124,7 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
 
         try {
-            $this->service()->createOrder($user, $this->customer, 'COD');
+            $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
             $this->fail('Expected CheckoutException for oversell.');
         } catch (CheckoutException $e) {
             // expected
@@ -144,7 +145,7 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
 
         $this->expectException(CheckoutException::class);
-        $this->service()->createOrder($user, $this->customer, 'COD');
+        $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
     }
 
     public function test_paid_order_is_idempotent_on_payment_id(): void
@@ -156,8 +157,8 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
 
         $payment = ['razorpay_payment_id' => 'pay_TEST123', 'payment_status' => 'Paid'];
-        $first  = $this->service()->createOrder($user, $this->customer, 'Card', $payment);
-        $second = $this->service()->createOrder($user, $this->customer, 'Card', $payment);
+        $first  = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'Card', $payment);
+        $second = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'Card', $payment);
 
         $this->assertEquals($first->id, $second->id);
         $this->assertDatabaseCount('orders', 1);
@@ -170,7 +171,7 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
 
         $this->expectException(CheckoutException::class);
-        $this->service()->createOrder($user, $this->customer, 'COD');
+        $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
     }
 
     public function test_valid_coupon_discount_is_applied_at_checkout(): void
@@ -183,7 +184,7 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
         session(['applied_coupon' => $coupon->code]);
 
-        $order = $this->service()->createOrder($user, $this->customer, 'COD');
+        $order = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
 
         $this->assertEquals(800, $order->total);
         $this->assertEquals($coupon->code, $order->coupon_code);
@@ -208,9 +209,77 @@ class CheckoutTest extends TestCase
         $this->actingAs($user);
         session(['applied_coupon' => $coupon->code]);
 
-        $order = $this->service()->createOrder($user, $this->customer, 'COD');
+        $order = $this->service()->createOrder(CartOwner::forUser($user), $this->customer, 'COD');
 
         $this->assertEquals(1000, $order->total, 'Per-user-exhausted coupon must not discount.');
         $this->assertNull($order->coupon_code);
+    }
+
+    public function test_guest_checkout_page_loads_with_cart_items(): void
+    {
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+        $token = CartItem::whereNotNull('guest_token')->value('guest_token');
+
+        $this->withCookie('guest_cart_token', $token)->get('/checkout')->assertOk();
+    }
+
+    public function test_guest_order_is_created_with_null_user_id(): void
+    {
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 2]);
+        $token = CartItem::whereNotNull('guest_token')->value('guest_token');
+
+        $order = $this->service()->createOrder(CartOwner::forGuestToken($token), $this->customer, 'COD');
+
+        $this->assertNull($order->user_id);
+        $this->assertEquals(2000, $order->total);
+        $this->assertEquals(3, $product->fresh()->stock);
+        $this->assertDatabaseCount('cart_items', 0);
+    }
+
+    public function test_guest_order_never_gets_a_coupon_discount(): void
+    {
+        // Coupons require a real account — a guest's checkout email is never
+        // verified, so there's no durable identity to enforce a per-user limit
+        // against. Guests are denied outright, regardless of the coupon's own validity.
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+        $token = CartItem::whereNotNull('guest_token')->value('guest_token');
+        $coupon = Coupon::factory()->create(['type' => 'percent', 'value' => 20, 'max_uses_per_user' => 1]);
+
+        $order = $this->service()->createOrder(CartOwner::forGuestToken($token), $this->customer, 'COD', [], $coupon->code);
+
+        $this->assertEquals(1000, $order->total);
+        $this->assertNull($order->coupon_code);
+    }
+
+    public function test_guest_cart_summary_never_shows_a_coupon_discount(): void
+    {
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+        $token = CartItem::whereNotNull('guest_token')->value('guest_token');
+        $coupon = Coupon::factory()->create(['type' => 'percent', 'value' => 20, 'max_uses_per_user' => 1]);
+        session(['applied_coupon' => $coupon->code]);
+
+        $summary = $this->service()->getSummary(CartOwner::forGuestToken($token));
+
+        $this->assertEquals(0, $summary['discount']);
+        $this->assertNull($summary['coupon']);
+    }
+
+    public function test_guest_cannot_apply_a_coupon(): void
+    {
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
+        $this->post('/cart/add', ['product_id' => $product->id, 'quantity' => 1]);
+        $token = CartItem::whereNotNull('guest_token')->value('guest_token');
+        Coupon::factory()->create(['code' => 'GUESTDENY']);
+
+        $response = $this->withCookie('guest_cart_token', $token)
+            ->post('/coupon/apply', ['code' => 'GUESTDENY'], ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $response->assertOk();
+        $response->assertJson(['success' => false, 'message' => 'Please sign in to apply a coupon.']);
+        $this->assertNull(session('applied_coupon'));
     }
 }

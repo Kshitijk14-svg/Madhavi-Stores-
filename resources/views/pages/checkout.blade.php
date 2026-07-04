@@ -18,12 +18,44 @@
                             <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px] mr-3">1</span>
                             Shipping Information
                         </h2>
+                        @guest
+                        <p class="text-xs text-muted mb-6">
+                            You can <a href="{{ route('login') }}" class="underline">sign in</a> to keep your order history,
+                            or continue as a guest below.
+                        </p>
+                        @endguest
                         @php
                             $nameParts = explode(' ', auth()->user()->name ?? '', 2);
                             $firstName = $nameParts[0] ?? '';
                             $lastName = $nameParts[1] ?? '';
                             $email = auth()->user()->email ?? '';
                         @endphp
+                        @auth
+                        @if($addresses->isNotEmpty())
+                        <div class="space-y-3 mb-6">
+                            @foreach($addresses as $addr)
+                            <label class="flex items-start gap-3 border border-primary/10 p-4 cursor-pointer text-sm">
+                                <input type="radio" name="saved_address" value="{{ $addr->id }}"
+                                       class="mt-1 saved-address-radio"
+                                       data-first_name="{{ $addr->first_name }}" data-last_name="{{ $addr->last_name }}"
+                                       data-phone="{{ $addr->phone }}" data-address="{{ $addr->address }}"
+                                       data-city="{{ $addr->city }}" data-postal_code="{{ $addr->postal_code }}"
+                                       {{ $addr->is_default ? 'checked' : '' }}>
+                                <span>
+                                    <span class="font-medium">{{ $addr->label ?: ($addr->first_name . ' ' . $addr->last_name) }}</span>
+                                    @if($addr->is_default)<span class="text-[10px] uppercase tracking-wide text-secondary ml-2">Default</span>@endif
+                                    <br>
+                                    <span class="text-muted text-xs">{{ $addr->address }}, {{ $addr->city }} {{ $addr->postal_code }}</span>
+                                </span>
+                            </label>
+                            @endforeach
+                            <label class="flex items-center gap-3 border border-primary/10 p-4 cursor-pointer text-sm">
+                                <input type="radio" name="saved_address" value="" class="saved-address-radio" id="saved-address-new">
+                                <span>Enter a different address</span>
+                            </label>
+                        </div>
+                        @endif
+                        @endauth
                         <div class="space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <input type="text" name="first_name" id="first_name" placeholder="First Name" value="{{ $firstName }}" required class="w-full bg-transparent border border-primary/10 px-4 py-3 text-sm focus:outline-none focus:border-secondary transition-colors">
@@ -123,6 +155,22 @@
             const form = document.getElementById('checkout-form');
             if (!form || form.dataset.initialized) return;
             form.dataset.initialized = 'true';
+
+            const savedRadios = form.querySelectorAll('.saved-address-radio');
+            function applySavedAddress(radio) {
+                const fields = ['first_name', 'last_name', 'phone', 'address', 'city', 'postal_code'];
+                if (!radio.value) { // "Enter a different address"
+                    fields.forEach(f => { const el = document.getElementById(f); if (el) el.value = ''; });
+                    return;
+                }
+                fields.forEach(f => {
+                    const el = document.getElementById(f);
+                    if (el) el.value = radio.dataset[f] || '';
+                });
+            }
+            savedRadios.forEach(radio => radio.addEventListener('change', () => applySavedAddress(radio)));
+            const initiallyChecked = form.querySelector('.saved-address-radio:checked');
+            if (initiallyChecked) applySavedAddress(initiallyChecked);
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();

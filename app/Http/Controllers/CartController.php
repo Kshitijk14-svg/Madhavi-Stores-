@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductSize;
 use App\Services\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -187,6 +188,10 @@ class CartController extends Controller
     {
         $request->validate(['code' => 'required|string']);
 
+        if (!Auth::check()) {
+            return $this->couponResponse($request, false, 'Please sign in to apply a coupon.');
+        }
+
         $owner  = $this->resolveOwner($request);
         $coupon = Coupon::where('code', $request->code)->first();
 
@@ -199,11 +204,8 @@ class CartController extends Controller
         $subtotal = $summary['subtotal'];
 
         // Validate exactly as checkout will (global + min cart + per-user limit),
-        // so a coupon accepted here is never rejected at checkout. Guests have no
-        // Order history, so their per-user usage is always 0.
-        $userUsage = $owner->isGuest()
-            ? 0
-            : Order::where('user_id', $owner->userId)->where('coupon_code', $coupon->code)->count();
+        // so a coupon accepted here is never rejected at checkout.
+        $userUsage = Order::where('user_id', $owner->userId)->where('coupon_code', $coupon->code)->count();
         if (!$coupon->isValidFor($subtotal, $userUsage)) {
             $msg = 'This coupon is inactive, expired, or no longer available.';
             if ($subtotal < $coupon->min_cart_value) {

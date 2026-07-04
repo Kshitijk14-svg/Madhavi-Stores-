@@ -1,0 +1,43 @@
+- generic [ref=f24e2]:
+  - generic [ref=f24e3]:
+    - img "Madhavi Stores" [ref=f24e4]
+    - generic [ref=f24e6]:
+      - paragraph [ref=f24e7]: Madhavi Stores
+      - heading "Quiet Luxury. Indian Heritage." [level=2] [ref=f24e8]:
+        - text: Quiet Luxury.
+        - text: Indian Heritage.
+      - paragraph [ref=f24e9]:
+        - text: Handcrafted textiles that tell the story
+        - text: of a culture woven through time.
+  - generic [ref=f24e11]:
+    - link "← Madhavi" [ref=f24e13] [cursor=pointer]:
+      - /url: http://127.0.0.1:8123
+    - generic [ref=f24e14]: Verification code sent! Check your email to finish saving your order.
+    - generic [ref=f24e15]:
+      - img [ref=f24e17]
+      - heading "Check your inbox" [level=1] [ref=f24e19]
+      - paragraph [ref=f24e20]:
+        - text: We sent a 6-digit code to
+        - strong [ref=f24e21]: otpclaim@example.com
+      - paragraph [ref=f24e22]:
+        - text: The email may take a minute or two to arrive.
+        - text: Don't see it? Please check your
+        - strong [ref=f24e23]: Spam
+        - text: or
+        - strong [ref=f24e24]: Promotions
+        - text: folder.
+    - generic [ref=f24e25]:
+      - generic [ref=f24e26]:
+        - text: ✦
+        - strong [ref=f24e27]: "Local Dev Fallback:"
+        - text: "Local SMTP SSL is not configured. Your verification code is:"
+        - strong [ref=f24e28]: "824209"
+      - generic [ref=f24e29]:
+        - generic [ref=f24e30]: Enter 6-digit code
+        - textbox "------" [active] [ref=f24e32]
+      - button "Verify Email" [disabled] [ref=f24e33] [cursor=pointer]
+    - generic [ref=f24e34]:
+      - text: Didn't receive the code?
+      - generic [ref=f24e35]: Resend in 40s
+    - link "← Back to login" [ref=f24e37] [cursor=pointer]:
+      - /url: http://127.0.0.1:8123/login

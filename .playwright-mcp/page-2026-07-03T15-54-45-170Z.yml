@@ -1,0 +1,39 @@
+- generic [ref=f8e2]:
+  - generic [ref=f8e3]:
+    - img "Madhavi Stores" [ref=f8e4]
+    - generic [ref=f8e6]:
+      - paragraph [ref=f8e7]: Madhavi Stores
+      - heading "Quiet Luxury. Indian Heritage." [level=2] [ref=f8e8]:
+        - text: Quiet Luxury.
+        - text: Indian Heritage.
+      - paragraph [ref=f8e9]:
+        - text: Handcrafted textiles that tell the story
+        - text: of a culture woven through time.
+  - generic [ref=f8e11]:
+    - link "← Madhavi" [ref=f8e13] [cursor=pointer]:
+      - /url: http://127.0.0.1:8123
+    - heading "Welcome back" [level=1] [ref=f8e14]
+    - paragraph [ref=f8e15]: Sign in to your Madhavi Stores account
+    - generic [ref=f8e16]:
+      - generic [ref=f8e17]:
+        - generic [ref=f8e18]: Email Address
+        - generic [ref=f8e19]:
+          - generic:
+            - img
+          - textbox "Email Address" [ref=f8e20]:
+            - /placeholder: you@example.com
+      - generic [ref=f8e21]:
+        - generic [ref=f8e22]: Password
+        - generic [ref=f8e23]:
+          - textbox "Password" [ref=f8e24]:
+            - /placeholder: ••••••••
+          - button [ref=f8e25] [cursor=pointer]:
+            - img [ref=f8e26]
+        - link "Forgot password?" [ref=f8e30] [cursor=pointer]:
+          - /url: http://127.0.0.1:8123/forgot-password
+      - button "Sign In" [ref=f8e31] [cursor=pointer]
+    - generic [ref=f8e33]: or
+    - generic [ref=f8e34]:
+      - text: New to Madhavi Stores?
+      - link "Create an account" [ref=f8e35] [cursor=pointer]:
+        - /url: http://127.0.0.1:8123/register

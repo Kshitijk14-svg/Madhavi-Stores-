@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -65,6 +66,18 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
+    /**
+     * Normalize email on write so case/whitespace never causes a silent lookup
+     * mismatch (e.g. a guest order under "John@Example.com" failing to link to
+     * an account registered as "john@example.com").
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value !== null ? strtolower(trim($value)) : $value,
+        );
+    }
+
     // ── Role Helpers ──────────────────────────────────
 
     public function isSuperAdmin(): bool
@@ -101,5 +114,10 @@ class User extends Authenticatable implements FilamentUser
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
     }
 }

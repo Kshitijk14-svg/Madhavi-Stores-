@@ -104,23 +104,29 @@
                         {{-- Coupon application --}}
                         <div class="border-t border-primary/10 pt-6 mt-6">
                             <h3 class="text-[9px] font-bold uppercase tracking-wider text-muted mb-3">Promo Coupon Code</h3>
-                            @if(session('applied_coupon'))
-                                <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-3 text-xs">
-                                    <div class="text-emerald-800">
-                                        <span class="font-mono font-bold">{{ session('applied_coupon') }}</span> applied
+                            @auth
+                                @if(session('applied_coupon'))
+                                    <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-3 text-xs">
+                                        <div class="text-emerald-800">
+                                            <span class="font-mono font-bold">{{ session('applied_coupon') }}</span> applied
+                                        </div>
+                                        <form action="{{ route('coupon.remove') }}" method="POST" id="remove-coupon-form">
+                                            @csrf
+                                            <button type="submit" class="text-red-600 hover:text-red-800 font-bold text-[10px] uppercase tracking-wider underline">Remove</button>
+                                        </form>
                                     </div>
-                                    <form action="{{ route('coupon.remove') }}" method="POST" id="remove-coupon-form">
+                                @else
+                                    <form action="{{ route('coupon.apply') }}" method="POST" class="flex gap-2" id="apply-coupon-form">
                                         @csrf
-                                        <button type="submit" class="text-red-600 hover:text-red-800 font-bold text-[10px] uppercase tracking-wider underline">Remove</button>
+                                        <input type="text" name="code" required placeholder="ENTER CODE" class="text-xs uppercase tracking-wider font-mono border border-primary/15 px-3 py-2 bg-white outline-none focus:border-primary flex-grow">
+                                        <button type="submit" class="btn-primary !py-2 !px-4 text-[9px] font-bold uppercase tracking-wider">Apply</button>
                                     </form>
-                                </div>
+                                @endif
                             @else
-                                <form action="{{ route('coupon.apply') }}" method="POST" class="flex gap-2" id="apply-coupon-form">
-                                    @csrf
-                                    <input type="text" name="code" required placeholder="ENTER CODE" class="text-xs uppercase tracking-wider font-mono border border-primary/15 px-3 py-2 bg-white outline-none focus:border-primary flex-grow">
-                                    <button type="submit" class="btn-primary !py-2 !px-4 text-[9px] font-bold uppercase tracking-wider">Apply</button>
-                                </form>
-                            @endif
+                                <p class="text-xs text-muted">
+                                    <a href="{{ route('login') }}" class="underline">Sign in</a> to apply a coupon code.
+                                </p>
+                            @endauth
                         </div>
                         
                         <div class="text-[9px] text-muted text-center leading-relaxed mt-6 pt-6 border-t border-primary/5">

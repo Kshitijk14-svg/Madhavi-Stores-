@@ -28,6 +28,7 @@
       <div style="display: flex; flex-direction: column; gap: 16px;">
         <button class="account-tab active" onclick="switchTab('orders')" id="tab-orders">Order History</button>
         <button class="account-tab" onclick="switchTab('wishlist')" id="tab-wishlist">Wishlist</button>
+        <button class="account-tab" onclick="switchTab('addresses')" id="tab-addresses">Address Book</button>
         <button class="account-tab" onclick="switchTab('profile')" id="tab-profile">Profile Settings</button>
       </div>
 
@@ -227,6 +228,65 @@
           @endif
         </div>
 
+        {{-- ADDRESSES TAB --}}
+        <div id="content-addresses" class="account-content" style="display: none;">
+          <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">Address Book</h2>
+
+          @if($addresses->isEmpty())
+            <p style="color: var(--muted);">You haven't saved any addresses yet.</p>
+          @else
+            <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+              @foreach($addresses as $i => $addr)
+              <div style="border:1px solid var(--border);padding:16px;position:relative;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <p style="font-size:13px;font-weight:700;color:var(--primary);">{{ $addr->label ?: 'Address ' . ($i + 1) }}</p>
+                  @if($addr->is_default)
+                  <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 8px;background:#f0fdf4;color:#15803d;">Default</span>
+                  @endif
+                </div>
+                <p style="font-size:12px;color:var(--muted);line-height:1.6;">
+                  {{ $addr->first_name }} {{ $addr->last_name }} &middot; {{ $addr->phone }}<br>
+                  {{ $addr->address }}, {{ $addr->city }} {{ $addr->postal_code }}
+                </p>
+                <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                  <button type="button" onclick="openAddressForm({{ $addr->id }})"
+                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;border:1px solid var(--border);padding:8px 12px;background:transparent;cursor:pointer;color:var(--primary);">Edit</button>
+                  @unless($addr->is_default)
+                  <form action="{{ route('account.addresses.default', $addr->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;border:1px solid var(--border);padding:8px 12px;background:transparent;cursor:pointer;color:var(--primary);">Set as Default</button>
+                  </form>
+                  @endunless
+                  <form action="{{ route('account.addresses.delete', $addr->id) }}" method="POST" onsubmit="return confirm('Remove this address?');">
+                    @csrf
+                    <button type="submit" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border:1px solid var(--border);padding:8px 12px;background:transparent;cursor:pointer;color:var(--muted);">Delete</button>
+                  </form>
+                </div>
+
+                {{-- Inline edit form, hidden by default --}}
+                <div id="address-form-{{ $addr->id }}" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+                  <form action="{{ route('account.addresses.update', $addr->id) }}" method="POST" style="display:flex;flex-direction:column;gap:12px;">
+                    @csrf
+                    @include('pages.partials.address-fields', ['addr' => $addr])
+                    <button type="submit" class="btn-primary">Save Address</button>
+                  </form>
+                </div>
+              </div>
+              @endforeach
+            </div>
+          @endif
+
+          {{-- Add new address --}}
+          <button type="button" onclick="openAddressForm('new')" class="btn-secondary" style="margin-bottom:16px;">+ Add New Address</button>
+          <div id="address-form-new" style="display:none;border:1px solid var(--border);padding:16px;">
+            <form action="{{ route('account.addresses.store') }}" method="POST" style="display:flex;flex-direction:column;gap:12px;">
+              @csrf
+              @include('pages.partials.address-fields')
+              <button type="submit" class="btn-primary">Save Address</button>
+            </form>
+          </div>
+        </div>
+
         {{-- PROFILE TAB --}}
         <div id="content-profile" class="account-content" style="display: none;">
           <h2 style="font-family:'Cormorant Garamond',serif; font-size: 2rem; font-weight: 300; margin-bottom: 24px;">Profile Settings</h2>
@@ -282,6 +342,17 @@
     document.getElementById('content-' + tabId).style.display = 'block';
     document.getElementById('tab-' + tabId).classList.add('active');
   }
+
+  function openAddressForm(key) {
+    document.querySelectorAll('[id^="address-form-"]').forEach(el => el.style.display = 'none');
+    const el = document.getElementById('address-form-' + key);
+    if (el) el.style.display = 'block';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (tab && document.getElementById('tab-' + tab)) switchTab(tab);
+  });
 
   function toggleOrderStrip(orderId) {
     const body    = document.getElementById('order-body-'  + orderId);

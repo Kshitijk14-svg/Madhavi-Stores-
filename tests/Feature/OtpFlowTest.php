@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\OtpMail;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -175,6 +176,53 @@ class OtpFlowTest extends TestCase
         ])->assertRedirect(route('login'));
 
         $this->assertTrue(Hash::check('newpassword456', $user->fresh()->password));
+    }
+
+    public function test_registering_links_past_guest_orders_with_the_same_email(): void
+    {
+        Mail::fake();
+
+        Order::create([
+            'user_id' => null, 'order_number' => 'MS-PASTGUEST', 'email' => 'alice@example.com',
+            'first_name' => 'Alice', 'last_name' => 'G', 'address' => '1 St', 'city' => 'Mumbai', 'postal_code' => '400001',
+            'payment_method' => 'COD', 'payment_status' => 'Paid', 'order_status' => 'Pending',
+            'subtotal' => 1000, 'discount' => 0, 'tax' => 0, 'total' => 1000,
+        ]);
+
+        $this->post('/register', [
+            'name'                  => 'Alice',
+            'email'                 => 'alice@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $this->post('/verify-email', ['otp' => $this->lastSentOtp()])->assertRedirect();
+
+        $user = User::where('email', 'alice@example.com')->first();
+        $this->assertEquals($user->id, Order::where('order_number', 'MS-PASTGUEST')->value('user_id'));
+    }
+
+    public function test_registering_links_past_guest_orders_even_with_mismatched_email_case(): void
+    {
+        Mail::fake();
+
+        Order::create([
+            'user_id' => null, 'order_number' => 'MS-PASTGUEST2', 'email' => 'Bob@Example.com',
+            'first_name' => 'Bob', 'last_name' => 'G', 'address' => '1 St', 'city' => 'Mumbai', 'postal_code' => '400001',
+            'payment_method' => 'COD', 'payment_status' => 'Paid', 'order_status' => 'Pending',
+            'subtotal' => 1000, 'discount' => 0, 'tax' => 0, 'total' => 1000,
+        ]);
+
+        $this->post('/register', [
+            'name'                  => 'Bob',
+            'email'                 => 'BOB@Example.COM',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $this->post('/verify-email', ['otp' => $this->lastSentOtp()])->assertRedirect();
+
+        $user = User::where('email', 'bob@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals($user->id, Order::where('order_number', 'MS-PASTGUEST2')->value('user_id'));
     }
 
     public function test_forgot_password_is_user_enumeration_safe(): void
