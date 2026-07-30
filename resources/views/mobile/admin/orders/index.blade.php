@@ -81,6 +81,9 @@
             {{ $order->order_status === 'Shipped' ? 'bg-indigo-50 text-indigo-700' : '' }}
             {{ $order->order_status === 'Delivered' ? 'bg-emerald-50 text-emerald-700' : '' }}
             {{ $order->order_status === 'Cancelled' ? 'bg-rose-50 text-rose-700' : '' }}">{{ $order->order_status }}</span>
+          @if($order->order_status === 'Cancelled' && $order->payment_status === 'Paid')
+            <span class="text-[8px] px-2 py-0.5 font-bold uppercase tracking-wider bg-red-600 text-white animate-pulse" title="Item sold out after payment was captured and the automatic refund failed — refund manually in the Razorpay Dashboard.">Refund needed</span>
+          @endif
           <span class="text-[10px] text-muted ml-auto">{{ $order->items->sum('quantity') }} items</span>
         </div>
 

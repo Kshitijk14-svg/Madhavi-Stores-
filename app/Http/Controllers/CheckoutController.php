@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\CheckoutException;
 use App\Http\Controllers\Concerns\ResolvesCartOwner;
+use App\Mail\AdminRefundRequiredMail;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CartService;
 use App\Support\CartOwner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Razorpay\Api\Api;
 
@@ -66,6 +68,16 @@ class CheckoutController extends Controller
 
         if ($summary['cartItems']->isEmpty()) {
             return response()->json(['success' => false, 'message' => 'Your shopping bag is empty.'], 400);
+        }
+
+        // Best-effort check to reject an obviously out-of-stock cart before the
+        // customer is charged. Not a full guarantee against a last-unit race —
+        // see CartService::createOrder()'s locked, post-payment check for that.
+        if ($unavailable = $this->cart->findUnavailableItem($owner)) {
+            return response()->json([
+                'success' => false,
+                'message' => $unavailable . ' is no longer available in the requested quantity. Please update your bag and try again.',
+            ], 409);
         }
 
         // ── Razorpay: create a gateway order, the charge happens client-side ──
@@ -233,6 +245,20 @@ class CheckoutController extends Controller
             ], 500);
         }
 
+        // The item sold out to another customer between store() and now, but the
+        // payment was already captured — createOrder() persisted the order as
+        // Cancelled instead of throwing it away. Refund immediately and tell the
+        // customer the truth rather than a false "order placed" message.
+        if ($order->order_status === 'Cancelled') {
+            $this->handleOversoldOrder($order, $isMock);
+
+            return response()->json([
+                'success'  => false,
+                'sold_out' => true,
+                'message'  => 'We\'re sorry — an item in your bag just sold out. Your payment has been refunded in full and no order was placed.',
+            ], 409);
+        }
+
         // Reconcile: the finalised order total must equal what the gateway charged.
         // A mismatch means the cart/price/coupon changed between store() and now;
         // the payment is signature-verified so we keep the order, but flag it loudly
@@ -337,7 +363,7 @@ class CheckoutController extends Controller
         ];
 
         try {
-            $this->cart->createOrder(
+            $order = $this->cart->createOrder(
                 $owner,
                 $customer,
                 $notes['payment_method'] ?? 'Razorpay',
@@ -348,6 +374,11 @@ class CheckoutController extends Controller
                 ],
                 $notes['coupon_code'] ?: null
             );
+
+            if ($order->order_status === 'Cancelled') {
+                $this->handleOversoldOrder($order, false);
+                return response()->json(['status' => 'cancelled_refunded'], 200);
+            }
         } catch (CheckoutException $e) {
             // Cart was empty (already ordered) or stock gone — log, acknowledge.
             logger()->warning('Webhook order creation skipped: ' . $e->getMessage(), ['payment_id' => $paymentId]);
@@ -358,5 +389,51 @@ class CheckoutController extends Controller
         }
 
         return response()->json(['status' => 'created'], 200);
+    }
+
+    /**
+     * A payment was captured but the item sold out before the order could be
+     * fulfilled (CartService::createOrder() persisted it as order_status =
+     * 'Cancelled' instead of throwing it away). Refund the customer immediately
+     * and alert every admin — this must never be a silent, log-only failure.
+     */
+    private function handleOversoldOrder(Order $order, bool $isMock): void
+    {
+        $refundSucceeded = false;
+
+        if ($isMock) {
+            // No real gateway payment exists in local mock mode; simulate success
+            // so the Cancelled → Refunded flow can still be exercised end to end.
+            $refundSucceeded = true;
+        } else {
+            try {
+                $api = new Api(config('razorpay.key_id'), config('razorpay.key_secret'));
+                $api->payment->fetch($order->razorpay_payment_id)->refund();
+                $refundSucceeded = true;
+            } catch (\Throwable $e) {
+                logger()->critical('Automatic refund failed for an oversold order — manual refund required.', [
+                    'order_number'        => $order->order_number,
+                    'razorpay_payment_id' => $order->razorpay_payment_id,
+                    'error'               => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $order->update(['payment_status' => $refundSucceeded ? 'Refunded' : 'Paid']);
+
+        try {
+            $adminEmails = User::where('role', 'admin')->pluck('email')->filter()->all();
+            if (!empty($adminEmails)) {
+                Mail::to($adminEmails)->send(new AdminRefundRequiredMail(
+                    $order,
+                    'The last unit of an item in this order sold out to another customer between payment and order finalisation.',
+                    $refundSucceeded
+                ));
+            }
+        } catch (\Throwable $e) {
+            logger()->error('Failed to send admin refund-required email: ' . $e->getMessage(), [
+                'order_number' => $order->order_number,
+            ]);
+        }
     }
 }

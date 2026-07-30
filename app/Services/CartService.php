@@ -120,22 +120,63 @@ class CartService
     }
 
     /**
+     * Best-effort, unlocked stock check used before charging the customer
+     * (CheckoutController::store()) to reject an obviously out-of-stock cart
+     * before payment starts. NOT a substitute for the locked check inside
+     * createOrder() — completing a Razorpay payment can take the customer
+     * minutes, so stock can still run out after this check passes. Returns
+     * the name of the first unavailable item, or null if everything is fine.
+     */
+    public function findUnavailableItem(CartOwner $owner): ?string
+    {
+        $cartItems = $owner->scope(CartItem::with('product'))->get();
+
+        foreach ($cartItems as $item) {
+            if (!$item->product) {
+                continue;
+            }
+
+            if ($item->product->has_sizes && $item->size) {
+                $stock = ProductSize::where('product_id', $item->product_id)->where('size', $item->size)->value('stock');
+                if ($stock === null || $stock < $item->quantity) {
+                    return $item->product->name . ' (size ' . $item->size . ')';
+                }
+            } elseif ($item->product->stock < $item->quantity) {
+                return $item->product->name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Create an order atomically.
      *
      * Guarantees:
      *  - Idempotent on razorpay_payment_id (a replayed browser POST or a webhook
      *    firing after the browser already created the order returns the existing
-     *    order instead of duplicating it).
+     *    order instead of duplicating it) — including the case where two
+     *    concurrent requests both pass the pre-transaction check below before
+     *    either inserts; the DB-level unique index on razorpay_payment_id catches
+     *    that race and the QueryException handler below returns the winner's row.
      *  - Pricing recomputed under the transaction using final_price.
      *  - Coupon row locked + re-validated before incrementing its usage.
-     *  - Stock decremented under lockForUpdate with an explicit sufficiency check —
-     *    an oversell rolls the whole order back instead of silently clamping to 0.
+     *  - Stock is checked for ALL items (locked) before anything is mutated.
+     *    - If payment has NOT been captured yet (COD, or no payment info at all):
+     *      an oversell throws CheckoutException and the whole attempt rolls back —
+     *      nothing was charged, so rejecting outright is safe.
+     *    - If payment HAS already been captured (payment_status === 'Paid', i.e.
+     *      Razorpay verifyPayment/webhook): an oversell must never silently
+     *      vanish a paid order. The Order + OrderItem rows are still persisted
+     *      (order_status = 'Cancelled', stock untouched) so the charge is visible
+     *      to the customer and admin instead of leaving only a log line. The
+     *      caller is responsible for triggering a refund once it sees that status.
      *
      * @param  array  $customer  first_name,last_name,email,address,city,postal_code
      * @param  array  $payment   razorpay_order_id,razorpay_payment_id,razorpay_signature,payment_status
      * @param  ?string $couponCode  explicit coupon (webhook context); falls back to session
      *
-     * @throws CheckoutException  with a user-safe message
+     * @throws CheckoutException  with a user-safe message (only when nothing was charged)
      */
     public function createOrder(CartOwner $owner, array $customer, string $paymentMethod, array $payment = [], ?string $couponCode = null): Order
     {
@@ -153,101 +194,145 @@ class CartService
             $customer['email'] = strtolower(trim($customer['email']));
         }
 
-        return DB::transaction(function () use ($owner, $customer, $paymentMethod, $payment, $couponCode) {
-            $cartItems = $owner->scope(CartItem::with('product'))->get();
+        $alreadyPaid = ($payment['payment_status'] ?? null) === 'Paid';
 
-            if ($cartItems->isEmpty()) {
-                throw new CheckoutException('Your shopping bag is empty.');
-            }
+        try {
+            return DB::transaction(function () use ($owner, $customer, $paymentMethod, $payment, $couponCode, $alreadyPaid) {
+                $cartItems = $owner->scope(CartItem::with('product'))->get();
 
-            $subtotal = 0;
-            foreach ($cartItems as $item) {
-                if (!$item->product) {
-                    continue;
+                if ($cartItems->isEmpty()) {
+                    throw new CheckoutException('Your shopping bag is empty.');
                 }
-                $subtotal += $item->product->final_price * $item->quantity;
-            }
 
-            [$discount, $coupon] = $this->resolveCoupon($owner, $couponCode, $subtotal, true);
+                $subtotal = 0;
+                foreach ($cartItems as $item) {
+                    if (!$item->product) {
+                        continue;
+                    }
+                    $subtotal += $item->product->final_price * $item->quantity;
+                }
 
-            $tax   = 0;
-            $total = max(0, $subtotal - $discount);
+                [$discount, $coupon] = $this->resolveCoupon($owner, $couponCode, $subtotal, true);
 
-            $orderNumber = 'MS-' . strtoupper(Str::random(8));
-            while (Order::where('order_number', $orderNumber)->exists()) {
+                $tax   = 0;
+                $total = max(0, $subtotal - $discount);
+
                 $orderNumber = 'MS-' . strtoupper(Str::random(8));
-            }
-
-            $order = Order::create([
-                'user_id'             => $owner->userId,
-                'order_number'        => $orderNumber,
-                'email'               => $customer['email'],
-                'phone'               => $customer['phone'] ?? null,
-                'first_name'          => $customer['first_name'],
-                'last_name'           => $customer['last_name'],
-                'address'             => $customer['address'],
-                'city'                => $customer['city'],
-                'postal_code'         => $customer['postal_code'],
-                'payment_method'      => $paymentMethod,
-                'razorpay_order_id'   => $payment['razorpay_order_id']   ?? null,
-                'razorpay_payment_id' => $payment['razorpay_payment_id'] ?? null,
-                'razorpay_signature'  => $payment['razorpay_signature']  ?? null,
-                'payment_status'      => $payment['payment_status'] ?? 'Pending',
-                'order_status'        => 'Pending',
-                'subtotal'            => $subtotal,
-                'discount'            => $discount,
-                'tax'                 => $tax,
-                'total'               => $total,
-                'coupon_code'         => $coupon?->code,
-                'coupon_id'           => $coupon?->id,
-            ]);
-
-            foreach ($cartItems as $item) {
-                if (!$item->product) {
-                    continue;
+                while (Order::where('order_number', $orderNumber)->exists()) {
+                    $orderNumber = 'MS-' . strtoupper(Str::random(8));
                 }
 
-                OrderItem::create([
-                    'order_id'     => $order->id,
-                    'product_id'   => $item->product_id,
-                    'product_name' => $item->product->name,
-                    'price'        => $item->product->final_price,
-                    'quantity'     => $item->quantity,
-                    'size'         => $item->size,
-                    'color'        => $item->color,
+                // Pass 1: lock every relevant stock row and determine sufficiency
+                // for ALL items before mutating anything, so a shortage on one
+                // item never leaves an earlier item's stock partially decremented.
+                $locked   = [];
+                $shortage = null;
+                foreach ($cartItems as $item) {
+                    if (!$item->product) {
+                        continue;
+                    }
+
+                    if ($item->product->has_sizes && $item->size) {
+                        $row       = ProductSize::where('product_id', $item->product_id)
+                            ->where('size', $item->size)
+                            ->lockForUpdate()
+                            ->first();
+                        $label     = $item->product->name . ' (size ' . $item->size . ')';
+                    } else {
+                        $row   = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                        $label = $item->product->name;
+                    }
+
+                    $locked[] = ['item' => $item, 'row' => $row];
+
+                    if ($shortage === null && (!$row || $row->stock < $item->quantity)) {
+                        $shortage = $label . ' just went out of stock.';
+                    }
+                }
+
+                if ($shortage !== null && !$alreadyPaid) {
+                    throw new CheckoutException($shortage . ' Your order was not placed and you have not been charged.');
+                }
+
+                $oversoldButPaid = $shortage !== null;
+
+                $order = Order::create([
+                    'user_id'             => $owner->userId,
+                    'order_number'        => $orderNumber,
+                    'email'               => $customer['email'],
+                    'phone'               => $customer['phone'] ?? null,
+                    'first_name'          => $customer['first_name'],
+                    'last_name'           => $customer['last_name'],
+                    'address'             => $customer['address'],
+                    'city'                => $customer['city'],
+                    'postal_code'         => $customer['postal_code'],
+                    'payment_method'      => $paymentMethod,
+                    'razorpay_order_id'   => $payment['razorpay_order_id']   ?? null,
+                    'razorpay_payment_id' => $payment['razorpay_payment_id'] ?? null,
+                    'razorpay_signature'  => $payment['razorpay_signature']  ?? null,
+                    'payment_status'      => $payment['payment_status'] ?? 'Pending',
+                    'order_status'        => $oversoldButPaid ? 'Cancelled' : 'Pending',
+                    'subtotal'            => $subtotal,
+                    'discount'            => $discount,
+                    'tax'                 => $tax,
+                    'total'               => $total,
+                    'coupon_code'         => $coupon?->code,
+                    'coupon_id'           => $coupon?->id,
                 ]);
 
-                if ($item->product->has_sizes && $item->size) {
-                    $productSize = ProductSize::where('product_id', $item->product_id)
-                        ->where('size', $item->size)
-                        ->lockForUpdate()
-                        ->first();
-                    if (!$productSize || $productSize->stock < $item->quantity) {
-                        throw new CheckoutException(
-                            $item->product->name . ' (size ' . $item->size . ') just went out of stock. Your order was not placed and you have not been charged.'
-                        );
+                foreach ($locked as $entry) {
+                    $item = $entry['item'];
+
+                    OrderItem::create([
+                        'order_id'     => $order->id,
+                        'product_id'   => $item->product_id,
+                        'product_name' => $item->product->name,
+                        'price'        => $item->product->final_price,
+                        'quantity'     => $item->quantity,
+                        'size'         => $item->size,
+                        'color'        => $item->color,
+                    ]);
+
+                    if (!$oversoldButPaid) {
+                        $entry['row']->decrement('stock', $item->quantity);
                     }
-                    $productSize->decrement('stock', $item->quantity);
-                } else {
-                    $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
-                    if (!$product || $product->stock < $item->quantity) {
-                        throw new CheckoutException(
-                            $item->product->name . ' just went out of stock. Your order was not placed and you have not been charged.'
-                        );
-                    }
-                    $product->decrement('stock', $item->quantity);
+                }
+
+                if ($oversoldButPaid) {
+                    // Payment already captured — leave the cart and coupon usage
+                    // untouched (support may need to see exactly what was ordered)
+                    // and skip straight to returning the Cancelled order. The
+                    // caller (CheckoutController) refunds the payment and alerts
+                    // admin when it sees order_status === 'Cancelled' here.
+                    return $order;
+                }
+
+                if ($coupon) {
+                    $coupon->incrementUsage();
+                }
+
+                $owner->scope(CartItem::query())->delete();
+                session()->forget('applied_coupon');
+
+                return $order;
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Two concurrent requests for the SAME payment (browser verifyPayment
+            // racing the webhook) can both pass the idempotency guard above before
+            // either has inserted; the unique index on razorpay_payment_id catches
+            // that here instead of surfacing a 500 to whichever request loses.
+            if (
+                $e->getCode() === '23000'
+                && !empty($payment['razorpay_payment_id'])
+                && str_contains($e->getMessage(), 'razorpay_payment_id')
+            ) {
+                $existing = Order::where('razorpay_payment_id', $payment['razorpay_payment_id'])->first();
+                if ($existing) {
+                    return $existing;
                 }
             }
-
-            if ($coupon) {
-                $coupon->incrementUsage();
-            }
-
-            $owner->scope(CartItem::query())->delete();
-            session()->forget('applied_coupon');
-
-            return $order;
-        });
+            throw $e;
+        }
     }
 
     /**

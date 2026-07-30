@@ -126,6 +126,11 @@
                                 ">
                                     {{ $order->payment_status }}
                                 </span>
+                                @if($order->order_status === 'Cancelled' && $order->payment_status === 'Paid')
+                                    <span class="block mt-1 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider bg-red-600 text-white animate-pulse" title="Item sold out after payment was captured and the automatic refund failed — refund manually in the Razorpay Dashboard.">
+                                        Refund needed
+                                    </span>
+                                @endif
                             </td>
 
                             {{-- Order Status Tag --}}

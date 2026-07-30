@@ -268,6 +268,90 @@ class CheckoutTest extends TestCase
         $this->assertNull($summary['coupon']);
     }
 
+    public function test_oversold_but_paid_order_is_persisted_as_cancelled_not_thrown_away(): void
+    {
+        // Two customers race for the last unit; this simulates the loser whose
+        // payment was already captured by Razorpay before stock ran out. The
+        // order must NOT be silently discarded — it has to be persisted (so the
+        // customer/admin can see it and a refund can be issued), not thrown away
+        // as a CheckoutException like the unpaid (COD) oversell case.
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 1]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 2]);
+
+        $this->actingAs($user);
+
+        $order = $this->service()->createOrder(
+            CartOwner::forUser($user),
+            $this->customer,
+            'Razorpay',
+            ['razorpay_payment_id' => 'pay_OVERSOLD1', 'payment_status' => 'Paid']
+        );
+
+        $this->assertEquals('Cancelled', $order->order_status);
+        $this->assertEquals('Paid', $order->payment_status, 'CartService never calls the refund API itself — that is the controller\'s job once it sees order_status=Cancelled.');
+        $this->assertEquals(1, $product->fresh()->stock, 'Stock must be untouched — nothing was actually fulfilled.');
+        $this->assertDatabaseHas('order_items', ['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 2]);
+        $this->assertEquals(1, CartItem::count(), 'Cart must be left intact so support can see exactly what was ordered.');
+    }
+
+    public function test_sized_product_oversold_but_paid_is_persisted_as_cancelled(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->withSizes()->create(['price' => 1000]);
+        ProductSize::factory()->create(['product_id' => $product->id, 'size' => 'M', 'stock' => 1]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 2, 'size' => 'M']);
+
+        $this->actingAs($user);
+
+        $order = $this->service()->createOrder(
+            CartOwner::forUser($user),
+            $this->customer,
+            'Razorpay',
+            ['razorpay_payment_id' => 'pay_OVERSOLD2', 'payment_status' => 'Paid']
+        );
+
+        $this->assertEquals('Cancelled', $order->order_status);
+        $this->assertEquals(1, ProductSize::where('product_id', $product->id)->where('size', 'M')->value('stock'));
+    }
+
+    public function test_duplicate_razorpay_payment_id_is_rejected_at_db_level(): void
+    {
+        // Guards the TOCTOU window where a browser verifyPayment() call and the
+        // Razorpay webhook race for the same payment: both can pass CartService's
+        // pre-transaction SELECT check before either inserts. The DB-level unique
+        // index (migration 2026_07_30_000001) is the backstop that actually
+        // prevents two Order rows — this proves the constraint is in place.
+        $user = User::factory()->create();
+        Order::create([
+            'user_id' => $user->id, 'order_number' => 'MS-DUPTEST1', 'email' => $user->email,
+            'first_name' => 'a', 'last_name' => 'b', 'address' => 'c', 'city' => 'd', 'postal_code' => 'e',
+            'payment_method' => 'Razorpay', 'payment_status' => 'Paid', 'order_status' => 'Pending',
+            'razorpay_payment_id' => 'pay_DUPLICATE', 'subtotal' => 1000, 'discount' => 0, 'tax' => 0, 'total' => 1000,
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        Order::create([
+            'user_id' => $user->id, 'order_number' => 'MS-DUPTEST2', 'email' => $user->email,
+            'first_name' => 'a', 'last_name' => 'b', 'address' => 'c', 'city' => 'd', 'postal_code' => 'e',
+            'payment_method' => 'Razorpay', 'payment_status' => 'Paid', 'order_status' => 'Pending',
+            'razorpay_payment_id' => 'pay_DUPLICATE', 'subtotal' => 1000, 'discount' => 0, 'tax' => 0, 'total' => 1000,
+        ]);
+    }
+
+    public function test_checkout_store_rejects_when_cart_item_exceeds_stock(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['price' => 1000, 'stock' => 1]);
+        CartItem::factory()->create(['user_id' => $user->id, 'product_id' => $product->id, 'quantity' => 5]);
+
+        $response = $this->actingAs($user)->postJson('/checkout', $this->customer);
+
+        $response->assertStatus(409);
+        $response->assertJsonFragment(['success' => false]);
+    }
+
     public function test_guest_cannot_apply_a_coupon(): void
     {
         $product = Product::factory()->create(['price' => 1000, 'stock' => 5]);
