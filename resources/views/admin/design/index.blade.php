@@ -190,8 +190,42 @@
         <div class="mt-10 pt-8 border-t border-gray-100">
             <div class="mb-4">
                 <h3 class="text-sm font-bold text-primary uppercase">Instagram Feed</h3>
-                <p class="text-[10px] text-muted">Posts are pulled live from Instagram (token configured in <code>.env</code>). Set the @handle shown on the homepage below. Toggle the section's visibility in the layout list above.</p>
+                <p class="text-[10px] text-muted">Posts are pulled live from Instagram. The access token refreshes itself automatically from normal site traffic — the status below and the controls in this panel are only needed if that ever fails. Set the @handle shown on the homepage below. Toggle the section's visibility in the layout list above.</p>
             </div>
+
+            @php
+                $igExpiresAt   = !empty($igTokenMeta['expires_at']) ? \Carbon\Carbon::parse($igTokenMeta['expires_at']) : null;
+                $igRefreshedAt = !empty($igTokenMeta['refreshed_at']) ? \Carbon\Carbon::parse($igTokenMeta['refreshed_at']) : null;
+                $igDaysLeft    = $igExpiresAt ? (int) floor(now()->diffInDays($igExpiresAt, false)) : null;
+                $igStatusColor = (!$igHasToken || $igDaysLeft === null || $igDaysLeft <= 7)
+                    ? 'text-rose-700 bg-rose-50 border-rose-200'
+                    : ($igDaysLeft <= 30 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200');
+            @endphp
+
+            <div class="max-w-sm mb-6 px-3 py-3 border text-[11px] {{ $igStatusColor }}">
+                @if(!$igHasToken)
+                    <p class="font-semibold">No access token configured.</p>
+                    <p class="mt-1">Paste a long-lived token below to start showing real posts.</p>
+                @else
+                    <p class="font-semibold">
+                        Token active —
+                        @if($igDaysLeft === null)
+                            expiry unknown (will self-correct on the next refresh)
+                        @elseif($igDaysLeft < 0)
+                            expired {{ $igExpiresAt->diffForHumans() }}
+                        @else
+                            ~{{ $igDaysLeft }} day{{ $igDaysLeft === 1 ? '' : 's' }} left ({{ $igExpiresAt->toFormattedDateString() }})
+                        @endif
+                    </p>
+                    @if($igRefreshedAt)
+                        <p class="mt-1 opacity-80">Last refreshed {{ $igRefreshedAt->diffForHumans() }}.</p>
+                    @endif
+                    @if(!empty($igTokenMeta['last_error']))
+                        <p class="mt-1"><strong>Last error:</strong> {{ $igTokenMeta['last_error'] }}</p>
+                    @endif
+                @endif
+            </div>
+
             <form action="{{ route('admin.design.update') }}" method="POST">
                 @csrf
                 <input type="hidden" name="type" value="instagram">
@@ -204,11 +238,27 @@
                                placeholder="madhavi_stores">
                     </div>
                 </div>
+                <div class="max-w-sm mt-5">
+                    <label class="text-[9px] font-bold text-muted uppercase tracking-wider block mb-2">Instagram Access Token</label>
+                    <input type="password" name="instagram_access_token" autocomplete="off"
+                           class="w-full text-xs text-primary bg-white border border-gray-200 px-3 py-2 outline-none"
+                           placeholder="Leave blank to keep the current token">
+                    <p class="text-[10px] text-muted mt-1">Paste a fresh long-lived token from the Meta Developer Console only if the automatic refresh has failed.</p>
+                </div>
                 <div class="pt-6 flex justify-end">
                     <button type="submit" class="btn-primary !py-3 !px-8 uppercase tracking-widest text-[10px] font-semibold">
-                        Save Instagram Handle
+                        Save Instagram Settings
                     </button>
                 </div>
+            </form>
+
+            <form action="{{ route('admin.design.instagram.refresh') }}" method="POST" class="mt-4 max-w-sm">
+                @csrf
+                <button type="submit" class="btn-secondary !py-2 !px-4 text-[10px] uppercase tracking-widest"
+                        {{ $igHasToken ? '' : 'disabled' }}>
+                    Refresh now
+                </button>
+                <span class="text-[10px] text-muted ml-2">Extends the current token immediately.</span>
             </form>
         </div>
     </div>

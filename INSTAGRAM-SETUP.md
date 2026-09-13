@@ -12,7 +12,7 @@ never breaks.
 
 This is a **one-time setup** that produces two values for `.env`:
 
-- `INSTAGRAM_ACCESS_TOKEN` — a long-lived access token (~60 days; auto-refreshed weekly)
+- `INSTAGRAM_ACCESS_TOKEN` — a long-lived access token (~60 days; self-refreshes from site traffic, see below)
 - `INSTAGRAM_BUSINESS_ACCOUNT_ID` — the Instagram **user ID** (a number, not the @handle)
 
 ---
@@ -72,21 +72,25 @@ Reload the homepage — the grid should now show your 6 latest posts.
 
 - **Caching:** posts are cached for `INSTAGRAM_CACHE_TTL` seconds (default 1 hour), so the
   homepage does not call the API on every request. Cache key: `instagram_feed_posts`.
-- **Token auto-refresh:** Instagram long-lived tokens expire in ~60 days. The scheduled command
-  `instagram:refresh-token` (runs **weekly** via `routes/console.php`) re-presents the current
-  token via `grant_type=ig_refresh_token` to `graph.instagram.com/refresh_access_token` (token
-  only — no app id/secret needed), which resets the 60-day window, and stores the new token in
-  the `settings` table — so it never needs manual rotation as long as the Laravel scheduler cron
-  is running. Note: a token must be at least 24 hours old before it can be refreshed. To test it
-  manually:
+- **Token auto-refresh:** Instagram long-lived tokens expire in ~60 days. Refreshing is
+  self-healing and does **not** depend on cron: on every homepage view `InstagramService`
+  cheaply checks whether the token is inside its renewal window (default: 25 days before expiry,
+  checked at most every 6h) and, if so, refreshes it *after the response is sent* via
+  `dispatch(...)->afterResponse()`. The scheduled `instagram:refresh-token` command (weekly, in
+  `routes/console.php`) is kept as a bonus path for hosts that do have cron. Token lifecycle
+  metadata (issued/expiry/last error) lives in the `settings` table under `instagram_token_meta`.
+  A token must be ≥24h old before Meta will refresh it. Thresholds are configurable in
+  `config/instagram.php` (`token_refresh_days`, `token_check_interval_hours`, `token_alert_days`).
+  If a refresh keeps failing near expiry, admins + superadmins get an email alert. Manual test:
 
   ```
   php artisan instagram:refresh-token
   ```
 
-- **Admin:** the @handle shown in the section (eyebrow + "Follow" button) is editable at
-  **/admin/design** (Homepage Layout tab → Instagram Feed). The section can be hidden/reordered
-  from the same page's layout list. The **token is never exposed in the admin** — it stays in `.env`.
+- **Admin:** **/admin/design** (Homepage Layout tab → Instagram Feed) shows a **token status
+  block** (days to expiry, last refresh, last error), a **paste-new-token** field (blank leaves
+  the current token untouched), and a **"Refresh now"** button. The @handle shown in the section
+  is editable here too, and the section can be hidden/reordered from the layout list.
 
 ## Troubleshooting
 
