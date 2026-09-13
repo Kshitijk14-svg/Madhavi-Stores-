@@ -133,4 +133,5 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Single-Page Dynamic Design Manager (desktop only — no mobile experience)
     Route::get('/design', [AdminController::class, 'designManager'])->name('design.index')->middleware('desktop.only');
     Route::post('/design/update', [AdminController::class, 'updateDesignSettings'])->name('design.update')->middleware('desktop.only');
+    Route::post('/design/instagram/refresh', [AdminController::class, 'refreshInstagramToken'])->name('design.instagram.refresh')->middleware('desktop.only');
 });

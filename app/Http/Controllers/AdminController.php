@@ -12,6 +12,7 @@ use App\Models\Coupon;
 use App\Models\Setting;
 use App\Models\CartItem;
 use App\Models\WishlistItem;
+use App\Services\InstagramService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1162,12 +1163,16 @@ class AdminController extends Controller
         ];
         $newsletter = Setting::get('newsletter_settings', $defaultNewsletter);
 
-        // Fetch Instagram settings (display handle only; token lives in .env).
+        // Fetch Instagram settings (display handle + self-refreshing token status).
         $instagram = Setting::get('instagram_settings', ['handle' => 'madhavi_stores']);
+        $ig = app(InstagramService::class);
+        $igTokenMeta = $ig->getTokenMeta();
+        $igHasToken = $ig->getToken() !== '';
 
         return view('admin.design.index', compact(
             'heroSlides', 'about', 'signinImage',
-            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter', 'instagram'
+            'homepageSections', 'dualBanners', 'promoBanner', 'newsletter', 'instagram',
+            'igTokenMeta', 'igHasToken'
         ));
     }
 
@@ -1261,23 +1266,30 @@ class AdminController extends Controller
             return redirect()->route('admin.design.index')->with('success', 'Homepage layout and banner configurations saved successfully.');
         }
 
-        // ── Instagram Feed (display handle only) ──────────────────
+        // ── Instagram Feed (display handle + optional token paste) ─
         if ($type === 'instagram') {
             $request->validate([
-                'instagram_handle' => ['nullable', 'string', 'max:60', 'regex:/^[A-Za-z0-9_.]*$/'],
+                'instagram_handle'       => ['nullable', 'string', 'max:60', 'regex:/^[A-Za-z0-9_.]*$/'],
+                'instagram_access_token' => ['nullable', 'string', 'max:500'],
             ]);
 
             $handle = ltrim(trim((string) $request->input('instagram_handle')), '@');
             Setting::set('instagram_settings', ['handle' => $handle ?: 'madhavi_stores']);
 
+            // Blank = leave the current token unchanged.
+            $newToken = trim((string) $request->input('instagram_access_token'));
+            if ($newToken !== '') {
+                app(InstagramService::class)->storeToken($newToken);
+            }
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Instagram handle updated.'
+                    'message' => 'Instagram settings updated.'
                 ]);
             }
 
-            return redirect()->route('admin.design.index')->with('success', 'Instagram handle updated.');
+            return redirect()->route('admin.design.index')->with('success', 'Instagram settings updated.');
         }
 
         // ── Signin Image ──────────────────────────────────────────
@@ -1392,6 +1404,18 @@ class AdminController extends Controller
             ], 400);
         }
         return redirect()->route('admin.design.index')->with('error', 'Invalid setting update type.');
+    }
+
+    /**
+     * Admin "Refresh now" button for the Instagram Feed panel. Runs the same
+     * refresh as the console command / traffic-driven loop and flashes the result.
+     */
+    public function refreshInstagramToken(InstagramService $instagram)
+    {
+        $result = $instagram->refreshToken();
+
+        return redirect()->route('admin.design.index')
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
     private function convertToWebp($file, $destinationFolder, int $maxDimension = 1600): ?string

@@ -26,4 +26,16 @@ return [
 
     // Number of posts to show in the homepage grid.
     'limit' => 6,
+
+    // Refresh the token when this many days remain before expiry. Meta long-lived
+    // tokens last 60 days, so 25 leaves a generous grace buffer.
+    'token_refresh_days' => (int) env('INSTAGRAM_TOKEN_REFRESH_DAYS', 25),
+
+    // How often (hours) a homepage load is allowed to check whether a refresh is
+    // due. Keeps the traffic-driven self-heal loop cheap.
+    'token_check_interval_hours' => (int) env('INSTAGRAM_TOKEN_CHECK_HOURS', 6),
+
+    // Email the admins if a refresh fails and expiry is this close (days), or
+    // the expiry is unknown.
+    'token_alert_days' => (int) env('INSTAGRAM_TOKEN_ALERT_DAYS', 14),
 ];
